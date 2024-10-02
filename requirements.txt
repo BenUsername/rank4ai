@@ -1,0 +1,9 @@
+Flask
+requests
+beautifulsoup4
+lxml
+openai
+python-dotenv
+validators
+readability-lxml
+lxml_html_clean

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Results for {{ domain }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <h1>Results for {{ domain }}</h1>
+    
+    <h2>Website Information</h2>
+    <p><strong>Title:</strong> {{ info.title }}</p>
+    <p><strong>Description:</strong> {{ info.description }}</p>
+    
+    <h2>Generated Marketing Prompts</h2>
+    <ol>
+    {% for prompt in prompts %}
+        <li>{{ prompt }}</li>
+    {% endfor %}
+    </ol>
+    
+    <h2>Prompt Analysis</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Prompt</th>
+                <th>Answer</th>
+                <th>Top Competitors</th>
+                <th>Visible</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in table %}
+            <tr>
+                <td>{{ row.prompt }}</td>
+                <td>{{ row.answer }}</td>
+                <td>
+                    {% if row.competitors != 'None mentioned' %}
+                        <ul>
+                            {% for competitor in row.competitors.split(', ') %}
+                                <li>{{ competitor }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        {{ row.competitors }}
+                    {% endif %}
+                </td>
+                <td>{{ row.visible }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    
+    <a href="/">Back to Home</a>
+</body>
+</html>
