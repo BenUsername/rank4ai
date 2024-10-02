@@ -8,6 +8,9 @@ import validators
 from readability import Document
 from openai import OpenAI
 import re
+import asyncio
+import aiohttp
+from aiohttp import ClientSession
 
 # Load environment variables from .env file
 load_dotenv()
@@ -118,48 +121,44 @@ def generate_marketing_prompts(title, description, content, domain):
         app.logger.error(f"Error during OpenAI API call: {e}")
         return []
 
-def generate_prompt_answers(prompts, domain):
-    """Generate answers for each prompt and create a table."""
-    table = []
-    for prompt in prompts:
-        try:
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "You are an impartial LLM agent helping users find the best website for their needs. When mentioning competitor names, enclose them in double asterisks like **Competitor Name**."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=300,
-                n=1,
-                temperature=0.7,
-            )
+async def generate_prompt_answer(prompt, domain, session):
+    try:
+        async with session.post('https://api.openai.com/v1/chat/completions', json={
+            "model": "gpt-4o-mini",
+            "messages": [
+                {"role": "system", "content": "You are an impartial LLM agent helping users find the best website for their needs. When mentioning competitor names, enclose them in double asterisks like **Competitor Name**."},
+                {"role": "user", "content": prompt}
+            ],
+            "max_tokens": 300,
+            "temperature": 0.7,
+        }) as response:
+            result = await response.json()
+            answer = result['choices'][0]['message']['content'].strip()
             
-            answer = response.choices[0].message.content.strip()
-            
-            # Check if the domain is mentioned in the answer
             visible = domain.lower() in answer.lower()
-            
-            # Extract competitors (improved implementation)
             competitors = re.findall(r'\*\*(.*?)\*\*', answer)
-            competitors = list(set(competitors))  # Remove duplicates
+            competitors = list(set(competitors))
             competitors = ', '.join(competitors) if competitors else 'None mentioned'
             
-            table.append({
+            return {
                 'prompt': prompt,
                 'answer': answer,
                 'competitors': competitors,
                 'visible': 'Yes' if visible else 'No'
-            })
-        except Exception as e:
-            app.logger.error(f"Error generating answer for prompt '{prompt}': {e}")
-            table.append({
-                'prompt': prompt,
-                'answer': 'Error generating answer',
-                'competitors': 'N/A',
-                'visible': 'N/A'
-            })
-    
-    return table
+            }
+    except Exception as e:
+        app.logger.error(f"Error generating answer for prompt '{prompt}': {e}")
+        return {
+            'prompt': prompt,
+            'answer': 'Error generating answer',
+            'competitors': 'N/A',
+            'visible': 'N/A'
+        }
+
+async def generate_prompt_answers(prompts, domain):
+    async with ClientSession(headers={"Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}"}) as session:
+        tasks = [generate_prompt_answer(prompt, domain, session) for prompt in prompts]
+        return await asyncio.gather(*tasks)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -183,7 +182,7 @@ def index():
             prompts = generate_marketing_prompts(info['title'], info['description'], info['content'], domain)
             
             # Generate answers and create table
-            table = generate_prompt_answers(prompts, domain)
+            table = asyncio.run(generate_prompt_answers(prompts, domain))
             
             session['search_performed'] = True
             return render_template('result.html', domain=domain, info=info, prompts=prompts, table=table, show_waiting_list=True)

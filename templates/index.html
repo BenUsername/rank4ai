@@ -30,10 +30,18 @@
         <p>You've already performed a search. Please join the waiting list for more.</p>
         <a href="https://form.typeform.com/to/YOUR_TYPEFORM_ID" target="_blank" class="cta-button waiting-list-button">Join Waiting List</a>
     {% else %}
-        <form method="post">
+        <form method="post" id="promptForm">
             <input type="text" name="domain" placeholder="Enter your domain (e.g., example.com)" required>
             <input type="submit" value="Generate Prompts" class="cta-button">
         </form>
+        <div class="spinner" id="spinner"></div>
     {% endif %}
+
+    <script>
+        document.getElementById('promptForm').addEventListener('submit', function(e) {
+            document.getElementById('spinner').style.display = 'block';
+            this.style.display = 'none';
+        });
+    </script>
 </body>
 </html>
