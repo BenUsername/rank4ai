@@ -27,14 +27,14 @@
                 <th>Prompt</th>
                 <th>Answer</th>
                 <th>Top Competitors</th>
-                <th>Visible</th>
+                <th>Are you visible in LLM results?</th>
             </tr>
         </thead>
         <tbody>
         {% for row in table %}
             <tr>
-                <td>{{ row.prompt }}</td>
-                <td>{{ row.answer }}</td>
+                <td class="truncate">{{ row.prompt }}</td>
+                <td class="truncate">{{ row.answer }}</td>
                 <td>
                     {% if row.competitors != 'None mentioned' %}
                         <ul>

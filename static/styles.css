@@ -62,3 +62,22 @@ th {
 .cta-button:hover {
     background-color: #27ae60;
 }
+
+.truncate {
+    max-width: 300px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    position: relative;
+}
+
+.truncate:hover {
+    white-space: normal;
+    overflow: visible;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    padding: 10px;
+    position: absolute;
+    z-index: 1;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
