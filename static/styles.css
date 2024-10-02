@@ -81,3 +81,17 @@ th {
     z-index: 1;
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
+
+.cta-container {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+.waiting-list-button {
+    background-color: #e74c3c;
+}
+
+.waiting-list-button:hover {
+    background-color: #c0392b;
+}

@@ -22,13 +22,18 @@
         <p>Ready to enhance your marketing strategy? Try it now!</p>
     </div>
 
-    <form method="post">
-        <input type="text" name="domain" placeholder="Enter your domain (e.g., example.com)" required>
-        <input type="submit" value="Generate Prompts" class="cta-button">
-    </form>
-
     {% if error %}
     <p class="error">{{ error }}</p>
+    {% endif %}
+
+    {% if session.get('search_performed') %}
+        <p>You've already performed a search. Please join the waiting list for more.</p>
+        <a href="https://form.typeform.com/to/YOUR_TYPEFORM_ID" target="_blank" class="cta-button waiting-list-button">Join Waiting List</a>
+    {% else %}
+        <form method="post">
+            <input type="text" name="domain" placeholder="Enter your domain (e.g., example.com)" required>
+            <input type="submit" value="Generate Prompts" class="cta-button">
+        </form>
     {% endif %}
 </body>
 </html>

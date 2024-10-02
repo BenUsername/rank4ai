@@ -1,6 +1,6 @@
 import os
 import openai
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, session
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
@@ -13,6 +13,7 @@ import re
 load_dotenv()
 
 app = Flask(__name__, static_folder='static')
+app.secret_key = os.getenv('FLASK_SECRET_KEY', 'default_secret_key')  # Set a secret key for sessions
 
 # Initialize the OpenAI client
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
@@ -167,6 +168,9 @@ def index():
     prompts = None
     table = None
     if request.method == 'POST':
+        if session.get('search_performed'):
+            return render_template('index.html', error="You've already performed a search. Please join the waiting list for more.")
+        
         domain = request.form.get('domain', '').strip()
         if not is_valid_domain(domain):
             error = 'Invalid domain name.'
@@ -181,7 +185,8 @@ def index():
             # Generate answers and create table
             table = generate_prompt_answers(prompts, domain)
             
-            return render_template('result.html', domain=domain, info=info, prompts=prompts, table=table)
+            session['search_performed'] = True
+            return render_template('result.html', domain=domain, info=info, prompts=prompts, table=table, show_waiting_list=True)
         except Exception as e:
             error = f'Error processing website: {e}'
     return render_template('index.html', error=error)

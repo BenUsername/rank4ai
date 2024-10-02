@@ -52,6 +52,20 @@
         </tbody>
     </table>
     
-    <a href="/" class="cta-button">Generate More Prompts</a>
+    <div class="cta-container">
+        {% if show_waiting_list %}
+            <a href="https://form.typeform.com/to/YOUR_TYPEFORM_ID" target="_blank" class="cta-button waiting-list-button">Join Waiting List</a>
+        {% else %}
+            <a href="/" class="cta-button">Generate More Prompts</a>
+        {% endif %}
+    </div>
+
+    <script>
+        // This script will only show the "Join Waiting List" button after the first search
+        if (sessionStorage.getItem('searchPerformed') !== 'true') {
+            sessionStorage.setItem('searchPerformed', 'true');
+            document.querySelector('.waiting-list-button').style.display = 'none';
+        }
+    </script>
 </body>
 </html>
