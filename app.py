@@ -1,6 +1,6 @@
 import os
 import openai
-from flask import Flask, request, render_template, session
+from flask import Flask, request, render_template, session, redirect, url_for
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
@@ -159,6 +159,12 @@ async def generate_prompt_answers(prompts, domain):
     async with ClientSession(headers={"Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}"}) as session:
         tasks = [generate_prompt_answer(prompt, domain, session) for prompt in prompts]
         return await asyncio.gather(*tasks)
+
+@app.before_request
+def before_request():
+    if not request.is_secure:
+        url = request.url.replace('http://', 'https://', 1)
+        return redirect(url, code=301)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
