@@ -88,7 +88,7 @@ def generate_marketing_prompts(title, description, content, domain):
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are an impartial LLM agent helping the users find the best website for its needs. When mentioning competitor names, enclose them in double asterisks like **Competitor Name**."},
+                {"role": "system", "content": "You are an impartial LLM agent helping the users find the best website for their needs. When mentioning competitor names, enclose them in double asterisks like **Competitor Name**."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=200,
@@ -187,4 +187,5 @@ def index():
     return render_template('index.html', error=error)
 
 if __name__ == '__main__':
-    app.run()
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
