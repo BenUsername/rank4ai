@@ -27,8 +27,10 @@
     {% endif %}
 
     {% if session.get('search_performed') %}
-        <p>You've already performed a search. Please join the waiting list for more.</p>
-        <a href="https://form.typeform.com/to/YOUR_TYPEFORM_ID" target="_blank" class="cta-button waiting-list-button">Join Waiting List</a>
+        <p class="cta-text">You've already performed a search. Want to try again and get more insights?</p>
+        <div class="cta-container">
+            <a href="https://form.typeform.com/to/YOUR_TYPEFORM_ID" target="_blank" class="cta-button waiting-list-button">Join Waiting List for Premium Access</a>
+        </div>
     {% else %}
         <form method="post" id="promptForm">
             <input type="text" name="domain" placeholder="Enter your domain (e.g., example.com)" required>
@@ -38,7 +40,7 @@
     {% endif %}
 
     <script>
-        document.getElementById('promptForm').addEventListener('submit', function(e) {
+        document.getElementById('promptForm')?.addEventListener('submit', function(e) {
             document.getElementById('spinner').style.display = 'block';
             this.style.display = 'none';
         });

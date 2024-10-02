@@ -84,16 +84,26 @@ th {
 
 .cta-container {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     margin-top: 20px;
 }
 
 .waiting-list-button {
     background-color: #e74c3c;
+    font-size: 1.1em;
+    padding: 15px 30px;
 }
 
 .waiting-list-button:hover {
     background-color: #c0392b;
+}
+
+/* Add this to your existing CSS */
+.cta-text {
+    font-size: 1.1em;
+    margin: 20px 0;
+    text-align: center;
+    color: #2c3e50;
 }
 
 /* Add these styles at the end of your existing CSS */
