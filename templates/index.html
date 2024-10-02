@@ -1,19 +1,34 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Website Info Extractor</title>
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marketing Prompt Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <div class="container">
-        <h1>Enter a Domain Name</h1>
-        <form method="POST">
-            <input type="text" name="domain" placeholder="example.com" required>
-            <button type="submit">Extract Info</button>
-        </form>
-        {% if error %}
-            <p class="error">{{ error }}</p>
-        {% endif %}
+    <h1>Marketing Prompt Generator</h1>
+    
+    <div class="intro">
+        <h2>Boost Your Marketing Strategy with AI-Powered Prompts</h2>
+        <p>Welcome to the Marketing Prompt Generator! This tool helps you generate effective marketing prompts based on your website's content. Simply enter your domain, and we'll analyze your site to create tailored prompts that can improve your visibility in AI-powered search results.</p>
+        <h3>How it works:</h3>
+        <ol>
+            <li>Enter your website's domain</li>
+            <li>We analyze your website's content</li>
+            <li>AI generates marketing prompts</li>
+            <li>Review prompts and competitor analysis</li>
+        </ol>
+        <p>Ready to enhance your marketing strategy? Try it now!</p>
     </div>
+
+    <form method="post">
+        <input type="text" name="domain" placeholder="Enter your domain (e.g., example.com)" required>
+        <input type="submit" value="Generate Prompts" class="cta-button">
+    </form>
+
+    {% if error %}
+    <p class="error">{{ error }}</p>
+    {% endif %}
 </body>
 </html>
