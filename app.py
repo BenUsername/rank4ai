@@ -138,12 +138,16 @@ async def generate_prompt_answer(prompt, domain, session):
             visible = domain.lower() in answer.lower()
             competitors = re.findall(r'\*\*(.*?)\*\*', answer)
             competitors = list(set(competitors))
-            competitors = ', '.join(competitors) if competitors else 'None mentioned'
+            competitors_str = ', '.join(competitors) if competitors else 'None mentioned'
+            
+            # Replace asterisks with HTML tags only for competitor names
+            for competitor in competitors:
+                answer = answer.replace(f'**{competitor}**', f'<strong>{competitor}</strong>')
             
             return {
                 'prompt': prompt,
                 'answer': answer,
-                'competitors': competitors,
+                'competitors': competitors_str,
                 'visible': 'Yes' if visible else 'No'
             }
     except Exception as e:
