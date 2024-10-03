@@ -81,7 +81,7 @@ def generate_marketing_prompts(title, description, content, domain):
     
     prompt = (
         f"Based on the following information for {domain}, imagine five marketing prompts "
-        "for which the chief marketing of the company would love to rank high in ChatGPT answers. The prompts should be as general as possible simulating a user searching for the service or product offered by {domain} but not necessarily using the domain name. If there any competitors doing well for this service mention them\n\n"
+        "for which the chief marketing of the company would love to rank high in ChatGPT answers. The prompts should be as general as possible simulating a user searching for the service or product offered by {domain} but not necessarily using the domain name..\n\n"
         f"Title: {title}\n"
         f"Description: {description}\n"
         f"Content: {content}"
@@ -93,7 +93,7 @@ def generate_marketing_prompts(title, description, content, domain):
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are an impartial LLM agent helping the users find the best website for their needs. When mentioning competitor names, enclose them in double asterisks like **Competitor Name**."},
+                {"role": "system", "content": "You are an impartial LLM agent helping the users find the best website for their needs."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=200,
@@ -127,7 +127,7 @@ async def generate_prompt_answer(prompt, domain, info, session):
         async with session.post('https://api.openai.com/v1/chat/completions', json={
             "model": "gpt-4o-mini",
             "messages": [
-                {"role": "system", "content": "You are an impartial LLM agent helping users find the best website for their needs. When mentioning competitor names, enclose them in double asterisks like **Competitor Name**."},
+                {"role": "system", "content": "You are an impartial LLM agent helping users find the best website for their needs. When mentioning competitor names, enclose them in double asterisks like **Competitor Name**. If there are no competitors mentioned, mention None mentioned and enclose that in double asterisks as well."},
                 {"role": "user", "content": prompt}
             ],
             "max_tokens": 300,
