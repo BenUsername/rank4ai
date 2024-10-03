@@ -182,11 +182,11 @@ async def generate_prompt_answer(prompt, domain, info, session):
         async with session.post('https://api.openai.com/v1/chat/completions', json={
             "model": "gpt-4o-mini",
             "messages": [
-                {"role": "system", "content": "You are an impartial LLM agent helping users find the best website for their needs. If you mention any competitor companies, products, or websites, enclose ONLY their names in double asterisks like **Competitor Name**. Do not use asterisks for anything else, including approaches, strategies, or general terms."},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": "You are an impartial LLM agent helping users find the best website for their needs. When mentioning competitor companies or products, provide their names followed by their domain name in parentheses, like this: Company Name (company-name.com). Only use this format for actual companies or products, not for general terms or strategies."},
+                {"role": "user", "content": f"Provide an informative answer to the following question, mentioning relevant competitor companies or products if applicable: {prompt}"}
             ],
             "max_tokens": 300,
-            "temperature": 0,
+            "temperature": 0.3,
         }) as response:
             result = await response.json()
             if 'error' in result:
@@ -197,15 +197,8 @@ async def generate_prompt_answer(prompt, domain, info, session):
             app.logger.info(f"OpenAI response for prompt '{prompt}': {answer}")
             
             # Extract competitors using regex
-            potential_competitors = re.findall(r'\*\*(.*?)\*\*', answer)
-            
-            # Verify competitors
-            competitors = []
-            for comp in potential_competitors:
-                if verify_company(comp):
-                    competitors.append(comp)
-            
-            competitors_str = ', '.join(competitors) if competitors else 'None mentioned'
+            competitors = re.findall(r'([A-Z][A-Za-z\s]+)\s+\(([a-z0-9-]+\.(?:com|net|org))\)', answer)
+            competitors_str = ', '.join([f"{name} ({domain})" for name, domain in competitors]) if competitors else 'None mentioned'
             
             # Check for visibility
             visible = any(
@@ -213,12 +206,9 @@ async def generate_prompt_answer(prompt, domain, info, session):
                 for name in [domain] + [info['title']]
             )
             
-            # Highlight only verified competitors in the answer
-            for competitor in competitors:
-                answer = re.sub(r'\b' + re.escape(competitor) + r'\b', f'<strong>{competitor}</strong>', answer)
-            
-            # Remove any remaining asterisks
-            answer = answer.replace('**', '')
+            # Highlight competitors in the answer
+            for name, comp_domain in competitors:
+                answer = re.sub(f"{re.escape(name)}\\s+\\({re.escape(comp_domain)}\\)", f"<strong>{name} ({comp_domain})</strong>", answer)
             
             return {
                 'prompt': prompt,
