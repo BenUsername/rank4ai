@@ -196,15 +196,14 @@ async def generate_prompt_answer(prompt, domain, info, session):
             
             app.logger.info(f"OpenAI response for prompt '{prompt}': {answer}")
             
-            # Extract potential competitors (organizations)
-            potential_competitors = extract_organizations(answer)
+            # Extract competitors using regex
+            competitors = re.findall(r'\*\*(.*?)\*\*', answer)
             
-            # Filter out excluded terms and the domain itself
-            competitors = [
-                comp for comp in potential_competitors 
-                if comp.lower() not in exclude_terms and comp.lower() not in domain.lower()
-            ]
-
+            # If no competitors found with asterisks, try to extract potential company names
+            if not competitors:
+                words = re.findall(r'\b[A-Z][a-z]*(?:\s+[A-Z][a-z]*)*\b', answer)
+                competitors = [word for word in words if word not in exclude_terms and word.lower() not in domain.lower()]
+            
             competitors_str = ', '.join(competitors) if competitors else 'None mentioned'
             
             # Check for visibility
@@ -215,7 +214,7 @@ async def generate_prompt_answer(prompt, domain, info, session):
             
             # Highlight competitors in the answer
             for competitor in competitors:
-                answer = answer.replace(competitor, f'<strong>{competitor}</strong>')
+                answer = re.sub(r'\b' + re.escape(competitor) + r'\b', f'<strong>{competitor}</strong>', answer)
             
             return {
                 'prompt': prompt,
