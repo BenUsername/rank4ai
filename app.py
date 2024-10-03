@@ -136,7 +136,7 @@ async def generate_prompt_answer(prompt, domain, info, session):
         async with session.post('https://api.openai.com/v1/chat/completions', json={
             "model": "gpt-4o-mini",
             "messages": [
-                {"role": "system", "content": "You are an impartial LLM agent helping users find the best website for their needs. If you mention any competitor companies or websites, enclose them in double asterisks like **Competitor Name**. Do not use asterisks for anything else."},
+                {"role": "system", "content": "You are an impartial LLM agent helping users find the best website for their needs. If you mention any competitor companies, products, or websites, enclose ONLY their names in double asterisks like **Competitor Name**. Do not use asterisks for anything else, including approaches, strategies, or general terms."},
                 {"role": "user", "content": prompt}
             ],
             "max_tokens": 300,
@@ -158,8 +158,13 @@ async def generate_prompt_answer(prompt, domain, info, session):
                 for name in potential_names
             )
             
-            competitors = re.findall(r'\*\*(.*?)\*\*', answer)
-            competitors = list(set(competitors))
+            # Extract competitors while preserving order
+            competitors = []
+            for match in re.finditer(r'\*\*(.*?)\*\*', answer):
+                competitor = match.group(1)
+                if competitor not in competitors:
+                    competitors.append(competitor)
+            
             competitors_str = ', '.join(competitors) if competitors else 'None mentioned'
             
             # Replace asterisks with HTML tags only for competitor names
