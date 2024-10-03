@@ -198,7 +198,7 @@ async def generate_prompt_answer(prompt, domain, info, session):
             
             # Extract competitors using regex
             competitors = re.findall(r'([A-Z][A-Za-z\s]+)\s+\(([a-z0-9-]+\.(?:com|net|org))\)', answer)
-            competitors_str = ', '.join([domain for _, domain in competitors]) if competitors else 'None mentioned'
+            competitors_str = ', '.join([comp_domain for _, comp_domain in competitors]) if competitors else 'None mentioned'
             
             # Check for visibility
             visible = any(
