@@ -12,12 +12,21 @@ import asyncio
 import aiohttp
 from aiohttp import ClientSession
 from fuzzywuzzy import fuzz
+import logging
 
 # Load environment variables from .env file
 load_dotenv()
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'default_secret_key')  # Set a secret key for sessions
+
+# Configure logging
+logger = logging.getLogger('logtail')
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 # Initialize the OpenAI client
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
@@ -196,6 +205,8 @@ def index():
             return render_template('index.html', error="You've reached the maximum number of free searches. Please join the waiting list for more.", searches_left=0)
         
         domain = request.form.get('domain', '').strip()
+        logger.info(f"User query: {domain}")  # Log the user query
+        
         if not is_valid_domain(domain):
             error = 'Invalid domain name.'
             return render_template('index.html', error=error, searches_left=searches_left)
@@ -214,6 +225,7 @@ def index():
             return render_template('result.html', domain=domain, info=info, prompts=prompts, table=table, show_waiting_list=(searches_left == 0), searches_left=searches_left)
         except Exception as e:
             error = f'Error processing website: {e}'
+            logger.error(f"Error processing {domain}: {str(e)}")  # Log any errors
     return render_template('index.html', error=error, searches_left=searches_left)
 
 if __name__ == '__main__':
