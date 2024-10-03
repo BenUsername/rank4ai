@@ -9,3 +9,4 @@ readability-lxml
 lxml_html_clean
 gunicorn==20.1.0
 aiohttp
+fuzzywuzzy

@@ -11,6 +11,7 @@ import re
 import asyncio
 import aiohttp
 from aiohttp import ClientSession
+from fuzzywuzzy import fuzz
 
 # Load environment variables from .env file
 load_dotenv()
@@ -121,7 +122,7 @@ def generate_marketing_prompts(title, description, content, domain):
         app.logger.error(f"Error during OpenAI API call: {e}")
         return []
 
-async def generate_prompt_answer(prompt, domain, session):
+async def generate_prompt_answer(prompt, domain, info, session):
     try:
         async with session.post('https://api.openai.com/v1/chat/completions', json={
             "model": "gpt-4o-mini",
@@ -135,7 +136,19 @@ async def generate_prompt_answer(prompt, domain, session):
             result = await response.json()
             answer = result['choices'][0]['message']['content'].strip()
             
-            visible = domain.lower() in answer.lower()
+            # Extract potential company names
+            potential_names = [
+                domain.split('.')[0].replace('-', ' ').title(),
+                info['title'],
+                ' '.join(word.capitalize() for word in domain.split('.')[0].split('-'))
+            ]
+            
+            # Check for visibility using fuzzy matching
+            visible = any(
+                fuzz.partial_ratio(name.lower(), answer.lower()) > 80
+                for name in potential_names
+            )
+            
             competitors = re.findall(r'\*\*(.*?)\*\*', answer)
             competitors = list(set(competitors))
             competitors_str = ', '.join(competitors) if competitors else 'None mentioned'
