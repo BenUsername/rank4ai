@@ -58,14 +58,16 @@
         </tbody>
     </table>
     
-    <div class="cta-container">
-        <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button">Join Waiting List for More Insights</a>
-    </div>
-
-    <p class="cta-text">Want to analyze more domains and get deeper insights? Join our waiting list to be notified when we launch our premium features!</p>
-
-    <div class="cta-container">
-        <a href="{{ url_for('index') }}" class="cta-button">Analyze Another Domain</a>
-    </div>
+    {% if searches_left > 0 %}
+        <p class="cta-text">You have {{ searches_left }} free searches left. Want to analyze more domains?</p>
+        <div class="cta-container">
+            <a href="{{ url_for('index') }}" class="cta-button">Analyze Another Domain</a>
+        </div>
+    {% else %}
+        <p class="cta-text">You've used all your free searches. Want to analyze more domains and get deeper insights?</p>
+        <div class="cta-container">
+            <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button">Join Waiting List for Premium Access</a>
+        </div>
+    {% endif %}
 </body>
 </html>

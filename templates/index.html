@@ -31,18 +31,18 @@
     <p class="error">{{ error }}</p>
     {% endif %}
 
-    {% if session.get('search_performed') %}
-        <p class="cta-text">You've already performed a search. Want to unlock more insights and optimize your LLM presence?</p>
-        <div class="cta-container">
-            <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button">Join Waiting List for Premium Access</a>
-        </div>
-    {% else %}
-        <p class="cta-text">Don't let your brand fall behind in the new era of search. Start tracking your LLM search performance today and unlock the insights you need to optimize your presence.</p>
+    {% if searches_left > 0 %}
+        <p class="cta-text">Don't let your brand fall behind in the new era of search. Start tracking your LLM search performance today and unlock the insights you need to optimize your presence. ({{ searches_left }} free searches left)</p>
         <form method="post" id="promptForm">
             <input type="text" name="domain" placeholder="Enter your domain (e.g., example.com)" required>
             <input type="submit" value="Get Started Now" class="cta-button">
         </form>
         <div class="spinner" id="spinner"></div>
+    {% else %}
+        <p class="cta-text">You've used all your free searches. Want to unlock more insights and optimize your LLM presence?</p>
+        <div class="cta-container">
+            <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button">Join Waiting List for Premium Access</a>
+        </div>
     {% endif %}
 
     <script>

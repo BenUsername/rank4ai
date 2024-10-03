@@ -172,14 +172,16 @@ def index():
     error = None
     prompts = None
     table = None
+    searches_left = 3 - session.get('searches_performed', 0)
+
     if request.method == 'POST':
-        if session.get('search_performed'):
-            return render_template('index.html', error="You've already performed a search. Please join the waiting list for more.")
+        if session.get('searches_performed', 0) >= 3:
+            return render_template('index.html', error="You've reached the maximum number of free searches. Please join the waiting list for more.", searches_left=0)
         
         domain = request.form.get('domain', '').strip()
         if not is_valid_domain(domain):
             error = 'Invalid domain name.'
-            return render_template('index.html', error=error)
+            return render_template('index.html', error=error, searches_left=searches_left)
         try:
             html_content = fetch_website_content(domain)
             info = extract_main_info(html_content)
@@ -190,11 +192,12 @@ def index():
             # Generate answers and create table
             table = asyncio.run(generate_prompt_answers(prompts, domain))
             
-            session['search_performed'] = True
-            return render_template('result.html', domain=domain, info=info, prompts=prompts, table=table, show_waiting_list=True)
+            session['searches_performed'] = session.get('searches_performed', 0) + 1
+            searches_left = 3 - session['searches_performed']
+            return render_template('result.html', domain=domain, info=info, prompts=prompts, table=table, show_waiting_list=(searches_left == 0), searches_left=searches_left)
         except Exception as e:
             error = f'Error processing website: {e}'
-    return render_template('index.html', error=error)
+    return render_template('index.html', error=error, searches_left=searches_left)
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
