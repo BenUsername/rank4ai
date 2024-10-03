@@ -14,6 +14,7 @@ from aiohttp import ClientSession
 from fuzzywuzzy import fuzz
 import logging
 import nltk
+import ssl
 from nltk import word_tokenize, pos_tag, ne_chunk
 from nltk.chunk import tree2conlltags
 
@@ -166,6 +167,9 @@ async def generate_prompt_answer(prompt, domain, info, session):
             "temperature": 0,
         }) as response:
             result = await response.json()
+            if 'error' in result:
+                raise Exception(f"OpenAI API error: {result['error']['message']}")
+            
             answer = result['choices'][0]['message']['content'].strip()
             
             app.logger.info(f"OpenAI response for prompt '{prompt}': {answer}")
@@ -198,10 +202,11 @@ async def generate_prompt_answer(prompt, domain, info, session):
                 'visible': 'Yes' if visible else 'No'
             }
     except Exception as e:
-        app.logger.error(f"Error generating answer for prompt '{prompt}': {e}")
+        error_message = f"Error generating answer for prompt '{prompt}': {str(e)}"
+        app.logger.error(error_message)
         return {
             'prompt': prompt,
-            'answer': 'Error generating answer',
+            'answer': f'Error: {error_message}',
             'competitors': 'N/A',
             'visible': 'N/A'
         }
