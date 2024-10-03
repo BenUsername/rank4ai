@@ -32,6 +32,12 @@ nltk.download('averaged_perceptron_tagger')
 nltk.download('maxent_ne_chunker')
 nltk.download('words')
 
+# Explicitly download the punkt tokenizer
+nltk.download('punkt')
+
+# Set the NLTK data path
+nltk.data.path.append('/app/nltk_data')
+
 # List of common terms to exclude
 exclude_terms = [
     "dynamic pricing", "marketing optimization", "personalized services", 
@@ -158,10 +164,18 @@ def generate_marketing_prompts(title, description, content, domain):
 
 def extract_organizations(text):
     """Extract organization names using NLTK."""
-    chunked = ne_chunk(pos_tag(word_tokenize(text)))
-    iob_tagged = tree2conlltags(chunked)
-    organizations = [word for word, pos, ne in iob_tagged if ne == 'B-ORGANIZATION']
-    return organizations
+    try:
+        tokens = word_tokenize(text)
+        tagged = pos_tag(tokens)
+        chunked = ne_chunk(tagged)
+        organizations = [word for word, pos, ne in tree2conlltags(chunked) if ne == 'B-ORGANIZATION']
+        return organizations
+    except LookupError as e:
+        app.logger.error(f"NLTK resource error: {str(e)}")
+        return []
+    except Exception as e:
+        app.logger.error(f"Error in extract_organizations: {str(e)}")
+        return []
 
 async def generate_prompt_answer(prompt, domain, info, session):
     try:
