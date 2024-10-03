@@ -218,11 +218,6 @@ async def generate_prompt_answer(prompt, domain, info, session):
             if rank > 0:
                 app.logger.info(f"Domain {domain} found in competitors list at rank {rank}")
             
-            # Highlight only the domains in the answer
-            for comp_domain in competitors:
-                pattern = re.escape(f"({comp_domain})")
-                answer = re.sub(pattern, f"(<strong>{comp_domain}</strong>)", answer)
-            
             return {
                 'prompt': prompt,
                 'answer': answer,

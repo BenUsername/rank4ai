@@ -49,7 +49,7 @@
         {% for row in table %}
             <tr id="result-{{ loop.index }}">
                 <td class="truncate">{{ row.prompt.split('.', 1)[-1].strip().strip('"*') }}</td>
-                <td class="truncate">{{ row.answer|replace('**', '<strong>')|replace('**', '</strong>')|safe }}</td>
+                <td class="truncate">{{ row.answer }}</td>
                 <td>
                     {% if row.competitors != 'None mentioned' %}
                         <ol>
