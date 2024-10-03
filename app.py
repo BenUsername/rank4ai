@@ -172,9 +172,9 @@ async def generate_prompt_answer(prompt, domain, info, session):
             'visible': 'N/A'
         }
 
-async def generate_prompt_answers(prompts, domain):
+async def generate_prompt_answers(prompts, domain, info):
     async with ClientSession(headers={"Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}"}) as session:
-        tasks = [generate_prompt_answer(prompt, domain, session) for prompt in prompts]
+        tasks = [generate_prompt_answer(prompt, domain, info, session) for prompt in prompts]
         return await asyncio.gather(*tasks)
 
 @app.before_request
@@ -207,7 +207,7 @@ def index():
             prompts = generate_marketing_prompts(info['title'], info['description'], info['content'], domain)
             
             # Generate answers and create table
-            table = asyncio.run(generate_prompt_answers(prompts, domain))
+            table = asyncio.run(generate_prompt_answers(prompts, domain, info))
             
             session['searches_performed'] = session.get('searches_performed', 0) + 1
             searches_left = 3 - session['searches_performed']
