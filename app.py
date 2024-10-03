@@ -15,9 +15,14 @@ from fuzzywuzzy import fuzz
 import logging
 import spacy
 from spacy.lang.en import English
+from spacy.cli import download
 
 # Load the English NLP model
-nlp = spacy.load("en_core_web_sm")
+try:
+    nlp = spacy.load("en_core_web_sm")
+except OSError:
+    download("en_core_web_sm")
+    nlp = spacy.load("en_core_web_sm")
 
 # List of common terms to exclude
 exclude_terms = [
