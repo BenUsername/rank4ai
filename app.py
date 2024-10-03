@@ -198,7 +198,7 @@ async def generate_prompt_answer(prompt, domain, info, session):
             
             # Extract competitors using regex
             competitors = re.findall(r'([A-Z][A-Za-z\s]+)\s+\(([a-z0-9-]+\.(?:com|net|org))\)', answer)
-            competitors_str = ', '.join([f"{name} ({domain})" for name, domain in competitors]) if competitors else 'None mentioned'
+            competitors_str = ', '.join([domain for _, domain in competitors]) if competitors else 'None mentioned'
             
             # Check for visibility
             visible = any(
@@ -206,10 +206,10 @@ async def generate_prompt_answer(prompt, domain, info, session):
                 for name in [domain] + [info['title']]
             )
             
-            # Highlight only the competitor names and domains in the answer
+            # Highlight only the competitor domains in the answer
             for name, comp_domain in competitors:
                 pattern = re.escape(f"{name} ({comp_domain})")
-                answer = re.sub(f"(Competitors like )?{pattern}", f"<strong>{name} ({comp_domain})</strong>", answer)
+                answer = re.sub(pattern, f"{name} (<strong>{comp_domain}</strong>)", answer)
             
             return {
                 'prompt': prompt,
