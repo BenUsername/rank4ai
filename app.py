@@ -182,7 +182,7 @@ async def generate_prompt_answer(prompt, domain, info, session):
         async with session.post('https://api.openai.com/v1/chat/completions', json={
             "model": "gpt-4o-mini",
             "messages": [
-                {"role": "system", "content": "You are an impartial LLM agent helping users find the best website for their needs. When mentioning competitor companies or products, provide their names followed by their domain name in parentheses, like this: Company Name (company-name.com). Only use this format for actual companies or products, not for general terms or strategies. Do not preface competitor mentions with phrases like 'Competitors like' or similar expressions."},
+                {"role": "system", "content": "You are an impartial LLM agent helping users find the best website for their needs. When mentioning competitor companies or products, provide their names followed by their domain name in parentheses, like this: Company Name (company-name.com). Only use this format for actual companies or products, not for general terms or strategies."},
                 {"role": "user", "content": f"Provide an informative answer to the following question, mentioning relevant competitor companies or products if applicable: {prompt}"}
             ],
             "max_tokens": 300,
@@ -197,17 +197,17 @@ async def generate_prompt_answer(prompt, domain, info, session):
             app.logger.info(f"OpenAI response for prompt '{prompt}': {answer}")
             
             # Extract competitors using regex
-            competitors = re.findall(r'([A-Z][A-Za-z\s]+)\s+\(([a-z0-9-]+\.(?:com|net|org))\)', answer)
-            competitors_str = ', '.join([comp_domain for _, comp_domain in competitors]) if competitors else 'None mentioned'
+            competitors = re.findall(r'\(([a-z0-9-]+\.(?:com|net|org|fr))\)', answer)
+            competitors_str = ', '.join(competitors) if competitors else 'None mentioned'
             
             # Check for visibility
-            visible = any(
+            visible = domain.lower() in answer.lower() or any(
                 fuzz.partial_ratio(name.lower(), answer.lower()) > 80
-                for name in [domain] + [info['title']]
+                for name in [info['title']]
             )
             
-            # Highlight only the competitor domains in the answer
-            for name, comp_domain in competitors:
+            # Highlight only the domains in the answer
+            for comp_domain in competitors:
                 pattern = re.escape(f"({comp_domain})")
                 answer = re.sub(pattern, f"(<strong>{comp_domain}</strong>)", answer)
             
