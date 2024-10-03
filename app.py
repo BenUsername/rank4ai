@@ -90,7 +90,7 @@ def generate_marketing_prompts(title, description, content, domain):
     
     prompt = (
         f"Based on the following information for {domain}, imagine five marketing prompts "
-        "for which the chief marketing of the company would love to rank high in ChatGPT answers. The prompts should be as general as possible simulating a user searching for the service or product offered by {domain} but not necessarily using the domain name..\n\n"
+        "for which the chief marketing of the company would love to rank high in ChatGPT answers. The prompts should be as general as possible simulating a user searching for the service or product offered by {domain} but not necessarily mentioning the domain name.\n\n"
         f"Title: {title}\n"
         f"Description: {description}\n"
         f"Content: {content}"
@@ -114,7 +114,7 @@ def generate_marketing_prompts(title, description, content, domain):
         
         # Extract the text response
         prompts_text = response.choices[0].message.content.strip()
-        app.logger.info(f"OpenAI response: {prompts_text}")
+        app.logger.info(f"OpenAI response for marketing prompts: {prompts_text}")
         
         # Split the prompts into a list
         prompts = [line.strip() for line in prompts_text.split('\n') if line.strip() and any(char.isdigit() for char in line)]
@@ -144,6 +144,8 @@ async def generate_prompt_answer(prompt, domain, info, session):
         }) as response:
             result = await response.json()
             answer = result['choices'][0]['message']['content'].strip()
+            
+            app.logger.info(f"OpenAI response for prompt '{prompt}': {answer}")
             
             # Extract potential company names
             potential_names = [
@@ -224,6 +226,8 @@ def index():
             
             # Generate answers and create table
             table = asyncio.run(generate_prompt_answers(prompts, domain, info))
+            
+            app.logger.info(f"Generated table for {domain}: {table}")
             
             session['searches_performed'] = session.get('searches_performed', 0) + 1
             searches_left = 3 - session['searches_performed']
