@@ -61,9 +61,9 @@
                         {{ row.competitors }}
                     {% endif %}
                 </td>
-                <td class="visibility-status {% if row.visible == 'Yes' %}visible{% else %}not-visible{% endif %}">
+                <td class="visibility-status {% if 'Yes' in row.visible %}visible{% else %}not-visible{% endif %}">
                     <span class="visibility-icon">
-                        {% if row.visible == 'Yes' %}
+                        {% if 'Yes' in row.visible %}
                             &#10004;
                         {% else %}
                             &#10008;

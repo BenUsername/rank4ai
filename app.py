@@ -197,14 +197,26 @@ async def generate_prompt_answer(prompt, domain, info, session):
             app.logger.info(f"OpenAI response for prompt '{prompt}': {answer}")
             
             # Extract competitors using regex
-            competitors = re.findall(r'\(([a-z0-9-]+\.(?:com|net|org|fr))\)', answer)
+            potential_competitors = re.findall(r'\(([a-z0-9-]+\.(?:com|net|org|fr))\)', answer)
+            
+            # Validate domains and create competitors list
+            competitors = [comp for comp in potential_competitors if is_valid_domain(comp)]
             competitors_str = ', '.join(competitors) if competitors else 'None mentioned'
             
-            # Check for visibility
-            visible = domain.lower() in answer.lower() or any(
-                fuzz.partial_ratio(name.lower(), answer.lower()) > 80
-                for name in [info['title']]
-            )
+            # Check for visibility and rank
+            visible = 'No'
+            rank = 0
+            for i, comp in enumerate(competitors, 1):
+                if domain.lower() in comp.lower():
+                    visible = 'Yes'
+                    rank = i
+                    break
+            
+            visibility_str = f"Yes (Rank: {rank})" if visible == 'Yes' else 'No'
+            
+            # Log the rank
+            if rank > 0:
+                app.logger.info(f"Domain {domain} found in competitors list at rank {rank}")
             
             # Highlight only the domains in the answer
             for comp_domain in competitors:
@@ -215,7 +227,7 @@ async def generate_prompt_answer(prompt, domain, info, session):
                 'prompt': prompt,
                 'answer': answer,
                 'competitors': competitors_str,
-                'visible': 'Yes' if visible else 'No'
+                'visible': visibility_str
             }
     except Exception as e:
         error_message = f"Error generating answer for prompt '{prompt}': {str(e)}"
