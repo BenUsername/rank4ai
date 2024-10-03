@@ -22,7 +22,7 @@
     <h2>Relevant Searches</h2>
     <ol>
     {% for prompt in prompts %}
-        <li>{{ prompt.split('.', 1)[-1].strip() }}</li>
+        <li>{{ prompt.strip().strip('"*') }}</li>
     {% endfor %}
     </ol>
     
@@ -39,20 +39,29 @@
         <tbody>
         {% for row in table %}
             <tr>
-                <td class="truncate">{{ row.prompt.split('.', 1)[-1].strip() }}</td>
-                <td class="truncate">{{ row.answer }}</td>
+                <td class="truncate">{{ row.prompt.strip().strip('"*') }}</td>
+                <td class="truncate">{{ row.answer|replace('**', '<strong>')|replace('**', '</strong>')|safe }}</td>
                 <td>
                     {% if row.competitors != 'None mentioned' %}
-                        <ul>
+                        <ol>
                             {% for competitor in row.competitors.split(', ') %}
                                 <li>{{ competitor }}</li>
                             {% endfor %}
-                        </ul>
+                        </ol>
                     {% else %}
                         {{ row.competitors }}
                     {% endif %}
                 </td>
-                <td>{{ row.visible }}</td>
+                <td class="visibility-status {% if row.visible == 'Yes' %}visible{% else %}not-visible{% endif %}">
+                    <span class="visibility-icon">
+                        {% if row.visible == 'Yes' %}
+                            &#10004;
+                        {% else %}
+                            &#10008;
+                        {% endif %}
+                    </span>
+                    {{ row.visible }}
+                </td>
             </tr>
         {% endfor %}
         </tbody>

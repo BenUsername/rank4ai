@@ -122,3 +122,23 @@ th {
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+
+/* Add these styles to your existing CSS */
+
+.visibility-status {
+    text-align: center;
+    font-weight: bold;
+}
+
+.visibility-status.visible {
+    color: #2ecc71;
+}
+
+.visibility-status.not-visible {
+    color: #e74c3c;
+}
+
+.visibility-icon {
+    font-size: 1.2em;
+    margin-right: 5px;
+}
