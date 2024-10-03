@@ -182,7 +182,7 @@ async def generate_prompt_answer(prompt, domain, info, session):
         async with session.post('https://api.openai.com/v1/chat/completions', json={
             "model": "gpt-4o-mini",
             "messages": [
-                {"role": "system", "content": "You are an impartial LLM agent helping users find the best website for their needs. When mentioning competitor companies or products, provide their names followed by their domain name in parentheses, like this: Company Name (company-name.com). Only use this format for actual companies or products, not for general terms or strategies."},
+                {"role": "system", "content": "You are an impartial LLM agent helping users find the best website for their needs. When mentioning competitor companies or products, provide their names followed by their domain name in parentheses, like this: Company Name (company-name.com). Only use this format for actual companies or products, not for general terms or strategies. Do not preface competitor mentions with phrases like 'Competitors like' or similar expressions."},
                 {"role": "user", "content": f"Provide an informative answer to the following question, mentioning relevant competitor companies or products if applicable: {prompt}"}
             ],
             "max_tokens": 300,
@@ -206,9 +206,10 @@ async def generate_prompt_answer(prompt, domain, info, session):
                 for name in [domain] + [info['title']]
             )
             
-            # Highlight competitors in the answer
+            # Highlight only the competitor names and domains in the answer
             for name, comp_domain in competitors:
-                answer = re.sub(f"{re.escape(name)}\\s+\\({re.escape(comp_domain)}\\)", f"<strong>{name} ({comp_domain})</strong>", answer)
+                pattern = re.escape(f"{name} ({comp_domain})")
+                answer = re.sub(f"(Competitors like )?{pattern}", f"<strong>{name} ({comp_domain})</strong>", answer)
             
             return {
                 'prompt': prompt,
