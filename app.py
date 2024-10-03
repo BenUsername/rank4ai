@@ -208,8 +208,8 @@ async def generate_prompt_answer(prompt, domain, info, session):
             
             # Highlight only the competitor domains in the answer
             for name, comp_domain in competitors:
-                pattern = re.escape(f"{name} ({comp_domain})")
-                answer = re.sub(pattern, f"{name} (<strong>{comp_domain}</strong>)", answer)
+                pattern = re.escape(f"({comp_domain})")
+                answer = re.sub(pattern, f"(<strong>{comp_domain}</strong>)", answer)
             
             return {
                 'prompt': prompt,
