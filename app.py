@@ -197,12 +197,13 @@ async def generate_prompt_answer(prompt, domain, info, session):
             app.logger.info(f"OpenAI response for prompt '{prompt}': {answer}")
             
             # Extract competitors using regex
-            competitors = re.findall(r'\*\*(.*?)\*\*', answer)
+            potential_competitors = re.findall(r'\*\*(.*?)\*\*', answer)
             
-            # If no competitors found with asterisks, try to extract potential company names
-            if not competitors:
-                words = re.findall(r'\b[A-Z][a-z]*(?:\s+[A-Z][a-z]*)*\b', answer)
-                competitors = [word for word in words if word not in exclude_terms and word.lower() not in domain.lower()]
+            # Verify competitors
+            competitors = []
+            for comp in potential_competitors:
+                if verify_company(comp):
+                    competitors.append(comp)
             
             competitors_str = ', '.join(competitors) if competitors else 'None mentioned'
             
@@ -212,9 +213,12 @@ async def generate_prompt_answer(prompt, domain, info, session):
                 for name in [domain] + [info['title']]
             )
             
-            # Highlight competitors in the answer
+            # Highlight only verified competitors in the answer
             for competitor in competitors:
                 answer = re.sub(r'\b' + re.escape(competitor) + r'\b', f'<strong>{competitor}</strong>', answer)
+            
+            # Remove any remaining asterisks
+            answer = answer.replace('**', '')
             
             return {
                 'prompt': prompt,
@@ -231,6 +235,28 @@ async def generate_prompt_answer(prompt, domain, info, session):
             'competitors': 'N/A',
             'visible': 'N/A'
         }
+
+def verify_company(name):
+    """Verify if a given name is likely a company by checking its web presence."""
+    search_url = f"https://www.google.com/search?q={name}+company"
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    try:
+        response = requests.get(search_url, headers=headers, timeout=5)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Check if there's a Wikipedia page or official website in the results
+        if soup.find('cite', string=re.compile(r'wikipedia\.org|\.com|\.net|\.org')):
+            return True
+        
+        # Check if there are any business-related keywords in the search results
+        business_keywords = ['company', 'corporation', 'inc', 'ltd', 'llc', 'business', 'enterprise']
+        if any(keyword in response.text.lower() for keyword in business_keywords):
+            return True
+        
+        return False
+    except Exception as e:
+        app.logger.error(f"Error verifying company: {str(e)}")
+        return False
 
 async def generate_prompt_answers(prompts, domain, info):
     async with ClientSession(headers={"Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}"}) as session:
