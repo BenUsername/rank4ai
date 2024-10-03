@@ -13,6 +13,18 @@ import aiohttp
 from aiohttp import ClientSession
 from fuzzywuzzy import fuzz
 import logging
+import spacy
+from spacy.lang.en import English
+
+# Load the English NLP model
+nlp = spacy.load("en_core_web_sm")
+
+# List of common terms to exclude
+exclude_terms = [
+    "dynamic pricing", "marketing optimization", "personalized services", 
+    "predictive analytics", "member analytics", "community engagement",
+    "partnerships and collaborations", "membership tiers"
+]
 
 # Load environment variables from .env file
 load_dotenv()
@@ -147,31 +159,29 @@ async def generate_prompt_answer(prompt, domain, info, session):
             
             app.logger.info(f"OpenAI response for prompt '{prompt}': {answer}")
             
-            # Extract potential company names
-            potential_names = [
-                domain.split('.')[0].replace('-', ' ').title(),
-                info['title'],
-                ' '.join(word.capitalize() for word in domain.split('.')[0].split('-'))
+            # Process the answer
+            doc = nlp(answer)
+            
+            # Extract potential competitors (organizations)
+            potential_competitors = [ent.text for ent in doc.ents if ent.label_ == "ORG"]
+            
+            # Filter out excluded terms and the domain itself
+            competitors = [
+                comp for comp in potential_competitors 
+                if comp.lower() not in exclude_terms and comp.lower() not in domain.lower()
             ]
-            
-            # Check for visibility using fuzzy matching
-            visible = any(
-                fuzz.partial_ratio(name.lower(), answer.lower()) > 80
-                for name in potential_names
-            )
-            
-            # Extract competitors while preserving order
-            competitors = []
-            for match in re.finditer(r'\*\*(.*?)\*\*', answer):
-                competitor = match.group(1)
-                if competitor not in competitors:
-                    competitors.append(competitor)
-            
+
             competitors_str = ', '.join(competitors) if competitors else 'None mentioned'
             
-            # Replace asterisks with HTML tags only for competitor names
+            # Check for visibility
+            visible = any(
+                fuzz.partial_ratio(name.lower(), answer.lower()) > 80
+                for name in [domain] + [info['title']]
+            )
+            
+            # Highlight competitors in the answer
             for competitor in competitors:
-                answer = answer.replace(f'**{competitor}**', f'<strong>{competitor}</strong>')
+                answer = answer.replace(competitor, f'<strong>{competitor}</strong>')
             
             return {
                 'prompt': prompt,
