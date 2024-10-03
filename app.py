@@ -13,16 +13,15 @@ import aiohttp
 from aiohttp import ClientSession
 from fuzzywuzzy import fuzz
 import logging
-import spacy
-from spacy.lang.en import English
-from spacy.cli import download
+import nltk
+from nltk import word_tokenize, pos_tag, ne_chunk
+from nltk.chunk import tree2conlltags
 
-# Load the English NLP model
-try:
-    nlp = spacy.load("en_core_web_sm")
-except OSError:
-    download("en_core_web_sm")
-    nlp = spacy.load("en_core_web_sm")
+# Download necessary NLTK data
+nltk.download('punkt')
+nltk.download('averaged_perceptron_tagger')
+nltk.download('maxent_ne_chunker')
+nltk.download('words')
 
 # List of common terms to exclude
 exclude_terms = [
@@ -148,6 +147,13 @@ def generate_marketing_prompts(title, description, content, domain):
         app.logger.error(f"Error during OpenAI API call: {e}")
         return []
 
+def extract_organizations(text):
+    """Extract organization names using NLTK."""
+    chunked = ne_chunk(pos_tag(word_tokenize(text)))
+    iob_tagged = tree2conlltags(chunked)
+    organizations = [word for word, pos, ne in iob_tagged if ne == 'B-ORGANIZATION']
+    return organizations
+
 async def generate_prompt_answer(prompt, domain, info, session):
     try:
         async with session.post('https://api.openai.com/v1/chat/completions', json={
@@ -164,11 +170,8 @@ async def generate_prompt_answer(prompt, domain, info, session):
             
             app.logger.info(f"OpenAI response for prompt '{prompt}': {answer}")
             
-            # Process the answer
-            doc = nlp(answer)
-            
             # Extract potential competitors (organizations)
-            potential_competitors = [ent.text for ent in doc.ents if ent.label_ == "ORG"]
+            potential_competitors = extract_organizations(answer)
             
             # Filter out excluded terms and the domain itself
             competitors = [
