@@ -89,13 +89,17 @@ th {
 }
 
 .waiting-list-button {
-    background-color: #e74c3c;
+    background-color: #ffd700; /* Gold color */
+    color: #333; /* Dark text for better contrast */
     font-size: 1.1em;
     padding: 15px 30px;
+    border: 2px solid #e6c200; /* Slightly darker gold for border */
+    transition: all 0.3s ease;
 }
 
 .waiting-list-button:hover {
-    background-color: #c0392b;
+    background-color: #ffec8b; /* Lighter gold on hover */
+    border-color: #ffd700;
 }
 
 /* Add this to your existing CSS */
