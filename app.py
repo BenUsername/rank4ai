@@ -18,6 +18,14 @@ import ssl
 from nltk import word_tokenize, pos_tag, ne_chunk
 from nltk.chunk import tree2conlltags
 
+# Set up SSL context for NLTK downloads
+try:
+    _create_unverified_https_context = ssl._create_unverified_context
+except AttributeError:
+    pass
+else:
+    ssl._create_default_https_context = _create_unverified_https_context
+
 # Download necessary NLTK data
 nltk.download('punkt')
 nltk.download('averaged_perceptron_tagger')
