@@ -136,7 +136,7 @@ async def generate_prompt_answer(prompt, domain, info, session):
         async with session.post('https://api.openai.com/v1/chat/completions', json={
             "model": "gpt-4o-mini",
             "messages": [
-                {"role": "system", "content": "You are an impartial LLM agent helping users find the best website for their needs. When mentioning competitor names, enclose them in double asterisks like **Competitor Name**. If there are no competitors mentioned, mention None mentioned and enclose that in double asterisks as well."},
+                {"role": "system", "content": "You are an impartial LLM agent helping users find the best website for their needs. If you mention any competitor companies or websites, enclose them in double asterisks like **Competitor Name**. Do not use asterisks for anything else."},
                 {"role": "user", "content": prompt}
             ],
             "max_tokens": 300,
