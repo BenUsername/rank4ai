@@ -140,7 +140,7 @@ async def generate_prompt_answer(prompt, domain, info, session):
                 {"role": "user", "content": prompt}
             ],
             "max_tokens": 300,
-            "temperature": 0.7,
+            "temperature": 0,
         }) as response:
             result = await response.json()
             answer = result['choices'][0]['message']['content'].strip()
