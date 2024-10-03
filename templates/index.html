@@ -3,23 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marketing Prompt Generator</title>
+    <title>LLM Search Performance Tracker</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    
+    <!-- Font Awesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔍</text></svg>">
 </head>
 <body>
-    <h1>Marketing Prompt Generator</h1>
+    <h1>LLM Search Performance Tracker</h1>
     
     <div class="intro">
-        <h2>Boost Your Marketing Strategy with AI-Powered Prompts</h2>
-        <p>Welcome to the Marketing Prompt Generator! This tool helps you generate effective marketing prompts based on your website's content. Simply enter your domain, and we'll analyze your site to create tailored prompts that can improve your visibility in AI-powered search results.</p>
+        <h2>Stay Visible in the New Era of Search</h2>
+        <p>As search shifts from Google to advanced Large Language Models (LLMs), understanding your brand's ranking in these new environments is crucial. Our platform helps you track and analyze your position within LLM-driven search results, ensuring you stay visible and competitive.</p>
         <h3>How it works:</h3>
         <ol>
             <li>Enter your website's domain</li>
-            <li>We analyze your website's content</li>
-            <li>AI generates marketing prompts</li>
-            <li>Review prompts and competitor analysis</li>
+            <li>We analyze your content and generate relevant prompts</li>
+            <li>Our AI simulates LLM responses to these prompts</li>
+            <li>Review your visibility and competitor analysis</li>
         </ol>
-        <p>Ready to enhance your marketing strategy? Try it now!</p>
     </div>
 
     {% if error %}
@@ -27,14 +32,15 @@
     {% endif %}
 
     {% if session.get('search_performed') %}
-        <p class="cta-text">You've already performed a search. Want to try again and get more insights?</p>
+        <p class="cta-text">You've already performed a search. Want to unlock more insights and optimize your LLM presence?</p>
         <div class="cta-container">
             <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button">Join Waiting List for Premium Access</a>
         </div>
     {% else %}
+        <p class="cta-text">Don't let your brand fall behind in the new era of search. Start tracking your LLM search performance today and unlock the insights you need to optimize your presence.</p>
         <form method="post" id="promptForm">
             <input type="text" name="domain" placeholder="Enter your domain (e.g., example.com)" required>
-            <input type="submit" value="Generate Prompts" class="cta-button">
+            <input type="submit" value="Get Started Now" class="cta-button">
         </form>
         <div class="spinner" id="spinner"></div>
     {% endif %}

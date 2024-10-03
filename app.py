@@ -80,7 +80,7 @@ def generate_marketing_prompts(title, description, content, domain):
     
     prompt = (
         f"Based on the following information for {domain}, imagine five marketing prompts "
-        "for which the chief marketing of the company would love to rank high in ChatGPT answers. The prompts should be as general as possible simulating a use searching for the service or product offered by {domain} but not necessarily using the domain name. If there any competitors doing well for this service mention them\n\n"
+        "for which the chief marketing of the company would love to rank high in ChatGPT answers. The prompts should be as general as possible simulating a user searching for the service or product offered by {domain} but not necessarily using the domain name. If there any competitors doing well for this service mention them\n\n"
         f"Title: {title}\n"
         f"Description: {description}\n"
         f"Content: {content}"
