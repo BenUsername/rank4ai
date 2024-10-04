@@ -14,45 +14,56 @@
       gtag('config', 'G-9B4WW61DS4');
     </script>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    
+
     <!-- Font Awesome CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔍</text></svg>">
 </head>
 <body>
     <h1>LLM Search Performance Tracker</h1>
     
-    <div class="intro">
-        <h2>Stay Visible in the New Era of Search</h2>
-        <p>As search shifts from Google to advanced Large Language Models (LLMs), understanding your brand's ranking in these new environments is crucial. Our platform helps you track and analyze your position within LLM-driven search results, ensuring you stay visible and competitive.</p>
-        <h3>How it works:</h3>
-        <ol>
-            <li>Enter your website's domain</li>
-            <li>We analyze your content and generate relevant prompts</li>
-            <li>Our AI simulates LLM responses to these prompts</li>
-            <li>Review your visibility and competitor analysis</li>
-        </ol>
-    </div>
+    <main>
+        <section class="intro">
+            <h2>Stay Seen in the New Search World</h2>
+            <p>Search is changing from Google to new smart helpers called LLMs. It is important to know where your brand shows up in these new searches. Our tool helps you see where you are in these searches, so you can stay easy to find and ahead of others.</p>
+        </section>
 
-    {% if error %}
-    <p class="error">{{ error }}</p>
-    {% endif %}
+        <section class="how-it-works">
+            <h2>How It Works</h2>
+            <ol>
+                <li><strong>Enter Your Website:</strong> Type in your website name.</li>
+                <li><strong>Analyze Content:</strong> We look at your website and find things people might search for about you.</li>
+                <li><strong>Simulate Search Results:</strong> Our AI shows what the LLM helper will say when people search for those things.</li>
+                <li><strong>Review Visibility:</strong> See where you show up and compare to others.</li>
+            </ol>
+        </section>
 
-    {% if searches_left > 0 %}
-        <p class="cta-text">Don't let your brand fall behind in the new era of search. Start tracking your LLM search performance today and unlock the insights you need to optimize your presence. ({{ searches_left }} free searches left)</p>
-        <form method="post" id="promptForm">
-            <input type="text" name="domain" placeholder="Enter your domain (e.g., example.com)" required>
-            <input type="submit" value="Get Started Now" class="cta-button">
-        </form>
-        <div class="spinner" id="spinner"></div>
-    {% else %}
-        <p class="cta-text">You've used all your free searches. Want to unlock more insights and optimize your LLM presence?</p>
-        <div class="cta-container">
-            <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button">Join Waiting List for Premium Access</a>
-        </div>
-    {% endif %}
+        {% if error %}
+        <section class="error-message">
+            <p class="error">{{ error }}</p>
+        </section>
+        {% endif %}
+
+        {% if searches_left > 0 %}
+        <section class="cta">
+            <p class="cta-text">Don't let your brand get lost in the new search world. Start tracking your visibility today and find ways to improve. ({{ searches_left }} free searches left)</p>
+            <form method="post" id="promptForm">
+                <input type="text" name="domain" placeholder="Enter your website name (e.g., example.com)" required>
+                <input type="submit" value="Get Started Now" class="cta-button">
+            </form>
+            <div class="spinner" id="spinner"></div>
+        </section>
+        {% else %}
+        <section class="cta">
+            <p class="cta-text">You've used all your free searches. Want to unlock more insights and make your brand even better?</p>
+            <div class="cta-container">
+                <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button">Join the Waiting List for More Access</a>
+            </div>
+        </section>
+        {% endif %}
+    </main>
 
     <script>
         document.getElementById('promptForm')?.addEventListener('submit', function(e) {
