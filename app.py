@@ -1,6 +1,6 @@
 import os
 import openai
-from flask import Flask, request, render_template, session, redirect, url_for
+from flask import Flask, request, render_template, session, redirect, url_for, send_from_directory
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
@@ -304,6 +304,14 @@ def index():
             error = f'Error processing website: {e}'
             logger.error(f"Error processing {domain}: {str(e)}")  # Log any errors
     return render_template('index.html', error=error, searches_left=searches_left)
+
+@app.route('/robots.txt')
+def robots():
+    return send_from_directory(app.static_folder, 'robots.txt')
+
+@app.route('/sitemap.xml')
+def sitemap():
+    return send_from_directory(app.static_folder, 'sitemap.xml')
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
