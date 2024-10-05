@@ -279,3 +279,22 @@ th {
     white-space: pre-wrap;
     line-height: 1.6;
 }
+
+/* Update the spinner style in the result table */
+.visibility-status .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #3498db;
+    margin: 0 5px;
+}
+
+#progress-log {
+    margin-top: 10px;
+    font-size: 0.9em;
+    color: #666;
+}
+
+#progress-log p {
+    margin: 5px 0;
+}

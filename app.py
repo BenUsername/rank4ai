@@ -67,7 +67,16 @@ def is_valid_domain(domain):
 
 def fetch_website_content(domain):
     """Fetch the HTML content of a website."""
-    urls = [f"https://{domain}", f"http://{domain}", f"https://www.{domain}", f"http://www.{domain}"]
+    urls = [
+        f"https://{domain}",
+        f"http://{domain}",
+        f"https://www.{domain}",
+        f"http://www.{domain}",
+        f"https://{domain}/en",  # Some sites use language-specific paths
+        f"http://{domain}/en",
+        f"https://www.{domain}/en",
+        f"http://www.{domain}/en"
+    ]
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     }
@@ -80,7 +89,7 @@ def fetch_website_content(domain):
         except Exception as e:
             app.logger.error(f"Error fetching {url}: {str(e)}")
     
-    raise Exception("Unable to fetch the website using both HTTP and HTTPS, with and without www.")
+    raise Exception("Unable to fetch the website content. Please check the domain and try again.")
 
 def extract_main_info(html_content):
     """Extract Title, Description, and Main Content from the HTML."""

@@ -54,6 +54,7 @@
                 <input type="submit" value="Get Started Now" class="cta-button">
             </form>
             <div class="spinner" id="spinner"></div>
+            <div id="progress-log"></div>
         </section>
         {% else %}
         <section class="cta">
@@ -67,13 +68,14 @@
 
     <script>
         function extractDomain(url) {
-            // Remove protocol and www if present
             url = url.replace(/^(?:https?:\/\/)?(?:www\.)?/i, "");
-            
-            // Split the remaining string by '/' and take the first part
             url = url.split('/')[0];
-            
             return url;
+        }
+
+        function updateProgress(message) {
+            const progressLog = document.getElementById('progress-log');
+            progressLog.innerHTML += `<p>${message}</p>`;
         }
 
         document.getElementById('promptForm')?.addEventListener('submit', function(e) {
@@ -81,7 +83,16 @@
             var domainInput = document.getElementById('domainInput');
             domainInput.value = extractDomain(domainInput.value);
             document.getElementById('spinner').style.display = 'block';
+            document.getElementById('progress-log').innerHTML = ''; // Clear previous logs
             this.style.display = 'none';
+
+            updateProgress('Fetching website content...');
+
+            // Simulate progress updates (you can't get real-time updates from the server without WebSockets)
+            setTimeout(() => updateProgress('Analyzing content...'), 3000);
+            setTimeout(() => updateProgress('Generating prompts...'), 6000);
+            setTimeout(() => updateProgress('Simulating LLM responses...'), 9000);
+
             this.submit();
         });
     </script>
