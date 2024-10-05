@@ -67,31 +67,20 @@ def is_valid_domain(domain):
 
 def fetch_website_content(domain):
     """Fetch the HTML content of a website."""
-    url = f"https://{domain}"
+    urls = [f"https://{domain}", f"http://{domain}", f"https://www.{domain}", f"http://www.{domain}"]
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     }
     
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        if response.status_code == 200:
-            return response.text
-        else:
-            raise Exception(f"Failed to fetch {url}. Status code: {response.status_code}")
-    except Exception as e:
-        app.logger.error(f"Error fetching {url}: {str(e)}")
-        
-        # Try with http if https fails
-        url = f"http://{domain}"
+    for url in urls:
         try:
             response = requests.get(url, headers=headers, timeout=10)
             if response.status_code == 200:
                 return response.text
-            else:
-                raise Exception(f"Failed to fetch {url}. Status code: {response.status_code}")
         except Exception as e:
             app.logger.error(f"Error fetching {url}: {str(e)}")
-            raise Exception("Unable to fetch the website using both HTTP and HTTPS.")
+    
+    raise Exception("Unable to fetch the website using both HTTP and HTTPS, with and without www.")
 
 def extract_main_info(html_content):
     """Extract Title, Description, and Main Content from the HTML."""

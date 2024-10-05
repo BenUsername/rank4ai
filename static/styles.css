@@ -114,13 +114,13 @@ th {
 
 .spinner {
     display: none;
-    width: 20px;
-    height: 20px;
-    border: 2px solid #f3f3f3;
-    border-top: 2px solid #3498db;
+    width: 50px; /* Increased size */
+    height: 50px; /* Increased size */
+    border: 5px solid #f3f3f3; /* Thicker border */
+    border-top: 5px solid #3498db;
     border-radius: 50%;
     animation: spin 1s linear infinite;
-    margin-left: 5px;
+    margin: 20px auto; /* Centers the spinner */
 }
 
 @keyframes spin {
@@ -134,15 +134,12 @@ th {
     min-width: 100px;
     text-align: left;
     padding-right: 25px;
-    font-family: Arial, sans-serif; /* Ensure consistent font */
+    font-family: inherit; /* This ensures it uses the same font as the rest of the page */
 }
 
-.visibility-status.visible {
-    color: #2ecc71;
-}
-
+.visibility-status.visible,
 .visibility-status.not-visible {
-    color: #e74c3c;
+    font-weight: normal; /* Ensures consistent weight with other text */
 }
 
 .visibility-icon {
