@@ -33,7 +33,7 @@
         <section class="how-it-works">
             <h2>How It Works</h2>
             <ol>
-                <li><strong>Enter Your Website:</strong> Type in your website name.</li>
+                <li><strong>Enter Your Website:</strong> Type in your website domain (e.g., example.com).</li>
                 <li><strong>Analyze Content:</strong> We look at your website and find things people might search for about you.</li>
                 <li><strong>Simulate Search Results:</strong> Our AI shows what the LLM helper will say when people search for those things.</li>
                 <li><strong>Review Visibility:</strong> See where you show up and compare to others.</li>
@@ -50,7 +50,7 @@
         <section class="cta">
             <p class="cta-text">Don't let your brand get lost in the new search world. Start tracking your visibility today and find ways to improve. ({{ searches_left }} free searches left)</p>
             <form method="post" id="promptForm">
-                <input type="text" name="domain" placeholder="Enter your website name (e.g., example.com)" required>
+                <input type="text" name="domain" id="domainInput" placeholder="Enter your website domain (e.g., example.com)" required>
                 <input type="submit" value="Get Started Now" class="cta-button">
             </form>
             <div class="spinner" id="spinner"></div>
@@ -66,9 +66,23 @@
     </main>
 
     <script>
+        function extractDomain(url) {
+            // Remove protocol and www if present
+            url = url.replace(/^(?:https?:\/\/)?(?:www\.)?/i, "");
+            
+            // Split the remaining string by '/' and take the first part
+            url = url.split('/')[0];
+            
+            return url;
+        }
+
         document.getElementById('promptForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var domainInput = document.getElementById('domainInput');
+            domainInput.value = extractDomain(domainInput.value);
             document.getElementById('spinner').style.display = 'block';
             this.style.display = 'none';
+            this.submit();
         });
     </script>
 </body>
