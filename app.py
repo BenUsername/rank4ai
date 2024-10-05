@@ -1,6 +1,6 @@
 import os
 import openai
-from flask import Flask, request, render_template, session, redirect, url_for, send_from_directory
+from flask import Flask, request, render_template, session, redirect, url_for, send_from_directory, jsonify
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
@@ -315,6 +315,31 @@ def robots():
 @app.route('/sitemap.xml')
 def sitemap():
     return send_from_directory(app.static_folder, 'sitemap.xml')
+
+@app.route('/get_advice', methods=['POST'])
+def get_advice():
+    data = request.json
+    domain = data['domain']
+    prompt = data['prompt']
+    
+    advice_prompt = f"Hello, imagine you are working for {domain} as an SEO expert specialized in ranking in LLM models, you realize your client's company should appear on chatgpt when people ask it \"{prompt}\" but somehow they do not appear in the answer. Their top competitors however do. What would be some very specific recommendations you would give your client to fix their absence in the response to this particular prompt? Can you make the answer very specific to this prompt in particular with some example actions? Also, make the answer like you are drafting the action plan, don't add any other comments to it."
+    
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are an SEO expert specialized in ranking in LLM models."},
+                {"role": "user", "content": advice_prompt}
+            ],
+            max_tokens=500,
+            temperature=0.7,
+        )
+        
+        advice = response.choices[0].message.content.strip()
+        return jsonify({'advice': advice})
+    except Exception as e:
+        app.logger.error(f"Error generating advice: {str(e)}")
+        return jsonify({'advice': "Sorry, we couldn't generate advice at this time. Please try again later."}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
