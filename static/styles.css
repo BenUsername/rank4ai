@@ -152,3 +152,81 @@ tr:target {
     background-color: #ffffd0;
     transition: background-color 0.5s ease;
 }
+
+.table-container {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: left;
+}
+
+th {
+    background-color: #f2f2f2;
+}
+
+.expandable {
+    position: relative;
+}
+
+.expandable .content {
+    max-height: 100px;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.expandable .content.expanded {
+    max-height: none;
+}
+
+.expand-btn {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background-color: #f2f2f2;
+    border: 1px solid #ddd;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+@media (max-width: 768px) {
+    th, td {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    th {
+        text-align: center;
+    }
+
+    td {
+        border-bottom: none;
+    }
+
+    td:before {
+        content: attr(data-label);
+        float: left;
+        font-weight: bold;
+    }
+
+    td:last-child {
+        border-bottom: 1px solid #ddd;
+    }
+}
+
+/* ... (keep other existing styles) ... */

@@ -36,45 +36,53 @@
     </ol>
     
     <h2>Visibility and Competitors</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Prompt</th>
-                <th>Answer</th>
-                <th>Top Competitors</th>
-                <th>Are you visible in LLM results?</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for row in table %}
-            <tr id="result-{{ loop.index }}">
-                <td class="truncate">{{ row.prompt.split('.', 1)[-1].strip().strip('"*') }}</td>
-                <td class="truncate">{{ row.answer }}</td>
-                <td>
-                    {% if row.competitors != 'None mentioned' %}
-                        <ol>
-                            {% for competitor in row.competitors.split(', ') %}
-                                <li>{{ competitor }}</li>
-                            {% endfor %}
-                        </ol>
-                    {% else %}
-                        {{ row.competitors }}
-                    {% endif %}
-                </td>
-                <td class="visibility-status {% if 'Yes' in row.visible %}visible{% else %}not-visible{% endif %}">
-                    <span class="visibility-icon">
-                        {% if 'Yes' in row.visible %}
-                            &#10004;
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Prompt</th>
+                    <th>Answer</th>
+                    <th>Top Competitors</th>
+                    <th>Visible in LLM?</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for row in table %}
+                <tr id="result-{{ loop.index }}">
+                    <td class="expandable">
+                        <div class="content">{{ row.prompt.split('.', 1)[-1].strip().strip('"*') }}</div>
+                        <button class="expand-btn" aria-label="Expand">+</button>
+                    </td>
+                    <td class="expandable">
+                        <div class="content">{{ row.answer }}</div>
+                        <button class="expand-btn" aria-label="Expand">+</button>
+                    </td>
+                    <td>
+                        {% if row.competitors != 'None mentioned' %}
+                            <ol>
+                                {% for competitor in row.competitors.split(', ') %}
+                                    <li>{{ competitor }}</li>
+                                {% endfor %}
+                            </ol>
                         {% else %}
-                            &#10008;
+                            {{ row.competitors }}
                         {% endif %}
-                    </span>
-                    {{ row.visible }}
-                </td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+                    </td>
+                    <td class="visibility-status {% if 'Yes' in row.visible %}visible{% else %}not-visible{% endif %}">
+                        <span class="visibility-icon">
+                            {% if 'Yes' in row.visible %}
+                                &#10004;
+                            {% else %}
+                                &#10008;
+                            {% endif %}
+                        </span>
+                        {{ row.visible }}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
     
     {% if searches_left > 0 %}
         <p class="cta-text">You have {{ searches_left }} free searches left. Want to analyze more domains?</p>
@@ -87,5 +95,15 @@
             <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button">Join Waiting List for Premium Access</a>
         </div>
     {% endif %}
+
+    <script>
+        document.querySelectorAll('.expand-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const content = this.previousElementSibling;
+                content.classList.toggle('expanded');
+                this.textContent = content.classList.contains('expanded') ? '-' : '+';
+            });
+        });
+    </script>
 </body>
 </html>
