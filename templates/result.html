@@ -57,6 +57,24 @@
             cursor: pointer;
             margin-left: 5px;
         }
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 5px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #adviceContent {
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
     </style>
 </head>
 <body>
@@ -113,6 +131,7 @@
                             {% else %}
                                 &#10008;
                                 <span class="info-icon" onclick="showAdvice('{{ domain }}', '{{ row.prompt }}', {{ loop.index }})">ℹ️</span>
+                                <div class="spinner" id="spinner-{{ loop.index }}"></div>
                             {% endif %}
                         </span>
                         {{ row.visible }}
@@ -168,6 +187,9 @@
         }
 
         function showAdvice(domain, prompt, rowIndex) {
+            const spinner = document.getElementById(`spinner-${rowIndex}`);
+            spinner.style.display = 'inline-block';
+            
             fetch('/get_advice', {
                 method: 'POST',
                 headers: {
@@ -177,10 +199,13 @@
             })
             .then(response => response.json())
             .then(data => {
-                document.getElementById("adviceContent").innerHTML = data.advice;
+                spinner.style.display = 'none';
+                const formattedAdvice = data.advice.replace(/(\d+\.)/g, '\n$1');
+                document.getElementById("adviceContent").innerText = formattedAdvice;
                 modal.style.display = "block";
             })
             .catch((error) => {
+                spinner.style.display = 'none';
                 console.error('Error:', error);
             });
         }
