@@ -52,12 +52,8 @@ app = Flask(__name__, static_folder='static')
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'default_secret_key')  # Set a secret key for sessions
 
 # Configure logging
-logger = logging.getLogger('logtail')
-logger.setLevel(logging.INFO)
-handler = logging.StreamHandler()
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Initialize the OpenAI client
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
@@ -69,34 +65,33 @@ def is_valid_domain(domain):
     """Validate the domain using the validators library."""
     return validators.domain(domain)
 
-async def fetch_website_content(domain):
+def fetch_website_content(domain):
     """Fetch the HTML content of a website."""
     url = f"https://{domain}"
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     }
     
-    async with aiohttp.ClientSession() as session:
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        if response.status_code == 200:
+            return response.text
+        else:
+            raise Exception(f"Failed to fetch {url}. Status code: {response.status_code}")
+    except Exception as e:
+        app.logger.error(f"Error fetching {url}: {str(e)}")
+        
+        # Try with http if https fails
+        url = f"http://{domain}"
         try:
-            async with session.get(url, headers=headers) as response:
-                if response.status == 200:
-                    return await response.text()
-                else:
-                    raise Exception(f"Failed to fetch {url}. Status code: {response.status}")
+            response = requests.get(url, headers=headers, timeout=10)
+            if response.status_code == 200:
+                return response.text
+            else:
+                raise Exception(f"Failed to fetch {url}. Status code: {response.status_code}")
         except Exception as e:
             app.logger.error(f"Error fetching {url}: {str(e)}")
-            
-            # Try with http if https fails
-            url = f"http://{domain}"
-            try:
-                async with session.get(url, headers=headers) as response:
-                    if response.status == 200:
-                        return await response.text()
-                    else:
-                        raise Exception(f"Failed to fetch {url}. Status code: {response.status}")
-            except Exception as e:
-                app.logger.error(f"Error fetching {url}: {str(e)}")
-                raise Exception("Unable to fetch the website using both HTTP and HTTPS.")
+            raise Exception("Unable to fetch the website using both HTTP and HTTPS.")
 
 def extract_main_info(html_content):
     """Extract Title, Description, and Main Content from the HTML."""
@@ -196,7 +191,7 @@ def extract_organizations(text):
         app.logger.error(f"Error in extract_organizations: {str(e)}")
         return []
 
-async def generate_prompt_answer(prompt, domain, info, session):
+def generate_prompt_answer(prompt, domain, info):
     # Check if the API call limit has been reached
     if session.get('api_calls', 0) >= MAX_API_CALLS_PER_SESSION:
         app.logger.warning(f"API call limit reached for session")
@@ -208,54 +203,51 @@ async def generate_prompt_answer(prompt, domain, info, session):
         }
 
     try:
-        async with session.post('https://api.openai.com/v1/chat/completions', json={
-            "model": "gpt-4o-mini",
-            "messages": [
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
                 {"role": "system", "content": "You are an impartial LLM agent helping users find the best website for their needs. When mentioning competitor companies or products, provide their names followed by their domain name in parentheses, like this: Company Name (company-name.com). Only use this format for actual companies or products, not for general terms or strategies."},
                 {"role": "user", "content": f"Provide an informative answer to the following question, mentioning relevant competitor companies or products if applicable: {prompt}"}
             ],
-            "max_tokens": 300,
-            "temperature": 0.3,
-        }) as response:
-            result = await response.json()
-            if 'error' in result:
-                raise Exception(f"OpenAI API error: {result['error']['message']}")
-            
-            # Increment the API call count
-            session['api_calls'] = session.get('api_calls', 0) + 1
-            
-            answer = result['choices'][0]['message']['content'].strip()
-            
-            app.logger.info(f"OpenAI response for prompt '{prompt}': {answer}")
-            
-            # Extract competitors using regex
-            potential_competitors = re.findall(r'\(([a-z0-9-]+\.(?:com|net|org|fr))\)', answer)
-            
-            # Validate domains and create competitors list
-            competitors = [comp for comp in potential_competitors if is_valid_domain(comp)]
-            competitors_str = ', '.join(competitors) if competitors else 'None mentioned'
-            
-            # Check for visibility and rank
-            visible = 'No'
-            rank = 0
-            for i, comp in enumerate(competitors, 1):
-                if domain.lower() in comp.lower():
-                    visible = 'Yes'
-                    rank = i
-                    break
-            
-            visibility_str = f"Yes (Rank: {rank})" if visible == 'Yes' else 'No'
-            
-            # Log the rank
-            if rank > 0:
-                app.logger.info(f"Domain {domain} found in competitors list at rank {rank}")
-            
-            return {
-                'prompt': prompt,
-                'answer': answer,
-                'competitors': competitors_str,
-                'visible': visibility_str
-            }
+            max_tokens=300,
+            temperature=0.3,
+        )
+        
+        # Increment the API call count
+        session['api_calls'] = session.get('api_calls', 0) + 1
+        
+        answer = response.choices[0].message.content.strip()
+        
+        app.logger.info(f"OpenAI response for prompt '{prompt}': {answer}")
+        
+        # Extract competitors using regex
+        potential_competitors = re.findall(r'\(([a-z0-9-]+\.(?:com|net|org|fr))\)', answer)
+        
+        # Validate domains and create competitors list
+        competitors = [comp for comp in potential_competitors if is_valid_domain(comp)]
+        competitors_str = ', '.join(competitors) if competitors else 'None mentioned'
+        
+        # Check for visibility and rank
+        visible = 'No'
+        rank = 0
+        for i, comp in enumerate(competitors, 1):
+            if domain.lower() in comp.lower():
+                visible = 'Yes'
+                rank = i
+                break
+        
+        visibility_str = f"Yes (Rank: {rank})" if visible == 'Yes' else 'No'
+        
+        # Log the rank
+        if rank > 0:
+            app.logger.info(f"Domain {domain} found in competitors list at rank {rank}")
+        
+        return {
+            'prompt': prompt,
+            'answer': answer,
+            'competitors': competitors_str,
+            'visible': visibility_str
+        }
     except Exception as e:
         error_message = f"Error generating answer for prompt '{prompt}': {str(e)}"
         app.logger.error(error_message)
@@ -288,10 +280,8 @@ def verify_company(name):
         app.logger.error(f"Error verifying company: {str(e)}")
         return False
 
-async def generate_prompt_answers(prompts, domain, info):
-    async with ClientSession(headers={"Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}"}) as session:
-        tasks = [generate_prompt_answer(prompt, domain, info, session) for prompt in prompts]
-        return await asyncio.gather(*tasks)
+def generate_prompt_answers(prompts, domain, info):
+    return [generate_prompt_answer(prompt, domain, info) for prompt in prompts]
 
 @app.before_request
 def before_request():
@@ -300,7 +290,7 @@ def before_request():
         return redirect(url, code=301)
 
 @app.route('/', methods=['GET', 'POST'])
-async def index():
+def index():
     """Handle the home page and form submissions."""
     error = None
     prompts = None
@@ -311,36 +301,30 @@ async def index():
         if session.get('searches_performed', 0) >= 3:
             return render_template('index.html', error="You've reached the maximum number of free searches. Please join the waiting list for more.", searches_left=0)
         
-        # Reset API call count at the start of each new search
         session['api_calls'] = 0
         
         domain = request.form.get('domain', '').strip()
-        logger.info(f"User query: {domain}")  # Log the user query
+        logger.info(f"User query: {domain}")
         
         if not is_valid_domain(domain):
             error = 'Invalid domain name.'
             return render_template('index.html', error=error, searches_left=searches_left)
         try:
-            html_content = await fetch_website_content(domain)
+            html_content = fetch_website_content(domain)
             info = extract_main_info(html_content)
             
-            # Generate prompts
             prompts = generate_marketing_prompts(info['title'], info['description'], info['content'], domain)
             
-            # Generate answers and create table
-            table = await generate_prompt_answers(prompts, domain, info)
+            table = generate_prompt_answers(prompts, domain, info)
             
-            app.logger.info(f"Generated table for {domain}: {table}")
+            logger.info(f"Generated table for {domain}: {table}")
             
             session['searches_performed'] = session.get('searches_performed', 0) + 1
             searches_left = 3 - session['searches_performed']
             return render_template('result.html', domain=domain, info=info, prompts=prompts, table=table, show_waiting_list=(searches_left == 0), searches_left=searches_left)
         except Exception as e:
-            if str(e) == "Unable to fetch the website using both HTTP and HTTPS.":
-                error = f"Unable to fetch the website {domain}. Please try another domain."
-            else:
-                error = f'Error processing website: {e}'
-            logger.error(f"Error processing {domain}: {str(e)}")  # Log any errors
+            logger.error(f"Error processing {domain}: {str(e)}")
+            error = f"Error processing website: {str(e)}"
     return render_template('index.html', error=error, searches_left=searches_left)
 
 @app.route('/robots.txt')
@@ -353,9 +337,8 @@ def sitemap():
 
 @app.route('/get_advice', methods=['POST'])
 def get_advice():
-    # Check if the API call limit has been reached
     if session.get('api_calls', 0) >= MAX_API_CALLS_PER_SESSION:
-        app.logger.warning(f"API call limit reached for session")
+        logger.warning(f"API call limit reached for session")
         return jsonify({'advice': "API call limit reached. Please try again later."}), 429
 
     data = request.json
@@ -375,15 +358,14 @@ def get_advice():
             temperature=0.7,
         )
         
-        # Increment the API call count
         session['api_calls'] = session.get('api_calls', 0) + 1
         
         advice = response.choices[0].message.content.strip()
         return jsonify({'advice': advice})
     except Exception as e:
-        app.logger.error(f"Error generating advice: {str(e)}")
+        logger.error(f"Error generating advice: {str(e)}")
         return jsonify({'advice': "Sorry, we couldn't generate advice at this time. Please try again later."}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port, debug=True)
