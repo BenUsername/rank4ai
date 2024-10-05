@@ -132,7 +132,8 @@ th {
 .visibility-status {
     min-width: 100px;
     text-align: left;
-    padding-right: 25px; /* Add some padding to accommodate the info icon */
+    padding-right: 25px;
+    font-family: Arial, sans-serif; /* Ensure consistent font */
 }
 
 .visibility-status.visible {
@@ -146,6 +147,13 @@ th {
 .visibility-icon {
     font-size: 1.2em;
     margin-right: 5px;
+}
+
+.info-icon {
+    cursor: pointer;
+    margin-left: 5px;
+    display: inline-block;
+    font-size: 1em; /* Adjust size to match other text */
 }
 
 /* Add this to your existing CSS */

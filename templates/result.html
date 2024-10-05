@@ -131,12 +131,14 @@
                     <td class="visibility-status {% if 'Yes' in row.visible %}visible{% else %}not-visible{% endif %}">
                         <span class="visibility-icon">
                             {% if 'Yes' in row.visible %}
-                                &#10004;
+                                &#10004; Yes
                             {% else %}
                                 &#10008; No
-                                <span class="info-icon" onclick="showAdvice('{{ domain }}', '{{ row.prompt }}', {{ loop.index }})">ℹ️</span>
                             {% endif %}
                         </span>
+                        {% if 'No' in row.visible %}
+                            <span class="info-icon" onclick="showAdvice('{{ domain }}', '{{ row.prompt }}', {{ loop.index }})">ℹ️</span>
+                        {% endif %}
                         <div class="spinner" id="spinner-{{ loop.index }}"></div>
                     </td>
                 </tr>
