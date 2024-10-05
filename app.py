@@ -62,6 +62,9 @@ logger.addHandler(handler)
 # Initialize the OpenAI client
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
+# Add this constant at the top of your file, after the imports
+MAX_API_CALLS_PER_SESSION = 15  # Adjust this number as needed
+
 def is_valid_domain(domain):
     """Validate the domain using the validators library."""
     return validators.domain(domain)
@@ -178,6 +181,16 @@ def extract_organizations(text):
         return []
 
 async def generate_prompt_answer(prompt, domain, info, session):
+    # Check if the API call limit has been reached
+    if session.get('api_calls', 0) >= MAX_API_CALLS_PER_SESSION:
+        app.logger.warning(f"API call limit reached for session")
+        return {
+            'prompt': prompt,
+            'answer': "API call limit reached. Please try again later.",
+            'competitors': 'N/A',
+            'visible': 'N/A'
+        }
+
     try:
         async with session.post('https://api.openai.com/v1/chat/completions', json={
             "model": "gpt-4o-mini",
@@ -191,6 +204,9 @@ async def generate_prompt_answer(prompt, domain, info, session):
             result = await response.json()
             if 'error' in result:
                 raise Exception(f"OpenAI API error: {result['error']['message']}")
+            
+            # Increment the API call count
+            session['api_calls'] = session.get('api_calls', 0) + 1
             
             answer = result['choices'][0]['message']['content'].strip()
             
@@ -279,6 +295,9 @@ def index():
         if session.get('searches_performed', 0) >= 3:
             return render_template('index.html', error="You've reached the maximum number of free searches. Please join the waiting list for more.", searches_left=0)
         
+        # Reset API call count at the start of each new search
+        session['api_calls'] = 0
+        
         domain = request.form.get('domain', '').strip()
         logger.info(f"User query: {domain}")  # Log the user query
         
@@ -318,6 +337,11 @@ def sitemap():
 
 @app.route('/get_advice', methods=['POST'])
 def get_advice():
+    # Check if the API call limit has been reached
+    if session.get('api_calls', 0) >= MAX_API_CALLS_PER_SESSION:
+        app.logger.warning(f"API call limit reached for session")
+        return jsonify({'advice': "API call limit reached. Please try again later."}), 429
+
     data = request.json
     domain = data['domain']
     prompt = data['prompt']
@@ -334,6 +358,9 @@ def get_advice():
             max_tokens=500,
             temperature=0.7,
         )
+        
+        # Increment the API call count
+        session['api_calls'] = session.get('api_calls', 0) + 1
         
         advice = response.choices[0].message.content.strip()
         return jsonify({'advice': advice})
