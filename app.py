@@ -69,18 +69,34 @@ def is_valid_domain(domain):
     """Validate the domain using the validators library."""
     return validators.domain(domain)
 
-def fetch_website_content(domain):
-    """Fetch the website content using HTTP/HTTPS."""
-    for scheme in ['https://', 'http://']:
-        url = f"{scheme}{domain}"
+async def fetch_website_content(domain):
+    """Fetch the HTML content of a website."""
+    url = f"https://{domain}"
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+    
+    async with aiohttp.ClientSession() as session:
         try:
-            headers = {'User-Agent': 'Mozilla/5.0'}
-            response = requests.get(url, headers=headers, timeout=10)
-            response.raise_for_status()
-            return response.text
-        except requests.exceptions.RequestException:
-            continue
-    raise Exception("Unable to fetch the website using both HTTP and HTTPS.")
+            async with session.get(url, headers=headers) as response:
+                if response.status == 200:
+                    return await response.text()
+                else:
+                    raise Exception(f"Failed to fetch {url}. Status code: {response.status}")
+        except Exception as e:
+            app.logger.error(f"Error fetching {url}: {str(e)}")
+            
+            # Try with http if https fails
+            url = f"http://{domain}"
+            try:
+                async with session.get(url, headers=headers) as response:
+                    if response.status == 200:
+                        return await response.text()
+                    else:
+                        raise Exception(f"Failed to fetch {url}. Status code: {response.status}")
+            except Exception as e:
+                app.logger.error(f"Error fetching {url}: {str(e)}")
+                raise Exception("Unable to fetch the website using both HTTP and HTTPS.")
 
 def extract_main_info(html_content):
     """Extract Title, Description, and Main Content from the HTML."""
@@ -284,7 +300,7 @@ def before_request():
         return redirect(url, code=301)
 
 @app.route('/', methods=['GET', 'POST'])
-def index():
+async def index():
     """Handle the home page and form submissions."""
     error = None
     prompts = None
@@ -305,14 +321,14 @@ def index():
             error = 'Invalid domain name.'
             return render_template('index.html', error=error, searches_left=searches_left)
         try:
-            html_content = fetch_website_content(domain)
+            html_content = await fetch_website_content(domain)
             info = extract_main_info(html_content)
             
             # Generate prompts
             prompts = generate_marketing_prompts(info['title'], info['description'], info['content'], domain)
             
             # Generate answers and create table
-            table = asyncio.run(generate_prompt_answers(prompts, domain, info))
+            table = await generate_prompt_answers(prompts, domain, info)
             
             app.logger.info(f"Generated table for {domain}: {table}")
             

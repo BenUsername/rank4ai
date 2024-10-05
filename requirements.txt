@@ -12,3 +12,4 @@ aiohttp
 fuzzywuzzy
 python-Levenshtein
 nltk==3.6.5
+hypercorn==0.14.3
