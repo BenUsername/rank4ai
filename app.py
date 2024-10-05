@@ -124,13 +124,13 @@ def generate_marketing_prompts(title, description, content, domain):
     description_word_count = len(description.split())
     content_word_count = len(content.split())
     total_word_count = title_word_count + description_word_count + content_word_count
-    app.logger.info(f"Title word count: {title_word_count}")
-    app.logger.info(f"Description word count: {description_word_count}")
-    app.logger.info(f"Content word count: {content_word_count}")
-    app.logger.info(f"Total content word count: {total_word_count}")
+    logger.info(f"Title word count: {title_word_count}")
+    logger.info(f"Description word count: {description_word_count}")
+    logger.info(f"Content word count: {content_word_count}")
+    logger.info(f"Total content word count: {total_word_count}")
     
     if total_word_count < MIN_WORD_COUNT:
-        app.logger.warning("Combined content is too short for meaningful prompt generation.")
+        logger.warning("Combined content is too short for meaningful prompt generation.")
         return []
     
     prompt = (
@@ -141,7 +141,7 @@ def generate_marketing_prompts(title, description, content, domain):
         f"Content: {content}"
     )
     
-    app.logger.debug(f"Constructed Prompt:\n{prompt}")
+    logger.debug(f"Constructed Prompt:\n{prompt}")
     
     try:
         response = client.chat.completions.create(
@@ -155,25 +155,25 @@ def generate_marketing_prompts(title, description, content, domain):
             temperature=0.7,
         )
         
-        app.logger.debug(f"OpenAI API Response:\n{response}")
+        logger.debug(f"OpenAI API Response:\n{response}")
         
         # Extract the text response
         prompts_text = response.choices[0].message.content.strip()
-        app.logger.info(f"OpenAI response for marketing prompts: {prompts_text}")
+        logger.info(f"OpenAI response for marketing prompts: {prompts_text}")
         
         # Split the prompts into a list
         prompts = [line.strip() for line in prompts_text.split('\n') if line.strip() and any(char.isdigit() for char in line)]
         
         # Ensure only five prompts are returned
         prompts = prompts[:5]
-        app.logger.info(f"Generated prompts: {prompts}")
+        logger.info(f"Generated prompts: {prompts}")
         
         if not prompts:
-            app.logger.warning("No valid prompts were generated.")
+            logger.warning("No valid prompts were generated.")
         
         return prompts
     except Exception as e:
-        app.logger.error(f"Error during OpenAI API call: {e}")
+        logger.error(f"Error during OpenAI API call: {e}")
         return []
 
 def extract_organizations(text):
@@ -311,12 +311,18 @@ def index():
             return render_template('index.html', error=error, searches_left=searches_left)
         try:
             html_content = fetch_website_content(domain)
+            logger.info(f"Successfully fetched content for {domain}")
+            
             info = extract_main_info(html_content)
+            logger.info(f"Extracted info: {info}")
             
             prompts = generate_marketing_prompts(info['title'], info['description'], info['content'], domain)
+            logger.info(f"Generated prompts: {prompts}")
+            
+            if not prompts:
+                raise ValueError("No valid prompts were generated.")
             
             table = generate_prompt_answers(prompts, domain, info)
-            
             logger.info(f"Generated table for {domain}: {table}")
             
             session['searches_performed'] = session.get('searches_performed', 0) + 1
