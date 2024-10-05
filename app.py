@@ -301,7 +301,10 @@ def index():
             searches_left = 3 - session['searches_performed']
             return render_template('result.html', domain=domain, info=info, prompts=prompts, table=table, show_waiting_list=(searches_left == 0), searches_left=searches_left)
         except Exception as e:
-            error = f'Error processing website: {e}'
+            if str(e) == "Unable to fetch the website using both HTTP and HTTPS.":
+                error = f"Unable to fetch the website {domain}. Please try another domain."
+            else:
+                error = f'Error processing website: {e}'
             logger.error(f"Error processing {domain}: {str(e)}")  # Log any errors
     return render_template('index.html', error=error, searches_left=searches_left)
 
