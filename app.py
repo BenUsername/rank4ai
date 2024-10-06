@@ -68,7 +68,7 @@ BASE_USER_COUNT = 1000  # Starting count
 DAILY_INCREASE = 5  # Number of users to add each day
 
 # Add this near the top of your file, after loading other environment variables
-CONTACT_EMAIL = os.getenv('mailto', 'default@example.com')
+CONTACT_EMAIL = os.getenv('mailto', 'support@promptboostai.com')
 
 def is_valid_domain(domain):
     """Validate the domain using the validators library."""
@@ -92,7 +92,7 @@ def fetch_website_content(domain):
     
     for url in urls:
         try:
-            response = requests.get(url, headers=headers, timeout=10)
+            response = requests.get(url, headers=headers, timeout=5)  # Reduced timeout to 5 seconds
             if response.status_code == 200:
                 return response.text
         except Timeout:
@@ -305,7 +305,6 @@ def before_request():
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    """Handle the home page and form submissions."""
     error = None
     prompts = None
     table = None
@@ -324,6 +323,7 @@ def index():
         if not is_valid_domain(domain):
             error = 'Invalid domain name.'
             return render_template('index.html', error=error, searches_left=searches_left, user_count=user_count)
+        
         try:
             html_content = fetch_website_content(domain)
             logger.info(f"Successfully fetched content for {domain}")
