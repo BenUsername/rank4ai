@@ -155,7 +155,30 @@
             setTimeout(() => updateProgress('Generating prompts...'), 6000);
             setTimeout(() => updateProgress('Simulating LLM responses...'), 9000);
 
-            this.submit();
+            // Set a client-side timeout
+            var timeout = setTimeout(() => {
+                document.getElementById('spinner').style.display = 'none';
+                document.getElementById('progress-log').innerHTML += '<p>Request timed out. Please try again or try another domain.</p>';
+                this.querySelector('button').style.display = 'inline-block';
+            }, 25000);  // 25 seconds timeout
+
+            fetch(this.action, {
+                method: 'POST',
+                body: new FormData(this)
+            }).then(response => {
+                clearTimeout(timeout);
+                return response.text();
+            }).then(html => {
+                document.open();
+                document.write(html);
+                document.close();
+            }).catch(error => {
+                clearTimeout(timeout);
+                console.error('Error:', error);
+                document.getElementById('spinner').style.display = 'none';
+                document.getElementById('progress-log').innerHTML += '<p>An error occurred. Please try again.</p>';
+                this.querySelector('button').style.display = 'inline-block';
+            });
         });
 
         // Back to top button functionality

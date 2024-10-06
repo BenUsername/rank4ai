@@ -92,7 +92,7 @@ def fetch_website_content(domain):
     
     for url in urls:
         try:
-            response = requests.get(url, headers=headers, timeout=5)  # Reduced timeout to 5 seconds
+            response = requests.get(url, headers=headers, timeout=3)  # Reduced timeout to 3 seconds
             if response.status_code == 200:
                 return response.text
         except Timeout:
