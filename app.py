@@ -163,7 +163,7 @@ def generate_marketing_prompts(title, description, content, domain):
         logger.info(f"OpenAI response for marketing prompts: {prompts_text}")
         
         # Split the prompts into a list
-        prompts = [line.strip() for line in prompts_text.split('\n') if line.strip() and any(char.isdigit() for char in line)]
+        prompts = [line.strip() for line in prompts_text.split('\n') if line.strip()]
         
         # Ensure only five prompts are returned
         prompts = prompts[:5]
@@ -319,7 +319,7 @@ def analyze():
         prompts = generate_marketing_prompts(info['title'], info['description'], info['content'], domain)
         
         if not prompts:
-            return jsonify({'error': "No valid prompts were generated."}), 500
+            return jsonify({'error': "We couldn't generate valid prompts for this website. Please try another domain."}), 500
 
         table = generate_prompt_answers(prompts, domain, info)
         
