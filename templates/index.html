@@ -18,138 +18,24 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔍</text></svg>">
-    <style>
-        /* Add these styles in addition to your existing CSS */
-        .hero {
-            background-color: #f8f9fa;
-            padding: 60px 0;
-            text-align: center;
-            margin-bottom: 40px;
-        }
-        .hero h1 {
-            margin-bottom: 20px;
-        }
-        .hero-form {
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        .hero-form input[type="text"] {
-            width: 70%;
-            padding: 10px;
-            font-size: 16px;
-        }
-        .hero-form button {
-            width: 25%;
-            padding: 10px;
-            font-size: 16px;
-        }
-        .cta-button-secondary {
-            display: inline-block;
-            background-color: #3498db;
-            color: white;
-            padding: 10px 20px;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-            margin-top: 20px;
-        }
-        .cta-button-secondary:hover {
-            background-color: #2980b9;
-        }
-        .sample-result {
-            background-color: #f9f9f9;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            padding: 20px;
-            margin-top: 30px;
-        }
-        .sample-result h3 {
-            color: #2c3e50;
-            margin-bottom: 15px;
-        }
-        .sample-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .sample-table th, .sample-table td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        .sample-table th {
-            background-color: #f2f2f2;
-        }
-        .sample-visible {
-            color: #2ecc71;
-        }
-        .sample-not-visible {
-            color: #e74c3c;
-        }
-        .info-icon {
-            font-size: 0.8em;
-            color: #3498db;
-            cursor: help;
-            margin-left: 5px;
-        }
-        .tooltip {
-            position: relative;
-            display: inline-block;
-        }
-        .tooltip .tooltiptext {
-            visibility: hidden;
-            width: 200px;
-            background-color: #555;
-            color: #fff;
-            text-align: center;
-            border-radius: 6px;
-            padding: 5px;
-            position: absolute;
-            z-index: 1;
-            bottom: 125%;
-            left: 50%;
-            margin-left: -100px;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        .tooltip:hover .tooltiptext {
-            visibility: visible;
-            opacity: 1;
-        }
-        .icon-large {
-            font-size: 1.5em;
-            margin-right: 10px;
-            vertical-align: middle;
-        }
-        .icon-small {
-            font-size: 1.2em;
-            margin-right: 5px;
-        }
-        .user-count {
-            font-size: 1.1em;
-            color: #2c3e50;
-            margin-bottom: 20px;
-        }
-        .user-count .icon-small {
-            color: #3498db;
-        }
-    </style>
 </head>
 <body>
     <header class="hero">
-        <h1><i class="fas fa-search icon-large"></i>LLM Search Performance Tracker</h1>
+        <h1><i class="fas fa-search icon-large" aria-hidden="true"></i>LLM Search Performance Tracker</h1>
         <p>Discover your brand's visibility in AI-powered search results</p>
-        <p class="user-count"><i class="fas fa-users icon-small"></i>{{ user_count }} users have improved their LLM visibility</p>
+        <p class="user-count"><i class="fas fa-users icon-small" aria-hidden="true"></i>{{ user_count }} users have improved their LLM visibility</p>
         {% if searches_left > 0 %}
         <form method="post" id="promptForm" class="hero-form">
-            <input type="text" name="domain" id="domainInput" placeholder="Enter your website domain (e.g., example.com)" required>
-            <button type="submit" class="cta-button"><i class="fas fa-rocket icon-small"></i>Analyze Now</button>
+            <label for="domainInput" class="sr-only">Enter your website domain</label>
+            <input type="text" name="domain" id="domainInput" placeholder="Enter your website domain (e.g., example.com)" required aria-required="true">
+            <button type="submit" class="cta-button"><i class="fas fa-rocket icon-small" aria-hidden="true"></i>Analyze Now</button>
         </form>
         <p class="cta-text">{{ searches_left }} free searches left</p>
-        <div class="spinner" id="spinner"></div>
-        <div id="progress-log"></div>
+        <div class="spinner" id="spinner" aria-hidden="true"></div>
+        <div id="progress-log" aria-live="polite"></div>
         {% else %}
-        <p class="cta-text"><i class="fas fa-star icon-small"></i>You've used all your free searches. Want to unlock more insights?</p>
-        <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button"><i class="fas fa-list-alt icon-small"></i>Join the Waiting List</a>
+        <p class="cta-text"><i class="fas fa-star icon-small" aria-hidden="true"></i>You've used all your free searches. Want to unlock more insights?</p>
+        <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button"><i class="fas fa-list-alt icon-small" aria-hidden="true"></i>Join the Waiting List</a>
         {% endif %}
     </header>
     
@@ -229,6 +115,19 @@
         {% endif %}
     </main>
 
+    <footer>
+        <p>&copy; 2024 LLM Search Performance Tracker. All rights reserved.</p>
+        <nav>
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms of Service</a>
+            <a href="#">Contact Us</a>
+        </nav>
+    </footer>
+
+    <a href="#" id="back-to-top" class="back-to-top" aria-label="Back to top">
+        <i class="fas fa-chevron-up" aria-hidden="true"></i>
+    </a>
+
     <script>
         function extractDomain(url) {
             url = url.replace(/^(?:https?:\/\/)?(?:www\.)?/i, "");
@@ -258,6 +157,23 @@
 
             this.submit();
         });
+
+        // Back to top button functionality
+        var backToTopButton = document.getElementById("back-to-top");
+        window.onscroll = function() {scrollFunction()};
+
+        function scrollFunction() {
+            if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+                backToTopButton.style.display = "block";
+            } else {
+                backToTopButton.style.display = "none";
+            }
+        }
+
+        backToTopButton.onclick = function() {
+            document.body.scrollTop = 0; // For Safari
+            document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+        }
     </script>
 </body>
 </html>

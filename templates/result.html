@@ -22,100 +22,121 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔍</text></svg>">
 </head>
 <body>
-    <h1>Results for {{ domain }}</h1>
-    
-    <h2>Website Information</h2>
-    <p><strong>Title:</strong> {{ info.title }}</p>
-    <p><strong>Description:</strong> {{ info.description }}</p>
-    
-    <h2>Relevant Searches</h2>
-    <ol>
-    {% for prompt in prompts %}
-        <li><a href="#result-{{ loop.index }}">{{ prompt.split('.', 1)[-1].strip().strip('"*') }}</a></li>
-    {% endfor %}
-    </ol>
-    
-    <h2>Visibility and Competitors</h2>
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>Prompt</th>
-                    <th>Answer</th>
-                    <th>Top Competitors</th>
-                    <th>Visible in LLM?</th>
-                </tr>
-            </thead>
-            <tbody>
-            {% for row in table %}
-                <tr id="result-{{ loop.index }}">
-                    <td class="expandable">
-                        <div class="content">{{ row.prompt.split('.', 1)[-1].strip().strip('"*') }}</div>
-                        <button class="expand-btn" aria-label="Expand">+</button>
-                    </td>
-                    <td class="expandable">
-                        <div class="content">{{ row.answer }}</div>
-                        <button class="expand-btn" aria-label="Expand">+</button>
-                    </td>
-                    <td>
-                        {% if row.competitors != 'None mentioned' %}
-                            <ol>
-                                {% for competitor in row.competitors.split(', ') %}
-                                    <li>{{ competitor }}</li>
-                                {% endfor %}
-                            </ol>
-                        {% else %}
-                            {{ row.competitors }}
-                        {% endif %}
-                    </td>
-                    <td class="visibility-status {% if 'Yes' in row.visible %}visible{% else %}not-visible{% endif %}">
-                        <span class="visibility-icon">
-                            {% if 'Yes' in row.visible %}
-                                {% set rank = row.visible.split('(Rank: ')[1].split(')')[0]|int %}
-                                {% if rank == 1 %}
-                                    Congrats, you're first! 🥇🎉
-                                {% elif rank == 2 %}
-                                    Congrats, you're second! 🥈🎉
-                                {% elif rank == 3 %}
-                                    Congrats, you're third! 🥉🎉
-                                {% else %}
-                                    Congrats, you're {{ rank }}th! 🎉
-                                {% endif %}
+    <header>
+        <nav>
+            <a href="{{ url_for('index') }}" class="home-link"><i class="fas fa-home" aria-hidden="true"></i> Home</a>
+        </nav>
+    </header>
+
+    <main>
+        <h1>Results for {{ domain }}</h1>
+        
+        <h2>Website Information</h2>
+        <p><strong>Title:</strong> {{ info.title }}</p>
+        <p><strong>Description:</strong> {{ info.description }}</p>
+        
+        <h2>Relevant Searches</h2>
+        <ol>
+        {% for prompt in prompts %}
+            <li><a href="#result-{{ loop.index }}">{{ prompt.split('.', 1)[-1].strip().strip('"*') }}</a></li>
+        {% endfor %}
+        </ol>
+        
+        <h2>Visibility and Competitors</h2>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Prompt</th>
+                        <th>Answer</th>
+                        <th>Top Competitors</th>
+                        <th>Visible in LLM?</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for row in table %}
+                    <tr id="result-{{ loop.index }}">
+                        <td class="expandable">
+                            <div class="content">{{ row.prompt.split('.', 1)[-1].strip().strip('"*') }}</div>
+                            <button class="expand-btn" aria-label="Expand">+</button>
+                        </td>
+                        <td class="expandable">
+                            <div class="content">{{ row.answer }}</div>
+                            <button class="expand-btn" aria-label="Expand">+</button>
+                        </td>
+                        <td>
+                            {% if row.competitors != 'None mentioned' %}
+                                <ol>
+                                    {% for competitor in row.competitors.split(', ') %}
+                                        <li>{{ competitor }}</li>
+                                    {% endfor %}
+                                </ol>
                             {% else %}
-                                &#10008; No
+                                {{ row.competitors }}
                             {% endif %}
-                        </span>
-                        {% if 'No' in row.visible %}
-                            <span class="info-icon" onclick="showAdvice('{{ domain }}', '{{ row.prompt }}', {{ loop.index }})">ℹ️</span>
-                        {% endif %}
-                        <div class="spinner" id="spinner-{{ loop.index }}"></div>
-                    </td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
+                        </td>
+                        <td class="visibility-status {% if 'Yes' in row.visible %}visible{% else %}not-visible{% endif %}">
+                            <span class="visibility-icon">
+                                {% if 'Yes' in row.visible %}
+                                    {% set rank = row.visible.split('(Rank: ')[1].split(')')[0]|int %}
+                                    {% if rank == 1 %}
+                                        Congrats, you're first! 🥇🎉
+                                    {% elif rank == 2 %}
+                                        Congrats, you're second! 🥈🎉
+                                    {% elif rank == 3 %}
+                                        Congrats, you're third! 🥉🎉
+                                    {% else %}
+                                        Congrats, you're {{ rank }}th! 🎉
+                                    {% endif %}
+                                {% else %}
+                                    &#10008; No
+                                {% endif %}
+                            </span>
+                            {% if 'No' in row.visible %}
+                                <span class="info-icon" onclick="showAdvice('{{ domain }}', '{{ row.prompt }}', {{ loop.index }})">ℹ️</span>
+                            {% endif %}
+                            <div class="spinner" id="spinner-{{ loop.index }}"></div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
-    <!-- Modal for displaying advice -->
-    <div id="adviceModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2>How to Improve Visibility</h2>
-            <div id="adviceContent"></div>
+        <!-- Modal for displaying advice -->
+        <div id="adviceModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>How to Improve Visibility</h2>
+                <div id="adviceContent"></div>
+            </div>
         </div>
-    </div>
 
-    {% if searches_left > 0 %}
-        <p class="cta-text">You have {{ searches_left }} free searches left. Want to analyze more domains?</p>
-        <div class="cta-container">
-            <a href="{{ url_for('index') }}" class="cta-button">Analyze Another Domain</a>
-        </div>
-    {% else %}
-        <p class="cta-text">You've used all your free searches. Want to analyze more domains and get deeper insights?</p>
-        <div class="cta-container">
-            <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button">Join Waiting List for Premium Access</a>
-        </div>
-    {% endif %}
+        {% if searches_left > 0 %}
+            <p class="cta-text">You have {{ searches_left }} free searches left. Want to analyze more domains?</p>
+            <div class="cta-container">
+                <a href="{{ url_for('index') }}" class="cta-button">Analyze Another Domain</a>
+            </div>
+        {% else %}
+            <p class="cta-text">You've used all your free searches. Want to analyze more domains and get deeper insights?</p>
+            <div class="cta-container">
+                <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button">Join Waiting List for Premium Access</a>
+            </div>
+        {% endif %}
+    </main>
+
+    <footer>
+        <p>&copy; 2024 LLM Search Performance Tracker. All rights reserved.</p>
+        <nav>
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms of Service</a>
+            <a href="#">Contact Us</a>
+        </nav>
+    </footer>
+
+    <a href="#" id="back-to-top" class="back-to-top" aria-label="Back to top">
+        <i class="fas fa-chevron-up" aria-hidden="true"></i>
+    </a>
 
     <script>
         document.querySelectorAll('.expand-btn').forEach(button => {
@@ -162,6 +183,23 @@
                 spinner.style.display = 'none';
                 console.error('Error:', error);
             });
+        }
+
+        // Back to top button functionality
+        var backToTopButton = document.getElementById("back-to-top");
+        window.onscroll = function() {scrollFunction()};
+
+        function scrollFunction() {
+            if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+                backToTopButton.style.display = "block";
+            } else {
+                backToTopButton.style.display = "none";
+            }
+        }
+
+        backToTopButton.onclick = function() {
+            document.body.scrollTop = 0; // For Safari
+            document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
         }
     </script>
 </body>

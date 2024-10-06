@@ -298,3 +298,138 @@ th {
 #progress-log p {
     margin: 5px 0;
 }
+
+/* Styles moved from index.html */
+.hero {
+    background-color: #f8f9fa;
+    padding: 60px 0;
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.hero h1 {
+    margin-bottom: 20px;
+}
+
+.hero-form {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.hero-form input[type="text"] {
+    width: 70%;
+    padding: 10px;
+    font-size: 16px;
+}
+
+.hero-form button {
+    width: 25%;
+    padding: 10px;
+    font-size: 16px;
+}
+
+.cta-button-secondary {
+    display: inline-block;
+    background-color: #3498db;
+    color: white;
+    padding: 10px 20px;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+    margin-top: 20px;
+}
+
+.cta-button-secondary:hover {
+    background-color: #2980b9;
+}
+
+.sample-result {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 20px;
+    margin-top: 30px;
+}
+
+.sample-result h3 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+}
+
+.sample-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.sample-table th, .sample-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.sample-table th {
+    background-color: #f2f2f2;
+}
+
+.sample-visible {
+    color: #2ecc71;
+}
+
+.sample-not-visible {
+    color: #e74c3c;
+}
+
+.info-icon {
+    font-size: 0.8em;
+    color: #3498db;
+    cursor: help;
+    margin-left: 5px;
+}
+
+.tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip .tooltiptext {
+    visibility: hidden;
+    width: 200px;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -100px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+}
+
+.icon-large {
+    font-size: 1.5em;
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
+.icon-small {
+    font-size: 1.2em;
+    margin-right: 5px;
+}
+
+.user-count {
+    font-size: 1.1em;
+    color: #2c3e50;
+    margin-bottom: 20px;
+}
+
+.user-count .icon-small {
+    color: #3498db;
+}
