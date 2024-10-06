@@ -2,6 +2,7 @@ import os
 import openai
 from flask import Flask, request, render_template, session, redirect, url_for, send_from_directory, jsonify
 import requests
+from requests.exceptions import RequestException, Timeout
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 import validators
@@ -80,7 +81,7 @@ def fetch_website_content(domain):
         f"http://{domain}",
         f"https://www.{domain}",
         f"http://www.{domain}",
-        f"https://{domain}/en",  # Some sites use language-specific paths
+        f"https://{domain}/en",
         f"http://{domain}/en",
         f"https://www.{domain}/en",
         f"http://www.{domain}/en"
@@ -94,10 +95,12 @@ def fetch_website_content(domain):
             response = requests.get(url, headers=headers, timeout=10)
             if response.status_code == 200:
                 return response.text
-        except Exception as e:
+        except Timeout:
+            app.logger.error(f"Timeout error fetching {url}")
+        except RequestException as e:
             app.logger.error(f"Error fetching {url}: {str(e)}")
     
-    raise Exception(f"Unable to fetch the website content for {domain}. This might be due to security settings on the website.")
+    raise Exception(f"Unable to fetch the website content for {domain}. The website may be unavailable or blocking our requests.")
 
 def extract_main_info(html_content):
     """Extract Title, Description, and Main Content from the HTML."""
@@ -342,10 +345,7 @@ def index():
             return render_template('result.html', domain=domain, info=info, prompts=prompts, table=table, show_waiting_list=(searches_left == 0), searches_left=searches_left, user_count=user_count)
         except Exception as e:
             logger.error(f"Error processing {domain}: {str(e)}")
-            if "Unable to fetch the website" in str(e):
-                error = f"We couldn't fetch the content for {domain}. This might be due to security settings on the website. Please try another domain."
-            else:
-                error = f"An error occurred while processing {domain}. Please try again or try another domain."
+            error = f"We couldn't fetch the content for {domain}. The website may be unavailable or blocking our requests. Please try another domain."
             return render_template('index.html', error=error, searches_left=searches_left, user_count=user_count)
     return render_template('index.html', error=error, searches_left=searches_left, user_count=user_count)
 
