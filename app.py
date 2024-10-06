@@ -313,7 +313,7 @@ def analyze():
     try:
         html_content = fetch_website_content(domain)
         if html_content is None:
-            return jsonify({'error': f"We couldn't fetch the content for {domain}. The website may be unavailable or blocking our requests."}), 404
+            return jsonify({'error': f"We couldn't fetch the content for {domain}. The website may be unavailable or blocking our requests. Please try another domain."}), 404
 
         info = extract_main_info(html_content)
         prompts = generate_marketing_prompts(info['title'], info['description'], info['content'], domain)
@@ -336,7 +336,7 @@ def analyze():
 
     except Exception as e:
         app.logger.error(f"Error processing {domain}: {str(e)}")
-        return jsonify({'error': f"An error occurred while processing your request. Please try again."}), 500
+        return jsonify({'error': f"An error occurred while processing your request for {domain}. The website may be unavailable or blocking our requests. Please try another domain."}), 500
 
 @app.route('/robots.txt')
 def robots():

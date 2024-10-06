@@ -134,40 +134,45 @@
 
         document.getElementById('analyzeForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            var domainInput = document.getElementById('domainInput');
-            domainInput.value = extractDomain(domainInput.value);
-            document.getElementById('spinner').style.display = 'block';
-            document.getElementById('progress-log').innerHTML = '';
-            document.getElementById('error-message').style.display = 'none';
-            document.getElementById('results-container').style.display = 'none';
+            const domain = document.getElementById('domainInput').value;
+            const spinner = document.getElementById('spinner');
+            const progressLog = document.getElementById('progress-log');
+            const errorMessage = document.getElementById('error-message');
+            
+            spinner.style.display = 'block';
+            progressLog.innerHTML = 'Fetching website content...';
+            errorMessage.style.display = 'none';
             this.querySelector('button').disabled = true;
-
-            updateProgress('Fetching website content...');
 
             fetch('/analyze', {
                 method: 'POST',
-                body: new FormData(this)
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `domain=${encodeURIComponent(domain)}`
             })
             .then(response => response.json())
             .then(data => {
-                document.getElementById('spinner').style.display = 'none';
+                spinner.style.display = 'none';
+                progressLog.innerHTML = '';  // Clear the progress log
                 this.querySelector('button').disabled = false;
 
                 if (data.error) {
-                    document.getElementById('error-message').textContent = data.error;
-                    document.getElementById('error-message').style.display = 'block';
+                    errorMessage.textContent = data.error;
+                    errorMessage.style.display = 'block';
                 } else {
                     displayResults(data);
                 }
 
                 document.getElementById('searches-left').textContent = data.searches_left;
             })
-            .catch(error => {
+            .catch((error) => {
                 console.error('Error:', error);
-                document.getElementById('spinner').style.display = 'none';
-                document.getElementById('error-message').textContent = 'An error occurred. Please try again.';
-                document.getElementById('error-message').style.display = 'block';
+                spinner.style.display = 'none';
+                progressLog.innerHTML = '';  // Clear the progress log
                 this.querySelector('button').disabled = false;
+                errorMessage.textContent = 'An error occurred. Please try again.';
+                errorMessage.style.display = 'block';
             });
         });
 
