@@ -81,29 +81,38 @@
             visibility: visible;
             opacity: 1;
         }
+        .icon-large {
+            font-size: 1.5em;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        .icon-small {
+            font-size: 1.2em;
+            margin-right: 5px;
+        }
     </style>
 </head>
 <body>
-    <h1>LLM Search Performance Tracker</h1>
+    <h1><i class="fas fa-search icon-large"></i>LLM Search Performance Tracker</h1>
     
     <main>
         <section class="intro">
-            <h2>Stay Seen in the New Search World</h2>
+            <h2><i class="fas fa-eye icon-large"></i>Stay Seen in the New Search World</h2>
             <p>Search is changing from Google to new smart helpers called LLMs. It is important to know where your brand shows up in these new searches. Our tool helps you see where you are in these searches, so you can stay easy to find and ahead of others.</p>
         </section>
 
         <section class="how-it-works">
-            <h2>How It Works</h2>
+            <h2><i class="fas fa-cogs icon-large"></i>How It Works</h2>
             <ol>
-                <li><strong>Enter Your Website:</strong> Type in your website domain (e.g., example.com).</li>
-                <li><strong>Analyze Content:</strong> We look at your website and find things people might search for about you.</li>
-                <li><strong>Simulate Search Results:</strong> Our AI shows what the LLM helper will say when people search for those things.</li>
-                <li><strong>Review Visibility:</strong> See where you show up and compare to others.</li>
+                <li><i class="fas fa-globe icon-small"></i><strong>Enter Your Website:</strong> Type in your website domain (e.g., example.com).</li>
+                <li><i class="fas fa-chart-bar icon-small"></i><strong>Analyze Content:</strong> We look at your website and find things people might search for about you.</li>
+                <li><i class="fas fa-robot icon-small"></i><strong>Simulate Search Results:</strong> Our AI shows what the LLM helper will say when people search for those things.</li>
+                <li><i class="fas fa-check-circle icon-small"></i><strong>Review Visibility:</strong> See where you show up and compare to others.</li>
             </ol>
         </section>
 
         <section class="sample-result">
-            <h3>Sample Result for ebay.com</h3>
+            <h3><i class="fas fa-chart-line icon-large"></i>Sample Result for ebay.com</h3>
             <p>This table shows an example of what our tool provides. It demonstrates how your website might appear in AI-powered search results for different queries, and how it compares to competitors.</p>
             <table class="sample-table">
                 <thead>
@@ -144,7 +153,7 @@
                     </tr>
                     <tr>
                         <td>Where to buy used electronics online</td>
-                        <td>amazon.com, bestbuy.com</td>
+                        <td>ebay.com, bestbuy.com</td>
                         <td class="sample-visible">Yes (Rank: 1)</td>
                     </tr>
                 </tbody>
@@ -154,25 +163,25 @@
 
         {% if error %}
         <section class="error-message">
-            <p class="error">{{ error }} Try another website.</p>
+            <p class="error"><i class="fas fa-exclamation-triangle icon-small"></i>{{ error }} Try another website.</p>
         </section>
         {% endif %}
 
         {% if searches_left > 0 %}
         <section class="cta">
-            <p class="cta-text">Don't let your brand get lost in the new search world. Start tracking your visibility today and find ways to improve. ({{ searches_left }} free searches left)</p>
+            <p class="cta-text"><i class="fas fa-bullhorn icon-small"></i>Don't let your brand get lost in the new search world. Start tracking your visibility today and find ways to improve. ({{ searches_left }} free searches left)</p>
             <form method="post" id="promptForm">
                 <input type="text" name="domain" id="domainInput" placeholder="Enter your website domain (e.g., example.com)" required>
-                <input type="submit" value="Get Started Now" class="cta-button">
+                <button type="submit" class="cta-button"><i class="fas fa-rocket icon-small"></i>Get Started Now</button>
             </form>
             <div class="spinner" id="spinner"></div>
             <div id="progress-log"></div>
         </section>
         {% else %}
         <section class="cta">
-            <p class="cta-text">You've used all your free searches. Want to unlock more insights and make your brand even better?</p>
+            <p class="cta-text"><i class="fas fa-star icon-small"></i>You've used all your free searches. Want to unlock more insights and make your brand even better?</p>
             <div class="cta-container">
-                <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button">Join the Waiting List for More Access</a>
+                <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button"><i class="fas fa-list-alt icon-small"></i>Join the Waiting List for More Access</a>
             </div>
         </section>
         {% endif %}
