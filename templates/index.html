@@ -187,7 +187,7 @@
                 
                 <h2>Relevant Searches</h2>
                 <ol>
-                    ${data.prompts.map(prompt => `<li>${prompt}</li>`).join('')}
+                    ${data.prompts.map(prompt => `<li>${prompt.replace(/^\d+\.\s*/, '')}</li>`).join('')}
                 </ol>
                 
                 <h2>Visibility and Competitors</h2>
@@ -219,7 +219,7 @@
                                         }
                                     </td>
                                     <td class="visibility-status ${row.visible.includes('Yes') ? 'visible' : 'not-visible'}">
-                                        ${row.visible}
+                                        ${formatVisibility(row.visible)}
                                     </td>
                                 </tr>
                             `).join('')}
@@ -238,6 +238,45 @@
                     this.textContent = content.classList.contains('expanded') ? '-' : '+';
                 });
             });
+
+            // Add CTA based on searches left
+            const ctaContainer = document.createElement('div');
+            ctaContainer.className = 'cta-container';
+            if (data.searches_left > 0) {
+                ctaContainer.innerHTML = `
+                    <p class="cta-text">You have ${data.searches_left} free searches left. Want to analyze more domains?</p>
+                    <a href="#" class="cta-button" onclick="document.getElementById('domainInput').focus(); return false;">Analyze Another Domain</a>
+                `;
+            } else {
+                ctaContainer.innerHTML = `
+                    <p class="cta-text">You've used all your free searches. Want to analyze more domains and get deeper insights?</p>
+                    <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button">Join Waiting List for Premium Access</a>
+                `;
+            }
+            resultsContainer.appendChild(ctaContainer);
+        }
+
+        function formatVisibility(visible) {
+            if (visible.includes('Yes')) {
+                const rank = visible.match(/\d+/)[0];
+                let rankText = '';
+                switch (rank) {
+                    case '1':
+                        rankText = 'first! 🥇🎉';
+                        break;
+                    case '2':
+                        rankText = 'second! 🥈🎉';
+                        break;
+                    case '3':
+                        rankText = 'third! 🥉🎉';
+                        break;
+                    default:
+                        rankText = `${rank}th! 🎉`;
+                }
+                return `<span style="color: green;">✓ Yes</span><br>Congrats, you're ${rankText}`;
+            } else {
+                return '<span style="color: red;">✗ No</span>';
+            }
         }
 
         // Back to top button functionality
