@@ -92,12 +92,10 @@ def fetch_website_content(domain):
     
     for url in urls:
         try:
-            response = requests.get(url, headers=headers, timeout=3)  # Reduced timeout to 3 seconds
+            response = requests.get(url, headers=headers, timeout=10)  # Increased timeout to 10 seconds
             if response.status_code == 200:
                 return response.text
-        except Timeout:
-            app.logger.error(f"Timeout error fetching {url}")
-        except RequestException as e:
+        except requests.exceptions.RequestException as e:
             app.logger.error(f"Error fetching {url}: {str(e)}")
     
     raise Exception(f"Unable to fetch the website content for {domain}. The website may be unavailable or blocking our requests.")
