@@ -20,6 +20,38 @@
 
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔍</text></svg>">
+    <style>
+        /* Add these styles in addition to your existing CSS */
+        .sample-result {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        .sample-result h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        .sample-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .sample-table th, .sample-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .sample-table th {
+            background-color: #f2f2f2;
+        }
+        .sample-visible {
+            color: #2ecc71;
+        }
+        .sample-not-visible {
+            color: #e74c3c;
+        }
+    </style>
 </head>
 <body>
     <h1>LLM Search Performance Tracker</h1>
@@ -38,6 +70,32 @@
                 <li><strong>Simulate Search Results:</strong> Our AI shows what the LLM helper will say when people search for those things.</li>
                 <li><strong>Review Visibility:</strong> See where you show up and compare to others.</li>
             </ol>
+        </section>
+
+        <section class="sample-result">
+            <h3>Sample Result for example.com</h3>
+            <table class="sample-table">
+                <thead>
+                    <tr>
+                        <th>Prompt</th>
+                        <th>Top Competitors</th>
+                        <th>Visible in LLM?</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Best online shopping platforms</td>
+                        <td>amazon.com, ebay.com</td>
+                        <td class="sample-visible">Yes (Rank: 3)</td>
+                    </tr>
+                    <tr>
+                        <td>Reliable e-commerce websites</td>
+                        <td>amazon.com, walmart.com</td>
+                        <td class="sample-not-visible">No</td>
+                    </tr>
+                    <!-- Add a few more rows for demonstration -->
+                </tbody>
+            </table>
         </section>
 
         {% if error %}
