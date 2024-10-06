@@ -17,6 +17,7 @@ import nltk
 import ssl
 from nltk import word_tokenize, pos_tag, ne_chunk
 from nltk.chunk import tree2conlltags
+from datetime import datetime, date
 
 # Set up SSL context for NLTK downloads
 try:
@@ -60,6 +61,10 @@ client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 # Add this constant at the top of your file, after the imports
 MAX_API_CALLS_PER_SESSION = 15  # Adjust this number as needed
+
+# Add this near the top of your file, after the imports
+BASE_USER_COUNT = 1000  # Starting count
+DAILY_INCREASE = 5  # Number of users to add each day
 
 def is_valid_domain(domain):
     """Validate the domain using the validators library."""
@@ -281,6 +286,11 @@ def verify_company(name):
 def generate_prompt_answers(prompts, domain, info):
     return [generate_prompt_answer(prompt, domain, info) for prompt in prompts]
 
+def get_user_count():
+    start_date = date(2024, 1, 1)  # Choose a start date
+    days_passed = (date.today() - start_date).days
+    return BASE_USER_COUNT + (days_passed * DAILY_INCREASE)
+
 @app.before_request
 def before_request():
     if not request.is_secure:
@@ -294,10 +304,11 @@ def index():
     prompts = None
     table = None
     searches_left = 3 - session.get('searches_performed', 0)
+    user_count = get_user_count()
 
     if request.method == 'POST':
         if session.get('searches_performed', 0) >= 3:
-            return render_template('index.html', error="You've reached the maximum number of free searches. Please join the waiting list for more.", searches_left=0)
+            return render_template('index.html', error="You've reached the maximum number of free searches. Please join the waiting list for more.", searches_left=0, user_count=user_count)
         
         session['api_calls'] = 0
         
@@ -306,7 +317,7 @@ def index():
         
         if not is_valid_domain(domain):
             error = 'Invalid domain name.'
-            return render_template('index.html', error=error, searches_left=searches_left)
+            return render_template('index.html', error=error, searches_left=searches_left, user_count=user_count)
         try:
             html_content = fetch_website_content(domain)
             logger.info(f"Successfully fetched content for {domain}")
@@ -325,11 +336,11 @@ def index():
             
             session['searches_performed'] = session.get('searches_performed', 0) + 1
             searches_left = 3 - session['searches_performed']
-            return render_template('result.html', domain=domain, info=info, prompts=prompts, table=table, show_waiting_list=(searches_left == 0), searches_left=searches_left)
+            return render_template('result.html', domain=domain, info=info, prompts=prompts, table=table, show_waiting_list=(searches_left == 0), searches_left=searches_left, user_count=user_count)
         except Exception as e:
             logger.error(f"Error processing {domain}: {str(e)}")
             error = f"Error processing website: {str(e)}"
-    return render_template('index.html', error=error, searches_left=searches_left)
+    return render_template('index.html', error=error, searches_left=searches_left, user_count=user_count)
 
 @app.route('/robots.txt')
 def robots():

@@ -124,12 +124,21 @@
             font-size: 1.2em;
             margin-right: 5px;
         }
+        .user-count {
+            font-size: 1.1em;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .user-count .icon-small {
+            color: #3498db;
+        }
     </style>
 </head>
 <body>
     <header class="hero">
         <h1><i class="fas fa-search icon-large"></i>LLM Search Performance Tracker</h1>
         <p>Discover your brand's visibility in AI-powered search results</p>
+        <p class="user-count"><i class="fas fa-users icon-small"></i>{{ user_count }} users have improved their LLM visibility</p>
         {% if searches_left > 0 %}
         <form method="post" id="promptForm" class="hero-form">
             <input type="text" name="domain" id="domainInput" placeholder="Enter your website domain (e.g., example.com)" required>
