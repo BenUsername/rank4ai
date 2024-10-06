@@ -66,6 +66,9 @@ MAX_API_CALLS_PER_SESSION = 15  # Adjust this number as needed
 BASE_USER_COUNT = 1000  # Starting count
 DAILY_INCREASE = 5  # Number of users to add each day
 
+# Add this near the top of your file, after loading other environment variables
+CONTACT_EMAIL = os.getenv('mailto', 'default@example.com')
+
 def is_valid_domain(domain):
     """Validate the domain using the validators library."""
     return validators.domain(domain)
@@ -387,11 +390,11 @@ def get_advice():
 
 @app.route('/privacy-policy')
 def privacy_policy():
-    return render_template('privacy_policy.html')
+    return render_template('privacy_policy.html', contact_email=CONTACT_EMAIL)
 
 @app.route('/terms-of-service')
 def terms_of_service():
-    return render_template('terms_of_service.html')
+    return render_template('terms_of_service.html', contact_email=CONTACT_EMAIL)
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
