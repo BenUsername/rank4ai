@@ -84,8 +84,18 @@ th {
 
 .cta-container {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
     margin-top: 20px;
+    text-align: center;
+}
+
+.cta-container .cta-text {
+    margin-bottom: 15px;
+}
+
+.cta-container .cta-button {
+    margin-top: 10px;
 }
 
 .waiting-list-button {

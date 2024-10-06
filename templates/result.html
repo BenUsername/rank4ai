@@ -113,13 +113,13 @@
         </div>
 
         {% if searches_left > 0 %}
-            <p class="cta-text">You have {{ searches_left }} free searches left. Want to analyze more domains?</p>
             <div class="cta-container">
+                <p class="cta-text">You have {{ searches_left }} free searches left. Want to analyze more domains?</p>
                 <a href="{{ url_for('index') }}" class="cta-button">Analyze Another Domain</a>
             </div>
         {% else %}
-            <p class="cta-text">You've used all your free searches. Want to analyze more domains and get deeper insights?</p>
             <div class="cta-container">
+                <p class="cta-text">You've used all your free searches. Want to analyze more domains and get deeper insights?</p>
                 <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button">Join Waiting List for Premium Access</a>
             </div>
         {% endif %}
