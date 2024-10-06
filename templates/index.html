@@ -14,14 +14,48 @@
       gtag('config', 'G-9B4WW61DS4');
     </script>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-
     <!-- Font Awesome CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔍</text></svg>">
     <style>
         /* Add these styles in addition to your existing CSS */
+        .hero {
+            background-color: #f8f9fa;
+            padding: 60px 0;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .hero h1 {
+            margin-bottom: 20px;
+        }
+        .hero-form {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .hero-form input[type="text"] {
+            width: 70%;
+            padding: 10px;
+            font-size: 16px;
+        }
+        .hero-form button {
+            width: 25%;
+            padding: 10px;
+            font-size: 16px;
+        }
+        .cta-button-secondary {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        .cta-button-secondary:hover {
+            background-color: #2980b9;
+        }
         .sample-result {
             background-color: #f9f9f9;
             border: 1px solid #ddd;
@@ -93,12 +127,30 @@
     </style>
 </head>
 <body>
-    <h1><i class="fas fa-search icon-large"></i>LLM Search Performance Tracker</h1>
+    <header class="hero">
+        <h1><i class="fas fa-search icon-large"></i>LLM Search Performance Tracker</h1>
+        <p>Discover your brand's visibility in AI-powered search results</p>
+        {% if searches_left > 0 %}
+        <form method="post" id="promptForm" class="hero-form">
+            <input type="text" name="domain" id="domainInput" placeholder="Enter your website domain (e.g., example.com)" required>
+            <button type="submit" class="cta-button"><i class="fas fa-rocket icon-small"></i>Analyze Now</button>
+        </form>
+        <p class="cta-text">{{ searches_left }} free searches left</p>
+        <div class="spinner" id="spinner"></div>
+        <div id="progress-log"></div>
+        {% else %}
+        <p class="cta-text"><i class="fas fa-star icon-small"></i>You've used all your free searches. Want to unlock more insights?</p>
+        <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button"><i class="fas fa-list-alt icon-small"></i>Join the Waiting List</a>
+        {% endif %}
+    </header>
     
     <main>
         <section class="intro">
             <h2><i class="fas fa-eye icon-large"></i>Stay Seen in the New Search World</h2>
             <p>Search is changing from Google to new smart helpers called LLMs. It is important to know where your brand shows up in these new searches. Our tool helps you see where you are in these searches, so you can stay easy to find and ahead of others.</p>
+            {% if searches_left > 0 %}
+            <a href="#" class="cta-button-secondary" onclick="document.getElementById('domainInput').focus(); return false;">Try it Now</a>
+            {% endif %}
         </section>
 
         <section class="how-it-works">
@@ -166,25 +218,6 @@
             <p class="error"><i class="fas fa-exclamation-triangle icon-small"></i>{{ error }} Try another website.</p>
         </section>
         {% endif %}
-
-        {% if searches_left > 0 %}
-        <section class="cta">
-            <p class="cta-text"><i class="fas fa-bullhorn icon-small"></i>Don't let your brand get lost in the new search world. Start tracking your visibility today and find ways to improve. ({{ searches_left }} free searches left)</p>
-            <form method="post" id="promptForm">
-                <input type="text" name="domain" id="domainInput" placeholder="Enter your website domain (e.g., example.com)" required>
-                <button type="submit" class="cta-button"><i class="fas fa-rocket icon-small"></i>Get Started Now</button>
-            </form>
-            <div class="spinner" id="spinner"></div>
-            <div id="progress-log"></div>
-        </section>
-        {% else %}
-        <section class="cta">
-            <p class="cta-text"><i class="fas fa-star icon-small"></i>You've used all your free searches. Want to unlock more insights and make your brand even better?</p>
-            <div class="cta-container">
-                <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button"><i class="fas fa-list-alt icon-small"></i>Join the Waiting List for More Access</a>
-            </div>
-        </section>
-        {% endif %}
     </main>
 
     <script>
@@ -205,7 +238,7 @@
             domainInput.value = extractDomain(domainInput.value);
             document.getElementById('spinner').style.display = 'block';
             document.getElementById('progress-log').innerHTML = ''; // Clear previous logs
-            this.style.display = 'none';
+            this.querySelector('button').style.display = 'none';
 
             updateProgress('Fetching website content...');
 
