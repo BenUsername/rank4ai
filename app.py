@@ -1,6 +1,6 @@
 import os
 import openai
-from flask import Flask, request, render_template, session, jsonify
+from flask import Flask, request, render_template, session, jsonify, redirect
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv

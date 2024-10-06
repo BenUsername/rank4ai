@@ -447,3 +447,17 @@ th {
 .error-message .error {
     margin: 0;
 }
+
+#results-container {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+#results-container h1 {
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 10px;
+}
