@@ -1,8 +1,7 @@
 import os
 import openai
-from flask import Flask, request, render_template, session, redirect, url_for, send_from_directory, jsonify
+from flask import Flask, request, render_template, session, jsonify
 import requests
-from requests.exceptions import RequestException, Timeout
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 import validators
@@ -75,16 +74,11 @@ def is_valid_domain(domain):
     return validators.domain(domain)
 
 def fetch_website_content(domain):
-    """Fetch the HTML content of a website."""
     urls = [
         f"https://{domain}",
         f"http://{domain}",
         f"https://www.{domain}",
         f"http://www.{domain}",
-        f"https://{domain}/en",
-        f"http://{domain}/en",
-        f"https://www.{domain}/en",
-        f"http://www.{domain}/en"
     ]
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -92,13 +86,13 @@ def fetch_website_content(domain):
     
     for url in urls:
         try:
-            response = requests.get(url, headers=headers, timeout=10)  # Increased timeout to 10 seconds
+            response = requests.get(url, headers=headers, timeout=10)
             if response.status_code == 200:
                 return response.text
         except requests.exceptions.RequestException as e:
             app.logger.error(f"Error fetching {url}: {str(e)}")
     
-    raise Exception(f"Unable to fetch the website content for {domain}. The website may be unavailable or blocking our requests.")
+    return None
 
 def extract_main_info(html_content):
     """Extract Title, Description, and Main Content from the HTML."""
@@ -301,51 +295,48 @@ def before_request():
         url = request.url.replace('http://', 'https://', 1)
         return redirect(url, code=301)
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/', methods=['GET'])
 def index():
-    error = None
-    prompts = None
-    table = None
     searches_left = 3 - session.get('searches_performed', 0)
     user_count = get_user_count()
+    return render_template('index.html', searches_left=searches_left, user_count=user_count)
 
-    if request.method == 'POST':
-        if session.get('searches_performed', 0) >= 3:
-            return render_template('index.html', error="You've reached the maximum number of free searches. Please join the waiting list for more.", searches_left=0, user_count=user_count)
+@app.route('/analyze', methods=['POST'])
+def analyze():
+    if session.get('searches_performed', 0) >= 3:
+        return jsonify({'error': "You've reached the maximum number of free searches. Please join the waiting list for more."}), 403
+
+    domain = request.form.get('domain', '').strip()
+    if not is_valid_domain(domain):
+        return jsonify({'error': 'Invalid domain name.'}), 400
+
+    try:
+        html_content = fetch_website_content(domain)
+        if html_content is None:
+            return jsonify({'error': f"We couldn't fetch the content for {domain}. The website may be unavailable or blocking our requests."}), 404
+
+        info = extract_main_info(html_content)
+        prompts = generate_marketing_prompts(info['title'], info['description'], info['content'], domain)
         
-        session['api_calls'] = 0
+        if not prompts:
+            return jsonify({'error': "No valid prompts were generated."}), 500
+
+        table = generate_prompt_answers(prompts, domain, info)
         
-        domain = request.form.get('domain', '').strip()
-        logger.info(f"User query: {domain}")
-        
-        if not is_valid_domain(domain):
-            error = 'Invalid domain name.'
-            return render_template('index.html', error=error, searches_left=searches_left, user_count=user_count)
-        
-        try:
-            html_content = fetch_website_content(domain)
-            logger.info(f"Successfully fetched content for {domain}")
-            
-            info = extract_main_info(html_content)
-            logger.info(f"Extracted info: {info}")
-            
-            prompts = generate_marketing_prompts(info['title'], info['description'], info['content'], domain)
-            logger.info(f"Generated prompts: {prompts}")
-            
-            if not prompts:
-                raise ValueError("No valid prompts were generated.")
-            
-            table = generate_prompt_answers(prompts, domain, info)
-            logger.info(f"Generated table for {domain}: {table}")
-            
-            session['searches_performed'] = session.get('searches_performed', 0) + 1
-            searches_left = 3 - session['searches_performed']
-            return render_template('result.html', domain=domain, info=info, prompts=prompts, table=table, show_waiting_list=(searches_left == 0), searches_left=searches_left, user_count=user_count)
-        except Exception as e:
-            logger.error(f"Error processing {domain}: {str(e)}")
-            error = f"We couldn't fetch the content for {domain}. The website may be unavailable or blocking our requests. Please try another domain."
-            return render_template('index.html', error=error, searches_left=searches_left, user_count=user_count)
-    return render_template('index.html', error=error, searches_left=searches_left, user_count=user_count)
+        session['searches_performed'] = session.get('searches_performed', 0) + 1
+        searches_left = 3 - session['searches_performed']
+
+        return jsonify({
+            'domain': domain,
+            'info': info,
+            'prompts': prompts,
+            'table': table,
+            'searches_left': searches_left
+        })
+
+    except Exception as e:
+        app.logger.error(f"Error processing {domain}: {str(e)}")
+        return jsonify({'error': f"An error occurred while processing your request. Please try again."}), 500
 
 @app.route('/robots.txt')
 def robots():
