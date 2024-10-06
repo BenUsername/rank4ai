@@ -94,7 +94,7 @@ def fetch_website_content(domain):
         except Exception as e:
             app.logger.error(f"Error fetching {url}: {str(e)}")
     
-    raise Exception("Unable to fetch the website content. Please check the domain and try again.")
+    raise Exception(f"Unable to fetch the website content for {domain}. This might be due to security settings on the website.")
 
 def extract_main_info(html_content):
     """Extract Title, Description, and Main Content from the HTML."""
@@ -339,7 +339,11 @@ def index():
             return render_template('result.html', domain=domain, info=info, prompts=prompts, table=table, show_waiting_list=(searches_left == 0), searches_left=searches_left, user_count=user_count)
         except Exception as e:
             logger.error(f"Error processing {domain}: {str(e)}")
-            error = f"Error processing website: {str(e)}"
+            if "Unable to fetch the website" in str(e):
+                error = f"We couldn't fetch the content for {domain}. This might be due to security settings on the website. Please try another domain."
+            else:
+                error = f"An error occurred while processing {domain}. Please try again or try another domain."
+            return render_template('index.html', error=error, searches_left=searches_left, user_count=user_count)
     return render_template('index.html', error=error, searches_left=searches_left, user_count=user_count)
 
 @app.route('/robots.txt')
@@ -380,6 +384,14 @@ def get_advice():
     except Exception as e:
         logger.error(f"Error generating advice: {str(e)}")
         return jsonify({'advice': "Sorry, we couldn't generate advice at this time. Please try again later."}), 500
+
+@app.route('/privacy-policy')
+def privacy_policy():
+    return render_template('privacy_policy.html')
+
+@app.route('/terms-of-service')
+def terms_of_service():
+    return render_template('terms_of_service.html')
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
