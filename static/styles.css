@@ -433,3 +433,17 @@ th {
 .user-count .icon-small {
     color: #3498db;
 }
+
+.error-message {
+    background-color: #ffebee;
+    border: 1px solid #ffcdd2;
+    color: #b71c1c;
+    padding: 10px;
+    margin: 20px 0;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.error-message .error {
+    margin: 0;
+}

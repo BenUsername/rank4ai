@@ -39,6 +39,12 @@
         {% endif %}
     </header>
     
+    {% if error %}
+    <section class="error-message">
+        <p class="error"><i class="fas fa-exclamation-triangle icon-small"></i>{{ error }}</p>
+    </section>
+    {% endif %}
+    
     <main>
         <section class="intro">
             <h2><i class="fas fa-eye icon-large"></i>Stay Seen in the New Search World</h2>
@@ -107,12 +113,6 @@
             </table>
             <p>Interpretation: In this example, ebay.com appears in AI responses for 2 out of 3 queries. It ranks 2nd for "Best online shopping platforms" and 1st for "Where to buy used electronics online". However, it doesn't appear in results for "Reliable e-commerce websites", which might be an area for improvement.</p>
         </section>
-
-        {% if error %}
-        <section class="error-message">
-            <p class="error"><i class="fas fa-exclamation-triangle icon-small"></i>{{ error }} Try another website.</p>
-        </section>
-        {% endif %}
     </main>
 
     <footer style="text-align: center; padding: 20px 0;">
