@@ -145,6 +145,7 @@ th {
     text-align: left;
     padding-right: 25px;
     font-family: inherit; /* This ensures it uses the same font as the rest of the page */
+    position: relative;
 }
 
 .visibility-status.visible,
@@ -160,8 +161,8 @@ th {
 .info-icon {
     cursor: pointer;
     margin-left: 5px;
-    display: inline-block;
-    font-size: 1em; /* Adjust size to match other text */
+    font-size: 1em;
+    vertical-align: middle;
 }
 
 /* Add this to your existing CSS */
@@ -292,11 +293,10 @@ th {
 
 /* Update the spinner style in the result table */
 .visibility-status .spinner {
-    width: 20px;
-    height: 20px;
-    border: 2px solid #f3f3f3;
-    border-top: 2px solid #3498db;
-    margin: 0 5px;
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
 }
 
 #progress-log {
