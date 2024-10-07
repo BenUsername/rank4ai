@@ -165,6 +165,14 @@ th {
     margin-left: 5px;
     font-size: 1em;
     vertical-align: middle;
+    display: inline-block;
+    user-select: none; /* Prevents text selection */
+}
+
+/* Add this new rule */
+.info-icon::before {
+    content: 'ℹ️';
+    cursor: pointer;
 }
 
 /* Add this to your existing CSS */

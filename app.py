@@ -13,10 +13,10 @@ import aiohttp
 from aiohttp import ClientSession
 from fuzzywuzzy import fuzz
 import logging
-import nltk
+# import nltk
 import ssl
-from nltk import word_tokenize, pos_tag, ne_chunk
-from nltk.chunk import tree2conlltags
+# from nltk import word_tokenize, pos_tag, ne_chunk
+# from nltk.chunk import tree2conlltags
 from datetime import datetime, date
 
 # Set up SSL context for NLTK downloads
@@ -28,22 +28,16 @@ else:
     ssl._create_default_https_context = _create_unverified_https_context
 
 # Download necessary NLTK data
-nltk.download('punkt')
-nltk.download('averaged_perceptron_tagger')
-nltk.download('maxent_ne_chunker')
-nltk.download('words')
+#nltk.download('punkt')
+#nltk.download('averaged_perceptron_tagger')
+# nltk.download('maxent_ne_chunker')
+# nltk.download('words')
 
 # Explicitly download the punkt tokenizer
-nltk.download('punkt')
+# nltk.download('punkt')
 
 # Set the NLTK data path
-nltk.data.path.append('/app/nltk_data')
-
-# List of common terms to exclude
-# exclude_terms = [
-    #"dynamic pricing", "marketing optimization", "personalized services", 
-    #"predictive analytics", "member analytics", "community engagement",
-    #"partnerships and collaborations", "membership tiers"
+# nltk.data.path.append('/app/nltk_data')
 
 # Load environment variables from .env file
 load_dotenv()
@@ -176,21 +170,6 @@ def generate_marketing_prompts(title, description, content, domain):
         logger.error(f"Error during OpenAI API call: {e}")
         return []
 
-# def extract_organizations(text):
-    """Extract organization names using NLTK."""
-    try:
-        tokens = word_tokenize(text)
-        tagged = pos_tag(tokens)
-        chunked = ne_chunk(tagged)
-        organizations = [word for word, pos, ne in tree2conlltags(chunked) if ne == 'B-ORGANIZATION']
-        return organizations
-    except LookupError as e:
-        app.logger.error(f"NLTK resource error: {str(e)}")
-        return []
-    except Exception as e:
-        app.logger.error(f"Error in extract_organizations: {str(e)}")
-        return []
-
 def generate_prompt_answer(prompt, domain, info):
     # Check if the API call limit has been reached
     if session.get('api_calls', 0) >= MAX_API_CALLS_PER_SESSION:
@@ -257,28 +236,6 @@ def generate_prompt_answer(prompt, domain, info):
             'competitors': 'N/A',
             'visible': 'N/A'
         }
-
-# def verify_company(name):
-    """Verify if a given name is likely a company by checking its web presence."""
-    search_url = f"https://www.google.com/search?q={name}+company"
-    headers = {'User-Agent': 'Mozilla/5.0'}
-    try:
-        response = requests.get(search_url, headers=headers, timeout=5)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Check if there's a Wikipedia page or official website in the results
-        if soup.find('cite', string=re.compile(r'wikipedia\.org|\.com|\.net|\.org')):
-            return True
-        
-        # Check if there are any business-related keywords in the search results
-        business_keywords = ['company', 'corporation', 'inc', 'ltd', 'llc', 'business', 'enterprise']
-        if any(keyword in response.text.lower() for keyword in business_keywords):
-            return True
-        
-        return False
-    except Exception as e:
-        app.logger.error(f"Error verifying company: {str(e)}")
-        return False
 
 def generate_prompt_answers(prompts, domain, info):
     return [generate_prompt_answer(prompt, domain, info) for prompt in prompts]

@@ -260,7 +260,7 @@
                                     </td>
                                     <td class="visibility-status ${row.visible.includes('Yes') ? 'visible' : 'not-visible'}">
                                         ${formatVisibility(row.visible)}
-                                        ${!row.visible.includes('Yes') ? `<span class="info-icon" onclick="showAdvice('${data.domain}', '${row.prompt.replace(/'/g, "\\'")}', ${index + 1})">ℹ️</span>` : ''}
+                                        ${!row.visible.includes('Yes') ? `<span class="info-icon" onclick="showAdvice('${data.domain}', '${row.prompt.replace(/'/g, "\\'")}', ${index + 1})"></span>` : ''}
                                     </td>
                                 </tr>
                             `).join('')}
