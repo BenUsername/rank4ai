@@ -82,7 +82,7 @@
                                     {% if rank == 1 %}
                                         Congrats, you're first! 🥇🎉
                                     {% elif rank == 2 %}
-                                        Congrats, you're second! 🥈����
+                                        Congrats, you're second! 🥈🎉
                                     {% elif rank == 3 %}
                                         Congrats, you're third! 🥉🎉
                                     {% else %}
@@ -90,10 +90,7 @@
                                     {% endif %}
                                 {% else %}
                                     <span style="color: red;">✗ No</span>
-                                    <span class="info-icon" 
-                                          data-domain="{{ domain }}" 
-                                          data-prompt="{{ row.prompt|replace("'", "\\'") }}" 
-                                          data-row-index="{{ loop.index }}">ℹ️</span>
+                                    <span class="info-icon" onclick="showAdvice('{{ domain }}', '{{ row.prompt|replace("'", "\\'") }}', {{ loop.index }})">ℹ️</span>
                                 {% endif %}
                             </span>
                             <div class="spinner" id="spinner-{{ loop.index }}"></div>
@@ -149,8 +146,8 @@
         });
 
         // Modal functionality
-        var modal = document.getElementById("adviceModal");
-        var span = document.getElementsByClassName("close")[0];
+        const modal = document.getElementById('adviceModal');
+        const span = document.getElementsByClassName("close")[0];
 
         span.onclick = function() {
             modal.style.display = "none";
@@ -177,17 +174,18 @@
             .then(data => {
                 spinner.style.display = 'none';
                 if (data.error) {
-                    document.getElementById("adviceContent").innerText = "Error: " + data.error;
+                    alert("Error: " + data.error);
                 } else {
-                    document.getElementById("adviceContent").innerText = data.advice;
+                    const modal = document.getElementById('adviceModal');
+                    const modalContent = document.getElementById('adviceContent');
+                    modalContent.innerHTML = data.advice;
+                    modal.style.display = "block";
                 }
-                modal.style.display = "block";
             })
             .catch((error) => {
                 spinner.style.display = 'none';
                 console.error('Error:', error);
-                document.getElementById("adviceContent").innerText = "An error occurred while fetching advice. Please try again.";
-                modal.style.display = "block";
+                alert("An error occurred while fetching advice. Please try again.");
             });
         }
 
