@@ -348,34 +348,31 @@ def sitemap():
 
 @app.route('/get_advice', methods=['POST'])
 def get_advice():
-    if session.get('api_calls', 0) >= MAX_API_CALLS_PER_SESSION:
-        logger.warning(f"API call limit reached for session")
-        return jsonify({'advice': "API call limit reached. Please try again later."}), 429
-
     data = request.json
-    domain = data['domain']
-    prompt = data['prompt']
-    
-    advice_prompt = f"Hello, imagine you are working for {domain} as an SEO expert specialized in ranking in LLM models, you realize your client's company should appear on chatgpt when people ask it \"{prompt}\" but somehow they do not appear in the answer. Their top competitors however do. What would be some very specific recommendations you would give your client to fix their absence in the response to this particular prompt? Can you make the answer very specific to this prompt in particular with some example actions? Also, make the answer like you are drafting the action plan, don't add any other comments to it."
+    domain = data.get('domain')
+    prompt = data.get('prompt')
     
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are an SEO expert specialized in ranking in LLM models."},
-                {"role": "user", "content": advice_prompt}
+                {"role": "system", "content": "You are an AI assistant providing advice on improving website visibility in AI search results."},
+                {"role": "user", "content": f"Provide 5 specific tips to improve the visibility of {domain} for the search query: '{prompt}'. Format the response as a numbered list."}
             ],
-            max_tokens=500,
+            max_tokens=250,
             temperature=0.7,
         )
         
-        session['api_calls'] = session.get('api_calls', 0) + 1
-        
         advice = response.choices[0].message.content.strip()
+        
+        # Ensure the advice is formatted as a numbered list
+        if not advice.startswith('1.'):
+            advice = '\n'.join([f"{i+1}. {tip.strip()}" for i, tip in enumerate(advice.split('\n'))])
+        
         return jsonify({'advice': advice})
     except Exception as e:
-        logger.error(f"Error generating advice: {str(e)}")
-        return jsonify({'advice': "Sorry, we couldn't generate advice at this time. Please try again later."}), 500
+        app.logger.error(f"Error generating advice: {str(e)}")
+        return jsonify({'error': 'An error occurred while generating advice. Please try again.'}), 500
 
 @app.route('/privacy-policy')
 def privacy_policy():

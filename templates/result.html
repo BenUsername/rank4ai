@@ -175,13 +175,18 @@
             .then(response => response.json())
             .then(data => {
                 spinner.style.display = 'none';
-                const formattedAdvice = data.advice.replace(/(\d+\.)/g, '\n$1');
-                document.getElementById("adviceContent").innerText = formattedAdvice;
+                if (data.error) {
+                    document.getElementById("adviceContent").innerText = "Error: " + data.error;
+                } else {
+                    document.getElementById("adviceContent").innerText = data.advice;
+                }
                 modal.style.display = "block";
             })
             .catch((error) => {
                 spinner.style.display = 'none';
                 console.error('Error:', error);
+                document.getElementById("adviceContent").innerText = "An error occurred while fetching advice. Please try again.";
+                modal.style.display = "block";
             });
         }
 
