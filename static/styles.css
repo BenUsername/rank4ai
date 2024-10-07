@@ -273,6 +273,7 @@ th {
     float: right;
     font-size: 28px;
     font-weight: bold;
+    cursor: pointer;
 }
 .close:hover,
 .close:focus {
@@ -283,7 +284,6 @@ th {
 .info-icon {
     cursor: pointer;
     margin-left: 5px;
-    display: inline-block;
 }
 #adviceContent {
     white-space: pre-wrap;

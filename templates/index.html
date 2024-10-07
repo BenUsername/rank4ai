@@ -140,9 +140,16 @@
             const errorMessage = document.getElementById('error-message');
             
             spinner.style.display = 'block';
-            progressLog.innerHTML = 'Fetching website content...';
+            progressLog.innerHTML = '';
             errorMessage.style.display = 'none';
             this.querySelector('button').disabled = true;
+
+            updateProgress('Fetching website content...');
+            
+            // Simulate progress updates (you may want to implement real progress tracking on the server side)
+            setTimeout(() => updateProgress('Analyzing content...'), 2000);
+            setTimeout(() => updateProgress('Generating prompts...'), 4000);
+            setTimeout(() => updateProgress('Simulating LLM responses...'), 6000);
 
             fetch('/analyze', {
                 method: 'POST',
