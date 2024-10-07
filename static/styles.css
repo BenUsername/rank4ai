@@ -161,13 +161,23 @@ th {
 }
 
 .info-icon {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
+    text-align: center;
+    border-radius: 50%;
+    background-color: #3498db;
+    color: white;
+    font-style: italic;
+    font-weight: bold;
+    font-size: 12px;
     cursor: pointer;
     margin-left: 5px;
-    color: #3498db;
 }
 
 .info-icon:hover {
-    color: #2980b9;
+    background-color: #2980b9;
 }
 
 /* Add this new rule */

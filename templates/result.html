@@ -89,7 +89,7 @@
                                 {% endif %}
                             {% else %}
                                 <span style="color: red;">✗ No</span>
-                                <i class="fas fa-info-circle info-icon" onclick="showAdvice('{{ domain }}', '{{ row.prompt|replace("'", "\\'") }}', {{ loop.index }})"></i>
+                                <span class="info-icon" onclick="showAdvice('{{ domain }}', '{{ row.prompt|replace("'", "\\'") }}', {{ loop.index }})">i</span>
                             {% endif %}
                             <div class="spinner" id="spinner-{{ loop.index }}"></div>
                         </td>
