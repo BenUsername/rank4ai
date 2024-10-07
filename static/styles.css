@@ -156,6 +156,8 @@ th {
 .visibility-icon {
     font-size: 1.2em;
     margin-right: 5px;
+    display: flex;
+    align-items: center;
 }
 
 .info-icon {
@@ -163,6 +165,7 @@ th {
     margin-left: 5px;
     font-size: 1em;
     vertical-align: middle;
+    display: inline-block;
 }
 
 /* Add this to your existing CSS */

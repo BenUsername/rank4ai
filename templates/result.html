@@ -90,11 +90,9 @@
                                     {% endif %}
                                 {% else %}
                                     <span style="color: red;">✗ No</span>
+                                    <span class="info-icon" onclick="showAdvice('{{ domain }}', '{{ row.prompt|replace("'", "\\'") }}', {{ loop.index }})">ℹ️</span>
                                 {% endif %}
                             </span>
-                            {% if 'No' in row.visible %}
-                                <span class="info-icon" onclick="showAdvice('{{ domain }}', '{{ row.prompt|replace("'", "\\'") }}', {{ loop.index }})">ℹ️</span>
-                            {% endif %}
                             <div class="spinner" id="spinner-{{ loop.index }}"></div>
                         </td>
                     </tr>
