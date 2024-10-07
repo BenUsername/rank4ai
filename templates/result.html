@@ -76,23 +76,21 @@
                             {% endif %}
                         </td>
                         <td class="visibility-status {% if 'Yes' in row.visible %}visible{% else %}not-visible{% endif %}">
-                            <span class="visibility-icon">
-                                {% if 'Yes' in row.visible %}
-                                    {% set rank = row.visible.split('(Rank: ')[1].split(')')[0]|int %}
-                                    {% if rank == 1 %}
-                                        Congrats, you're first! 🥇🎉
-                                    {% elif rank == 2 %}
-                                        Congrats, you're second! 🥈🎉
-                                    {% elif rank == 3 %}
-                                        Congrats, you're third! 🥉🎉
-                                    {% else %}
-                                        Congrats, you're {{ rank }}th! 🎉
-                                    {% endif %}
+                            {% if 'Yes' in row.visible %}
+                                {% set rank = row.visible.split('(Rank: ')[1].split(')')[0]|int %}
+                                {% if rank == 1 %}
+                                    Congrats, you're first! 🥇🎉
+                                {% elif rank == 2 %}
+                                    Congrats, you're second! 🥈🎉
+                                {% elif rank == 3 %}
+                                    Congrats, you're third! 🥉🎉
                                 {% else %}
-                                    <span style="color: red;">✗ No</span>
-                                    <span class="info-icon" onclick="showAdvice('{{ domain }}', '{{ row.prompt|replace("'", "\\'") }}', {{ loop.index }})">ℹ️</span>
+                                    Congrats, you're {{ rank }}th! 🎉
                                 {% endif %}
-                            </span>
+                            {% else %}
+                                <span style="color: red;">✗ No</span>
+                                <i class="fas fa-info-circle info-icon" onclick="showAdvice('{{ domain }}', '{{ row.prompt|replace("'", "\\'") }}', {{ loop.index }})"></i>
+                            {% endif %}
                             <div class="spinner" id="spinner-{{ loop.index }}"></div>
                         </td>
                     </tr>

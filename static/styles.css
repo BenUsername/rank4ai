@@ -163,8 +163,11 @@ th {
 .info-icon {
     cursor: pointer;
     margin-left: 5px;
-    font-size: 1em;
-    vertical-align: middle;
+    color: #3498db;
+}
+
+.info-icon:hover {
+    color: #2980b9;
 }
 
 /* Add this new rule */
