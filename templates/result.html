@@ -82,7 +82,7 @@
                                     {% if rank == 1 %}
                                         Congrats, you're first! 🥇🎉
                                     {% elif rank == 2 %}
-                                        Congrats, you're second! 🥈🎉
+                                        Congrats, you're second! 🥈����
                                     {% elif rank == 3 %}
                                         Congrats, you're third! 🥉🎉
                                     {% else %}
@@ -90,7 +90,10 @@
                                     {% endif %}
                                 {% else %}
                                     <span style="color: red;">✗ No</span>
-                                    <span class="info-icon" onclick="showAdvice('{{ domain }}', '{{ row.prompt|replace("'", "\\'") }}', {{ loop.index }})">ℹ️</span>
+                                    <span class="info-icon" 
+                                          data-domain="{{ domain }}" 
+                                          data-prompt="{{ row.prompt|replace("'", "\\'") }}" 
+                                          data-row-index="{{ loop.index }}">ℹ️</span>
                                 {% endif %}
                             </span>
                             <div class="spinner" id="spinner-{{ loop.index }}"></div>

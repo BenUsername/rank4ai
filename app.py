@@ -13,10 +13,7 @@ import aiohttp
 from aiohttp import ClientSession
 from fuzzywuzzy import fuzz
 import logging
-# import nltk
 import ssl
-# from nltk import word_tokenize, pos_tag, ne_chunk
-# from nltk.chunk import tree2conlltags
 from datetime import datetime, date
 
 # Set up SSL context for NLTK downloads
@@ -26,18 +23,6 @@ except AttributeError:
     pass
 else:
     ssl._create_default_https_context = _create_unverified_https_context
-
-# Download necessary NLTK data
-#nltk.download('punkt')
-#nltk.download('averaged_perceptron_tagger')
-# nltk.download('maxent_ne_chunker')
-# nltk.download('words')
-
-# Explicitly download the punkt tokenizer
-# nltk.download('punkt')
-
-# Set the NLTK data path
-# nltk.data.path.append('/app/nltk_data')
 
 # Load environment variables from .env file
 load_dotenv()
