@@ -27,7 +27,11 @@
         <form id="analyzeForm" class="hero-form">
             <label for="domainInput" class="sr-only">Enter your website domain</label>
             <input type="text" name="domain" id="domainInput" placeholder="Enter your website domain (e.g., example.com)" required aria-required="true">
-            <button type="submit" class="cta-button"><i class="fas fa-rocket icon-small" aria-hidden="true"></i>Analyze Now</button>
+            {% if searches_left > 0 %}
+                <button type="submit" class="cta-button" id="analyzeButton"><i class="fas fa-rocket icon-small" aria-hidden="true"></i>Analyze Now</button>
+            {% else %}
+                <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button" id="waitingListButton">Join Waiting List</a>
+            {% endif %}
         </form>
         <p class="cta-text"><span id="searches-left">{{ searches_left }}</span> free searches left</p>
         <div class="spinner" id="spinner" aria-hidden="true"></div>
@@ -138,11 +142,14 @@
             const spinner = document.getElementById('spinner');
             const progressLog = document.getElementById('progress-log');
             const errorMessage = document.getElementById('error-message');
+            const analyzeButton = document.getElementById('analyzeButton');
             
             spinner.style.display = 'block';
             progressLog.innerHTML = '';
             errorMessage.style.display = 'none';
-            this.querySelector('button').disabled = true;
+            if (analyzeButton) {
+                analyzeButton.disabled = true;
+            }
 
             updateProgress('Fetching website content...');
             
@@ -162,7 +169,9 @@
             .then(data => {
                 spinner.style.display = 'none';
                 progressLog.innerHTML = '';  // Clear the progress log
-                this.querySelector('button').disabled = false;
+                if (analyzeButton) {
+                    analyzeButton.disabled = false;
+                }
 
                 if (data.error) {
                     errorMessage.textContent = data.error;
@@ -171,13 +180,32 @@
                     displayResults(data);
                 }
 
-                document.getElementById('searches-left').textContent = data.searches_left;
+                const searchesLeft = data.searches_left;
+                document.getElementById('searches-left').textContent = searchesLeft;
+
+                // Update the button if no searches are left
+                if (searchesLeft === 0) {
+                    const form = document.getElementById('analyzeForm');
+                    const analyzeButton = document.getElementById('analyzeButton');
+                    if (analyzeButton) {
+                        analyzeButton.remove();
+                        const waitingListButton = document.createElement('a');
+                        waitingListButton.href = 'https://mv71z3xpmnl.typeform.com/to/bmN8bM2y';
+                        waitingListButton.target = '_blank';
+                        waitingListButton.className = 'cta-button waiting-list-button';
+                        waitingListButton.id = 'waitingListButton';
+                        waitingListButton.textContent = 'Join Waiting List';
+                        form.appendChild(waitingListButton);
+                    }
+                }
             })
             .catch((error) => {
                 console.error('Error:', error);
                 spinner.style.display = 'none';
                 progressLog.innerHTML = '';  // Clear the progress log
-                this.querySelector('button').disabled = false;
+                if (analyzeButton) {
+                    analyzeButton.disabled = false;
+                }
                 errorMessage.textContent = 'An error occurred. Please try again.';
                 errorMessage.style.display = 'block';
             });
