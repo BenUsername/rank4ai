@@ -260,7 +260,6 @@
                                     </td>
                                     <td class="visibility-status ${row.visible.includes('Yes') ? 'visible' : 'not-visible'}">
                                         ${formatVisibility(row.visible)}
-                                        ${!row.visible.includes('Yes') ? `<span class="info-icon" onclick="showAdvice('${data.domain}', '${row.prompt.replace(/'/g, "\\'")}', ${index + 1})"></span>` : ''}
                                     </td>
                                 </tr>
                             `).join('')}
@@ -316,7 +315,7 @@
                 }
                 return `<span style="color: green;">✓ Yes</span><br>Congrats, you're ${rankText}`;
             } else {
-                return '<span style="color: red;">✗ No</span><span class="info-icon" onclick="showAdvice(\'${data.domain}\', \'${row.prompt.replace(/\'/g, "\\\'")}\', ${index + 1})">i</span>';
+                return '<span style="color: red;">✗ No</span><button class="info-button" onclick="showAdvice(\'${data.domain}\', \'${row.prompt.replace(/\'/g, "\\\'")}\', ${index + 1})">i</button>';
             }
         }
 
