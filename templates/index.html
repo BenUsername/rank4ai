@@ -117,7 +117,7 @@
         <nav>
             <a href="{{ url_for('privacy_policy') }}">Privacy Policy</a> |
             <a href="{{ url_for('terms_of_service') }}">Terms of Service</a> |
-            <a href="mailto:{{ contact_email }}">Contact Us</a>
+            <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank">Contact Us</a>
         </nav>
     </footer>
 
@@ -260,6 +260,7 @@
                                     </td>
                                     <td class="visibility-status ${row.visible.includes('Yes') ? 'visible' : 'not-visible'}">
                                         ${formatVisibility(row.visible)}
+                                        ${!row.visible.includes('Yes') ? `<span class="info-icon" onclick="showAdvice('${data.domain}', '${row.prompt.replace(/'/g, "\\'")}', ${index + 1})">ℹ️</span>` : ''}
                                     </td>
                                 </tr>
                             `).join('')}
@@ -334,6 +335,33 @@
         backToTopButton.onclick = function() {
             document.body.scrollTop = 0; // For Safari
             document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+        }
+
+        function showAdvice(domain, prompt, rowIndex) {
+            const spinner = document.getElementById(`spinner-${rowIndex}`);
+            spinner.style.display = 'inline-block';
+            
+            fetch('/get_advice', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({domain: domain, prompt: prompt}),
+            })
+            .then(response => response.json())
+            .then(data => {
+                spinner.style.display = 'none';
+                if (data.error) {
+                    alert("Error: " + data.error);
+                } else {
+                    alert(data.advice);
+                }
+            })
+            .catch((error) => {
+                spinner.style.display = 'none';
+                console.error('Error:', error);
+                alert("An error occurred while fetching advice. Please try again.");
+            });
         }
     </script>
 </body>
