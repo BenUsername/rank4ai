@@ -158,6 +158,7 @@
         }
 
         function showAdvice(domain, prompt, rowIndex) {
+            console.log(`showAdvice called with domain: ${domain}, prompt: ${prompt}, rowIndex: ${rowIndex}`);
             const spinner = document.getElementById(`spinner-${rowIndex}`);
             spinner.style.display = 'inline-block';
             
@@ -168,22 +169,30 @@
                 },
                 body: JSON.stringify({domain: domain, prompt: prompt}),
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('Response received:', response);
+                return response.json();
+            })
             .then(data => {
+                console.log('Data received:', data);
                 spinner.style.display = 'none';
+                const modal = document.getElementById('adviceModal');
+                const modalContent = document.getElementById('adviceContent');
                 if (data.error) {
-                    alert("Error: " + data.error);
+                    console.error('Error in advice data:', data.error);
+                    modalContent.textContent = "Error: " + data.error;
                 } else {
-                    const modal = document.getElementById('adviceModal');
-                    const modalContent = document.getElementById('adviceContent');
-                    modalContent.innerHTML = data.advice;
-                    modal.style.display = "block";
+                    modalContent.textContent = data.advice;
                 }
+                modal.style.display = "block";
             })
             .catch((error) => {
+                console.error('Error in showAdvice:', error);
                 spinner.style.display = 'none';
-                console.error('Error:', error);
-                alert("An error occurred while fetching advice. Please try again.");
+                const modal = document.getElementById('adviceModal');
+                const modalContent = document.getElementById('adviceContent');
+                modalContent.textContent = "An error occurred while fetching advice. Please try again.";
+                modal.style.display = "block";
             });
         }
 

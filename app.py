@@ -13,16 +13,16 @@ import aiohttp
 from aiohttp import ClientSession
 from fuzzywuzzy import fuzz
 import logging
-import ssl
+# import ssl
 from datetime import datetime, date
 
 # Set up SSL context for NLTK downloads
-try:
-    _create_unverified_https_context = ssl._create_unverified_context
-except AttributeError:
-    pass
-else:
-    ssl._create_default_https_context = _create_unverified_https_context
+# try:
+#     _create_unverified_https_context = ssl._create_unverified_context
+# except AttributeError:
+#     pass
+# else:
+#     ssl._create_default_https_context = _create_unverified_https_context
 
 # Load environment variables from .env file
 load_dotenv()
@@ -171,7 +171,7 @@ def generate_prompt_answer(prompt, domain, info):
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are an impartial LLM agent helping users find the best website for their needs. When mentioning competitor companies or products, provide their names followed by their domain name in parentheses, like this: Company Name (company-name.com). Only use this format for actual companies or products, not for general terms or strategies."},
-                {"role": "user", "content": f"Provide an informative answer to the following question, mentioning relevant competitor companies or products if applicable: {prompt}"}
+                {"role": "user", "content": f"Provide a succint answer to the following question, mentioning relevant competitor companies or products if applicable: {prompt}"}
             ],
             max_tokens=300,
             temperature=0.3,
@@ -289,9 +289,12 @@ def sitemap():
 
 @app.route('/get_advice', methods=['POST'])
 def get_advice():
+    app.logger.info('get_advice route called')
     data = request.json
     domain = data.get('domain')
     prompt = data.get('prompt')
+    
+    app.logger.info(f'Received request for advice - Domain: {domain}, Prompt: {prompt}')
     
     try:
         response = client.chat.completions.create(
@@ -310,6 +313,7 @@ def get_advice():
         if not advice.startswith('1.'):
             advice = '\n'.join([f"{i+1}. {tip.strip()}" for i, tip in enumerate(advice.split('\n'))])
         
+        app.logger.info(f'Advice generated successfully for {domain}')
         return jsonify({'advice': advice})
     except Exception as e:
         app.logger.error(f"Error generating advice: {str(e)}")
