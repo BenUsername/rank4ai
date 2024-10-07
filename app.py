@@ -1,5 +1,4 @@
 import os
-import openai
 from flask import Flask, request, render_template, session, jsonify, redirect
 import requests
 from bs4 import BeautifulSoup
@@ -8,12 +7,9 @@ import validators
 from readability import Document
 from openai import OpenAI
 import re
-import asyncio
-import aiohttp
-from aiohttp import ClientSession
-from fuzzywuzzy import fuzz
+from aiohttp import ClientSession # type: ignore
+from fuzzywuzzy import fuzz # type: ignore
 import logging
-# import ssl
 from datetime import datetime, date
 
 # Set up SSL context for NLTK downloads
