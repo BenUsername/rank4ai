@@ -91,7 +91,7 @@
                                 <span style="color: red;">✗ No</span>
                                 <button class="info-button" onclick="showAdvice('{{ domain }}', '{{ row.prompt|replace("'", "\\'") }}', {{ loop.index }})">i</button>
                             {% endif %}
-                            <div class="spinner" id="spinner-{{ loop.index }}"></div>
+                            <div class="spinner" id="spinner-{{ loop.index }}" style="display: none;"></div>
                         </td>
                     </tr>
                 {% endfor %}
@@ -167,19 +167,18 @@
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({domain: domain, prompt: prompt}),
+                body: JSON.stringify({domain: domain, prompt: prompt})
             })
             .then(response => {
-                console.log('Response received:', response);
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
                 return response.json();
             })
             .then(data => {
-                console.log('Data received:', data);
                 spinner.style.display = 'none';
-                const modal = document.getElementById('adviceModal');
                 const modalContent = document.getElementById('adviceContent');
                 if (data.error) {
-                    console.error('Error in advice data:', data.error);
                     modalContent.textContent = "Error: " + data.error;
                 } else {
                     modalContent.textContent = data.advice;
@@ -189,7 +188,6 @@
             .catch((error) => {
                 console.error('Error in showAdvice:', error);
                 spinner.style.display = 'none';
-                const modal = document.getElementById('adviceModal');
                 const modalContent = document.getElementById('adviceContent');
                 modalContent.textContent = "An error occurred while fetching advice. Please try again.";
                 modal.style.display = "block";
