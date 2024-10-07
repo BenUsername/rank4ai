@@ -40,11 +40,10 @@ nltk.download('punkt')
 nltk.data.path.append('/app/nltk_data')
 
 # List of common terms to exclude
-exclude_terms = [
-    "dynamic pricing", "marketing optimization", "personalized services", 
-    "predictive analytics", "member analytics", "community engagement",
-    "partnerships and collaborations", "membership tiers"
-]
+# exclude_terms = [
+    #"dynamic pricing", "marketing optimization", "personalized services", 
+    #"predictive analytics", "member analytics", "community engagement",
+    #"partnerships and collaborations", "membership tiers"
 
 # Load environment variables from .env file
 load_dotenv()
@@ -177,7 +176,7 @@ def generate_marketing_prompts(title, description, content, domain):
         logger.error(f"Error during OpenAI API call: {e}")
         return []
 
-def extract_organizations(text):
+# def extract_organizations(text):
     """Extract organization names using NLTK."""
     try:
         tokens = word_tokenize(text)
@@ -259,7 +258,7 @@ def generate_prompt_answer(prompt, domain, info):
             'visible': 'N/A'
         }
 
-def verify_company(name):
+# def verify_company(name):
     """Verify if a given name is likely a company by checking its web presence."""
     search_url = f"https://www.google.com/search?q={name}+company"
     headers = {'User-Agent': 'Mozilla/5.0'}
