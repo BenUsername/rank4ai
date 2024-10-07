@@ -178,7 +178,6 @@
             .then(data => {
                 console.log('Advice data received:', data);
                 spinner.style.display = 'none';
-                const modal = document.getElementById('adviceModal');
                 const modalContent = document.getElementById('adviceContent');
                 if (data.error) {
                     modalContent.textContent = "Error: " + data.error;
@@ -190,7 +189,6 @@
             .catch((error) => {
                 console.error('Error in showAdvice:', error);
                 spinner.style.display = 'none';
-                const modal = document.getElementById('adviceModal');
                 const modalContent = document.getElementById('adviceContent');
                 modalContent.textContent = "An error occurred while fetching advice. Please try again.";
                 modal.style.display = "block";
