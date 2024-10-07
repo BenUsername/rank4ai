@@ -255,7 +255,7 @@ th {
 .modal {
     display: none;
     position: fixed;
-    z-index: 1;
+    z-index: 1000;
     left: 0;
     top: 0;
     width: 100%;
@@ -289,8 +289,8 @@ th {
     margin-left: 5px;
 }
 #adviceContent {
+    margin-top: 20px;
     white-space: pre-wrap;
-    line-height: 1.6;
 }
 
 /* Update the spinner style in the result table */

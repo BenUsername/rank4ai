@@ -351,18 +351,49 @@
             .then(response => response.json())
             .then(data => {
                 spinner.style.display = 'none';
+                const modal = document.getElementById('adviceModal');
+                const modalContent = document.getElementById('adviceContent');
                 if (data.error) {
-                    alert("Error: " + data.error);
+                    modalContent.textContent = "Error: " + data.error;
                 } else {
-                    alert(data.advice);
+                    modalContent.textContent = data.advice;
                 }
+                modal.style.display = "block";
             })
             .catch((error) => {
                 spinner.style.display = 'none';
                 console.error('Error:', error);
-                alert("An error occurred while fetching advice. Please try again.");
+                const modal = document.getElementById('adviceModal');
+                const modalContent = document.getElementById('adviceContent');
+                modalContent.textContent = "An error occurred while fetching advice. Please try again.";
+                modal.style.display = "block";
             });
         }
+
+        // Add this code to handle closing the modal
+        window.onclick = function(event) {
+            const modal = document.getElementById('adviceModal');
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        const closeBtn = document.getElementsByClassName("close")[0];
+        if (closeBtn) {
+            closeBtn.onclick = function() {
+                const modal = document.getElementById('adviceModal');
+                modal.style.display = "none";
+            }
+        }
     </script>
+
+    <!-- Add this right before the closing </body> tag -->
+    <div id="adviceModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>How to Improve Visibility</h2>
+            <div id="adviceContent"></div>
+        </div>
+    </div>
 </body>
 </html>
