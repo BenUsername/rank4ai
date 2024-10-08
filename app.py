@@ -1,5 +1,6 @@
 import os
-from flask import Flask, request, render_template, session, jsonify, redirect, send_from_directory, Markup
+from flask import Flask, request, render_template, session, jsonify, redirect, send_from_directory
+from markupsafe import Markup
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
