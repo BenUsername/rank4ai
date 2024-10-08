@@ -7,10 +7,8 @@ import validators
 from readability import Document
 from openai import OpenAI
 import re
-#from aiohttp import ClientSession 
-#from fuzzywuzzy import fuzz 
 import logging
-from datetime import datetime, date
+from datetime import date
 
 # Load environment variables from .env file
 load_dotenv()
