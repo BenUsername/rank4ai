@@ -90,7 +90,7 @@
                                 {% endif %}
                             {% else %}
                                 <span style="color: red;">✗ No</span>
-                                <button class="info-button" onclick="showAdvice('{{ domain }}', '{{ row.prompt }}')">i</button>
+                                <button class="info-button" onclick="showAdvice('{{ domain }}', '{{ row.prompt | replace("'", "\\'") }}')">Get Advice</button>
                             {% endif %}
                         </td>
                     </tr>
