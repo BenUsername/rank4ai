@@ -400,9 +400,11 @@ footer {
 }
 
 .advice-link {
-    color: red;
+    color: #3498db;  /* Change to a blue color or any other color you prefer */
     text-decoration: none;
     cursor: pointer;
+    display: inline-block;
+    margin-top: 5px;  /* Add some space above the link */
 }
 
 .advice-link:hover {
