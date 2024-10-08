@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request, render_template, session, jsonify, redirect, send_from_directory
+from flask import Flask, request, render_template, session, jsonify, redirect, send_from_directory, Markup
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
@@ -7,18 +7,10 @@ import validators
 from readability import Document
 from openai import OpenAI
 import re
-from aiohttp import ClientSession # type: ignore
-from fuzzywuzzy import fuzz # type: ignore
+from aiohttp import ClientSession 
+from fuzzywuzzy import fuzz 
 import logging
 from datetime import datetime, date
-
-# Set up SSL context for NLTK downloads
-# try:
-#     _create_unverified_https_context = ssl._create_unverified_context
-# except AttributeError:
-#     pass
-# else:
-#     ssl._create_default_https_context = _create_unverified_https_context
 
 # Load environment variables from .env file
 load_dotenv()
@@ -322,6 +314,26 @@ def privacy_policy():
 @app.route('/terms-of-service')
 def terms_of_service():
     return render_template('terms_of_service.html', contact_email=CONTACT_EMAIL)
+
+def format_visibility(visible, domain, prompt, row_index):
+    if 'Yes' in visible:
+        rank = int(re.search(r'\d+', visible).group())
+        rank_text = {
+            1: 'first! 🥇🎉',
+            2: 'second! 🥈🎉',
+            3: 'third! 🥉🎉'
+        }.get(rank, f'{rank}th! 🎉')
+        return Markup(f'<span style="color: green;">✓ Yes</span><br>Congrats, you\'re {rank_text}')
+    else:
+        return Markup(f'<span style="color: red;">✗ No</span>'
+                      f'<button class="info-button" onclick="showAdvice(\'{domain}\', \'{prompt.replace("\'", "\\\'")}\', {row_index})">i</button>'
+                      f'<div class="spinner" id="spinner-{row_index}" style="display: none;"></div>')
+
+# Don't forget to pass this function to your template context when rendering
+@app.route('/results')
+def results():
+    # ... your existing code ...
+    return render_template('result.html', format_visibility=format_visibility, ...)
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))

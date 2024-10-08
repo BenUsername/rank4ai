@@ -75,23 +75,8 @@
                                 {{ row.competitors }}
                             {% endif %}
                         </td>
-                        <td class="visibility-status {% if 'Yes' in row.visible %}visible{% else %}not-visible{% endif %}">
-                            {% if 'Yes' in row.visible %}
-                                {% set rank = row.visible.split('(Rank: ')[1].split(')')[0]|int %}
-                                {% if rank == 1 %}
-                                    Congrats, you're first! 🥇🎉
-                                {% elif rank == 2 %}
-                                    Congrats, you're second! 🥈🎉
-                                {% elif rank == 3 %}
-                                    Congrats, you're third! 🥉🎉
-                                {% else %}
-                                    Congrats, you're {{ rank }}th! 🎉
-                                {% endif %}
-                            {% else %}
-                                <span style="color: red;">✗ No</span>
-                                <button class="info-button" onclick="showAdvice({{ domain | tojson }}, {{ row.prompt | tojson }}, {{ loop.index }})">i</button>
-                            {% endif %}
-                            <div class="spinner" id="spinner-{{ loop.index }}" style="display: none;"></div>
+                        <td class="visibility-status {{ 'visible' if 'Yes' in row.visible else 'not-visible' }}">
+                            {{ format_visibility(row.visible, domain, row.prompt, loop.index) | safe }}
                         </td>
                     </tr>
                 {% endfor %}
