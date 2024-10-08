@@ -547,3 +547,13 @@ footer {
 .info-button:hover {
     background-color: #2980b9;
 }
+
+.advice-link {
+    color: red;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.advice-link:hover {
+    text-decoration: underline;
+}
