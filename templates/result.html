@@ -149,7 +149,7 @@
             }
         }
 
-        function showAdvice(domain, prompt) {
+        function getAdvice(domain, prompt) {
             fetch('/get_advice', {
                 method: 'POST',
                 headers: {
@@ -187,63 +187,6 @@
             document.body.scrollTop = 0; // For Safari
             document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
         }
-    </script>
-    <script>
-        function getAdvice(domain, prompt) {
-            fetch('/get_advice', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({domain: domain, prompt: prompt})
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    alert("Error: " + data.error);
-                } else {
-                    alert(data.advice);
-                }
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-                alert("An error occurred while fetching advice. Please try again.");
-            });
-        }
-    </script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.advice-link').forEach(link => {
-                link.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const domain = this.getAttribute('data-domain');
-                    const prompt = this.getAttribute('data-prompt');
-                    getAdvice(domain, prompt);
-                });
-            });
-
-            function getAdvice(domain, prompt) {
-                fetch('/get_advice', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({domain: domain, prompt: prompt})
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        alert("Error: " + data.error);
-                    } else {
-                        alert(data.advice);
-                    }
-                })
-                .catch((error) => {
-                    console.error('Error:', error);
-                    alert("An error occurred while fetching advice. Please try again.");
-                });
-            }
-        });
     </script>
 </body>
 </html>
