@@ -259,7 +259,7 @@
                                         }
                                     </td>
                                     <td class="visibility-status ${row.visible.includes('Yes') ? 'visible' : 'not-visible'}">
-                                        ${formatVisibility(row.visible)}
+                                        ${formatVisibility(row.visible, data.domain, row.prompt, index)}
                                     </td>
                                 </tr>
                             `).join('')}
@@ -296,7 +296,7 @@
             resultsContainer.appendChild(ctaContainer);
         }
 
-        function formatVisibility(visible) {
+        function formatVisibility(visible, domain, prompt, index) {
             if (visible.includes('Yes')) {
                 const rank = visible.match(/\d+/)[0];
                 let rankText = '';
@@ -315,7 +315,7 @@
                 }
                 return `<span style="color: green;">✓ Yes</span><br>Congrats, you're ${rankText}`;
             } else {
-                return '<span style="color: red;">✗ No</span><button class="info-button" onclick="showAdvice(\'${data.domain}\', \'${row.prompt.replace(/\'/g, "\\\'")}\', ${index + 1})">i</button>';
+                return `<span style="color: red;">✗ No</span><a href="#" class="advice-link" onclick="getAdvice('${domain}', '${prompt.replace(/'/g, "\\'")}'); return false;">Get Advice</a>`;
             }
         }
 
@@ -336,36 +336,25 @@
             document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
         }
 
-        function showAdvice(domain, prompt, rowIndex) {
-            const spinner = document.getElementById(`spinner-${rowIndex}`);
-            spinner.style.display = 'inline-block';
-            
+        function getAdvice(domain, prompt) {
             fetch('/get_advice', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({domain: domain, prompt: prompt}),
+                body: JSON.stringify({domain: domain, prompt: prompt})
             })
             .then(response => response.json())
             .then(data => {
-                spinner.style.display = 'none';
-                const modal = document.getElementById('adviceModal');
-                const modalContent = document.getElementById('adviceContent');
                 if (data.error) {
-                    modalContent.textContent = "Error: " + data.error;
+                    alert("Error: " + data.error);
                 } else {
-                    modalContent.textContent = data.advice;
+                    alert(data.advice);
                 }
-                modal.style.display = "block";
             })
             .catch((error) => {
-                spinner.style.display = 'none';
                 console.error('Error:', error);
-                const modal = document.getElementById('adviceModal');
-                const modalContent = document.getElementById('adviceContent');
-                modalContent.textContent = "An error occurred while fetching advice. Please try again.";
-                modal.style.display = "block";
+                alert("An error occurred while fetching advice. Please try again.");
             });
         }
 
