@@ -296,36 +296,6 @@
             resultsContainer.appendChild(ctaContainer);
         }
 
-        function getAdvice(domain, prompt, element) {
-            const spinner = document.createElement('div');
-            spinner.className = 'advice-spinner';
-            element.appendChild(spinner);
-
-            fetch('/get_advice', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({domain: domain, prompt: prompt})
-            })
-            .then(response => response.json())
-            .then(data => {
-                spinner.remove();
-                if (data.error) {
-                    alert("Error: " + data.error);
-                } else {
-                    const adviceElement = document.createElement('div');
-                    adviceElement.innerHTML = `<h4>Advice to improve visibility:</h4><pre>${data.advice}</pre>`;
-                    element.appendChild(adviceElement);
-                }
-            })
-            .catch((error) => {
-                spinner.remove();
-                console.error('Error:', error);
-                alert("An error occurred while fetching advice. Please try again.");
-            });
-        }
-
         function formatVisibility(visible, domain, prompt, index) {
             if (visible.includes('Yes')) {
                 const rank = visible.match(/\d+/)[0];
@@ -365,31 +335,6 @@
             document.body.scrollTop = 0; // For Safari
             document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
         }
-
-        // Add this code to handle closing the modal
-        window.onclick = function(event) {
-            const modal = document.getElementById('adviceModal');
-            if (event.target == modal) {
-                modal.style.display = "none";
-            }
-        }
-
-        const closeBtn = document.getElementsByClassName("close")[0];
-        if (closeBtn) {
-            closeBtn.onclick = function() {
-                const modal = document.getElementById('adviceModal');
-                modal.style.display = "none";
-            }
-        }
     </script>
-
-    <!-- Add this right before the closing </body> tag -->
-    <div id="adviceModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2>How to Improve Visibility</h2>
-            <div id="adviceContent"></div>
-        </div>
-    </div>
 </body>
 </html>
