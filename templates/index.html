@@ -315,7 +315,7 @@
                 }
                 return `<span style="color: green;">✓ Yes</span><br>Congrats, you're ${rankText}`;
             } else {
-                return `<span style="color: red;">✗ No</span><br><a href="#" class="advice-link" onclick="getAdvice('${domain}', '${prompt.replace(/'/g, "\\'")}', this.parentNode); return false;">Get Advice</a>`;
+                return `<span style="color: red;">✗ No</span><br><a href="#" class="advice-link" onclick="getAdvice('${domain}', '${prompt.replace(/'/g, "\\'")}'); return false;">Get Advice</a>`;
             }
         }
 
@@ -335,6 +335,64 @@
             document.body.scrollTop = 0; // For Safari
             document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
         }
+    </script>
+
+    <!-- Add this just before the closing </body> tag -->
+
+    <!-- Modal for displaying advice -->
+    <div id="adviceModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="adviceContent"></div>
+        </div>
+    </div>
+
+    <script>
+    // Add this to your existing script section
+    function getAdvice(domain, prompt) {
+        const modal = document.getElementById('adviceModal');
+        const modalContent = document.getElementById('adviceContent');
+        const spinner = document.createElement('div');
+        spinner.className = 'advice-spinner';
+        modalContent.innerHTML = '';
+        modalContent.appendChild(spinner);
+        modal.style.display = "block";
+
+        fetch('/get_advice', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({domain: domain, prompt: prompt})
+        })
+        .then(response => response.json())
+        .then(data => {
+            spinner.remove();
+            if (data.error) {
+                modalContent.innerHTML = `<p class="error">Error: ${data.error}</p>`;
+            } else {
+                modalContent.innerHTML = `<h3>Advice for improving visibility of ${domain} for "${prompt}":</h3><pre>${data.advice}</pre>`;
+            }
+        })
+        .catch((error) => {
+            spinner.remove();
+            console.error('Error:', error);
+            modalContent.innerHTML = `<p class="error">An error occurred while fetching advice. Please try again.</p>`;
+        });
+    }
+
+    // Close modal when clicking outside of it
+    window.onclick = function(event) {
+        const modal = document.getElementById('adviceModal');
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
+
+    // Close modal when clicking the close button
+    document.querySelector('.close').onclick = function() {
+        document.getElementById('adviceModal').style.display = "none";
+    }
     </script>
 </body>
 </html>
