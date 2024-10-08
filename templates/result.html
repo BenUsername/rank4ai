@@ -96,7 +96,6 @@
         <div id="adviceModal" class="modal">
             <div class="modal-content">
                 <span class="close">&times;</span>
-                <h2>How to Improve Visibility</h2>
                 <div id="adviceContent"></div>
             </div>
         </div>
@@ -168,9 +167,10 @@
                 if (data.error) {
                     alert("Error: " + data.error);
                 } else {
-                    const adviceElement = document.createElement('div');
-                    adviceElement.innerHTML = `<h4>Advice to improve visibility:</h4><pre>${data.advice}</pre>`;
-                    element.appendChild(adviceElement);
+                    const modal = document.getElementById('adviceModal');
+                    const modalContent = document.getElementById('adviceContent');
+                    modalContent.innerHTML = `<h3>Advice for improving visibility of ${domain} for "${prompt}":</h3><pre>${data.advice}</pre>`;
+                    modal.style.display = "block";
                 }
             })
             .catch((error) => {
@@ -178,6 +178,19 @@
                 console.error('Error:', error);
                 alert("An error occurred while fetching advice. Please try again.");
             });
+        }
+
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            const modal = document.getElementById('adviceModal');
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        // Close modal when clicking the close button
+        document.querySelector('.close').onclick = function() {
+            document.getElementById('adviceModal').style.display = "none";
         }
 
         // Back to top button functionality
