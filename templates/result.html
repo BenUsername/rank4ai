@@ -83,7 +83,7 @@
                                 {% if rank == 1 %}🥇{% elif rank == 2 %}🥈{% elif rank == 3 %}🥉{% else %}🎉{% endif %}
                             {% else %}
                                 <span style="color: red;">✗ No</span>
-                                <a href="#" class="advice-link" onclick="getAdvice('{{ domain }}', '{{ row.prompt }}', this.parentNode); return false;">Get Advice</a>
+                                <br><a href="#" class="advice-link" onclick="getAdvice('{{ domain }}', '{{ row.prompt }}'); return false;">Get Advice</a>
                             {% endif %}
                         </td>
                     </tr>
@@ -149,10 +149,14 @@
             }
         }
 
-        function getAdvice(domain, prompt, element) {
+        function getAdvice(domain, prompt) {
+            const modal = document.getElementById('adviceModal');
+            const modalContent = document.getElementById('adviceContent');
             const spinner = document.createElement('div');
             spinner.className = 'advice-spinner';
-            element.appendChild(spinner);
+            modalContent.innerHTML = '';
+            modalContent.appendChild(spinner);
+            modal.style.display = "block";
 
             fetch('/get_advice', {
                 method: 'POST',
@@ -165,18 +169,15 @@
             .then(data => {
                 spinner.remove();
                 if (data.error) {
-                    alert("Error: " + data.error);
+                    modalContent.innerHTML = `<p class="error">Error: ${data.error}</p>`;
                 } else {
-                    const modal = document.getElementById('adviceModal');
-                    const modalContent = document.getElementById('adviceContent');
                     modalContent.innerHTML = `<h3>Advice for improving visibility of ${domain} for "${prompt}":</h3><pre>${data.advice}</pre>`;
-                    modal.style.display = "block";
                 }
             })
             .catch((error) => {
                 spinner.remove();
                 console.error('Error:', error);
-                alert("An error occurred while fetching advice. Please try again.");
+                modalContent.innerHTML = `<p class="error">An error occurred while fetching advice. Please try again.</p>`;
             });
         }
 
