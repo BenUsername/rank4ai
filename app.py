@@ -35,6 +35,15 @@ DAILY_INCREASE = 5  # Number of users to add each day
 # Add this near the top of your file, after loading other environment variables
 CONTACT_EMAIL = os.getenv('mailto', 'support@promptboostai.com')
 
+# Add this near the top of your file, after other imports
+from flask import send_from_directory
+
+# Add this route to your app
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'static'),
+                               'favicon.ico', mimetype='image/vnd.microsoft.icon')
+
 def is_valid_domain(domain):
     """Validate the domain using the validators library."""
     return validators.domain(domain)

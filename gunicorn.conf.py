@@ -1,2 +1,2 @@
-timeout = 30  # 30 seconds
+timeout = 60  # 60 seconds
 workers = 2
