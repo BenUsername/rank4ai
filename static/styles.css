@@ -160,19 +160,6 @@ th {
     align-items: center;
 }
 
-/* Remove these styles */
-.info-icon {
-    /* ... */
-}
-
-.info-icon:hover {
-    /* ... */
-}
-
-.info-icon::before {
-    /* ... */
-}
-
 /* Add this new rule */
 .tr:target {
     background-color: #ffffd0;
