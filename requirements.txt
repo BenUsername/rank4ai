@@ -11,4 +11,3 @@ gunicorn==20.1.0
 aiohttp
 fuzzywuzzy
 python-Levenshtein
-nltk==3.6.5
