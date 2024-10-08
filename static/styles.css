@@ -160,36 +160,21 @@ th {
     align-items: center;
 }
 
+/* Remove these styles */
 .info-icon {
-    display: inline-block;
-    width: 18px;
-    height: 18px;
-    line-height: 18px;
-    text-align: center;
-    border-radius: 50%;
-    background-color: #3498db;
-    color: white;
-    font-style: italic;
-    font-weight: bold;
-    font-size: 12px;
-    cursor: pointer;
-    margin-left: 5px;
-    border: none;
-    padding: 0;
+    /* ... */
 }
 
 .info-icon:hover {
-    background-color: #2980b9;
+    /* ... */
+}
+
+.info-icon::before {
+    /* ... */
 }
 
 /* Add this new rule */
-.info-icon::before {
-    content: 'ℹ️';
-    cursor: pointer;
-}
-
-/* Add this to your existing CSS */
-tr:target {
+.tr:target {
     background-color: #ffffd0;
     transition: background-color 0.5s ease;
 }
@@ -305,10 +290,6 @@ th {
     text-decoration: none;
     cursor: pointer;
 }
-.info-icon {
-    cursor: pointer;
-    margin-left: 5px;
-}
 #adviceContent {
     margin-top: 20px;
     white-space: pre-wrap;
@@ -410,107 +391,6 @@ th {
 
 .sample-not-visible {
     color: #e74c3c;
-}
-
-.info-icon {
-    font-size: 0.8em;
-    color: #3498db;
-    cursor: help;
-    margin-left: 5px;
-}
-
-.tooltip {
-    position: relative;
-    display: inline-block;
-}
-
-.tooltip .tooltiptext {
-    visibility: hidden;
-    width: 200px;
-    background-color: #555;
-    color: #fff;
-    text-align: center;
-    border-radius: 6px;
-    padding: 5px;
-    position: absolute;
-    z-index: 1;
-    bottom: 125%;
-    left: 50%;
-    margin-left: -100px;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-
-.tooltip:hover .tooltiptext {
-    visibility: visible;
-    opacity: 1;
-}
-
-.icon-large {
-    font-size: 1.5em;
-    margin-right: 10px;
-    vertical-align: middle;
-}
-
-.icon-small {
-    font-size: 1.2em;
-    margin-right: 5px;
-}
-
-.user-count {
-    font-size: 1.1em;
-    color: #2c3e50;
-    margin-bottom: 20px;
-}
-
-.user-count .icon-small {
-    color: #3498db;
-}
-
-.error-message {
-    background-color: #ffebee;
-    border: 1px solid #ffcdd2;
-    color: #b71c1c;
-    padding: 10px;
-    margin: 20px 0;
-    border-radius: 4px;
-    text-align: center;
-}
-
-.error-message .error {
-    margin: 0;
-}
-
-#results-container {
-    background-color: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    padding: 20px;
-    margin-top: 20px;
-}
-
-#results-container h1 {
-    color: #2c3e50;
-    border-bottom: 2px solid #3498db;
-    padding-bottom: 10px;
-}
-
-.content-container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-.content-container h1, .content-container h2 {
-    color: #2c3e50;
-}
-
-.content-container ul {
-    padding-left: 20px;
-}
-
-.content-container li {
-    margin-bottom: 10px;
 }
 
 .home-link {
