@@ -285,31 +285,18 @@ def sitemap():
 
 @app.route('/get_advice', methods=['POST'])
 def get_advice():
-    app.logger.info('get_advice route called')
     data = request.json
     domain = data.get('domain')
     prompt = data.get('prompt')
     
-    app.logger.info(f'Received request for advice - Domain: {domain}, Prompt: {prompt}')
-    
     try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are an AI assistant providing advice on improving website visibility in AI search results."},
-                {"role": "user", "content": f"Provide 5 specific tips to improve the visibility of {domain} for the search query: '{prompt}'. Format the response as a numbered list."}
-            ],
-            max_tokens=250,
-            temperature=0.7,
-        )
+        advice = f"To improve visibility for {domain} regarding '{prompt}':\n\n"
+        advice += "1. Optimize your content for this specific query\n"
+        advice += "2. Improve your website's overall SEO\n"
+        advice += "3. Create high-quality, relevant content\n"
+        advice += "4. Build authoritative backlinks\n"
+        advice += "5. Ensure your website is mobile-friendly and fast-loading"
         
-        advice = response.choices[0].message.content.strip()
-        
-        # Ensure the advice is formatted as a numbered list
-        if not advice.startswith('1.'):
-            advice = '\n'.join([f"{i+1}. {tip.strip()}" for i, tip in enumerate(advice.split('\n'))])
-        
-        app.logger.info(f'Advice generated successfully for {domain}')
         return jsonify({'advice': advice})
     except Exception as e:
         app.logger.error(f"Error generating advice: {str(e)}")

@@ -79,18 +79,11 @@
                             {% if 'Yes' in row.visible %}
                                 <span style="color: green;">✓ Yes</span>
                                 {% set rank = row.visible.split('(Rank: ')[1].split(')')[0]|int %}
-                                {% if rank == 1 %}
-                                    <br>Congrats, you're first! 🥇🎉
-                                {% elif rank == 2 %}
-                                    <br>Congrats, you're second! 🥈🎉
-                                {% elif rank == 3 %}
-                                    <br>Congrats, you're third! 🥉🎉
-                                {% else %}
-                                    <br>Congrats, you're {{ rank }}th! 🎉
-                                {% endif %}
+                                <br>Congrats, you're {{ rank }}{{ 'st' if rank == 1 else 'nd' if rank == 2 else 'rd' if rank == 3 else 'th' }}! 
+                                {% if rank == 1 %}🥇{% elif rank == 2 %}🥈{% elif rank == 3 %}🥉{% else %}🎉{% endif %}
                             {% else %}
                                 <span style="color: red;">✗ No</span>
-                                <button class="info-button" onclick="showAdvice('{{ domain }}', '{{ row.prompt | replace("'", "\\'") }}')">Get Advice</button>
+                                <button onclick="getAdvice('{{ domain }}', '{{ row.prompt }}')">Get Advice</button>
                             {% endif %}
                         </td>
                     </tr>
@@ -194,6 +187,29 @@
         backToTopButton.onclick = function() {
             document.body.scrollTop = 0; // For Safari
             document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+        }
+    </script>
+    <script>
+        function getAdvice(domain, prompt) {
+            fetch('/get_advice', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({domain: domain, prompt: prompt})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert("Error: " + data.error);
+                } else {
+                    alert(data.advice);
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert("An error occurred while fetching advice. Please try again.");
+            });
         }
     </script>
 </body>
