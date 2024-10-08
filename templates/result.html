@@ -76,7 +76,22 @@
                             {% endif %}
                         </td>
                         <td class="visibility-status {{ 'visible' if 'Yes' in row.visible else 'not-visible' }}">
-                            {{ format_visibility(row.visible, domain, row.prompt, loop.index) | safe }}
+                            {% if 'Yes' in row.visible %}
+                                <span style="color: green;">✓ Yes</span>
+                                {% set rank = row.visible.split('(Rank: ')[1].split(')')[0]|int %}
+                                {% if rank == 1 %}
+                                    <br>Congrats, you're first! 🥇🎉
+                                {% elif rank == 2 %}
+                                    <br>Congrats, you're second! 🥈🎉
+                                {% elif rank == 3 %}
+                                    <br>Congrats, you're third! 🥉🎉
+                                {% else %}
+                                    <br>Congrats, you're {{ rank }}th! 🎉
+                                {% endif %}
+                            {% else %}
+                                <span style="color: red;">✗ No</span>
+                                <button class="info-button" onclick="showAdvice('{{ domain }}', '{{ row.prompt }}')">i</button>
+                            {% endif %}
                         </td>
                     </tr>
                 {% endfor %}
@@ -142,11 +157,7 @@
             }
         }
 
-        function showAdvice(domain, prompt, rowIndex) {
-            console.log(`showAdvice called with domain: ${domain}, prompt: ${prompt}, rowIndex: ${rowIndex}`);
-            const spinner = document.getElementById(`spinner-${rowIndex}`);
-            spinner.style.display = 'inline-block';
-            
+        function showAdvice(domain, prompt) {
             fetch('/get_advice', {
                 method: 'POST',
                 headers: {
@@ -154,29 +165,17 @@
                 },
                 body: JSON.stringify({domain: domain, prompt: prompt})
             })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
-                console.log('Advice data received:', data);
-                spinner.style.display = 'none';
-                const modalContent = document.getElementById('adviceContent');
                 if (data.error) {
-                    modalContent.textContent = "Error: " + data.error;
+                    alert("Error: " + data.error);
                 } else {
-                    modalContent.textContent = data.advice;
+                    alert(data.advice);
                 }
-                modal.style.display = "block";
             })
             .catch((error) => {
-                console.error('Error in showAdvice:', error);
-                spinner.style.display = 'none';
-                const modalContent = document.getElementById('adviceContent');
-                modalContent.textContent = "An error occurred while fetching advice. Please try again.";
-                modal.style.display = "block";
+                console.error('Error:', error);
+                alert("An error occurred while fetching advice. Please try again.");
             });
         }
 
