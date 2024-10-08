@@ -157,7 +157,10 @@
                 if (data.error) {
                     modalContent.innerHTML = `<p class="error">Error: ${data.error}</p>`;
                 } else {
-                    const formattedAdvice = data.advice.replace(/(\d+\.)/g, '<li>$1').replace(/\n/g, '</li><li>');
+                    const formattedAdvice = data.advice
+                        .replace(/(\d+\.)/g, '<li><strong>$1</strong>')
+                        .replace(/\n/g, '</li><li>')
+                        .replace(/<li><\/li>/g, '');
                     modalContent.innerHTML = `
                         <h3>Advice for improving visibility of ${domain} for "${prompt}":</h3>
                         <ol>${formattedAdvice}</ol>
