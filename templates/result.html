@@ -82,7 +82,7 @@
                                 <br>Congrats, you're {{ rank }}{{ 'st' if rank == 1 else 'nd' if rank == 2 else 'rd' if rank == 3 else 'th' }}! 
                                 {% if rank == 1 %}🥇{% elif rank == 2 %}🥈{% elif rank == 3 %}🥉{% else %}🎉{% endif %}
                             {% else %}
-                                <a href="#" class="advice-link" data-domain="{{ domain }}" data-prompt="{{ row.prompt }}">✗ No</a>
+                                <a href="#" class="advice-link" onclick="getAdvice('{{ domain }}', '{{ row.prompt }}'); return false;">✗ No</a>
                             {% endif %}
                         </td>
                     </tr>
@@ -267,6 +267,29 @@
                 });
             }
         });
+    </script>
+    <script>
+        function getAdvice(domain, prompt) {
+            fetch('/get_advice', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({domain: domain, prompt: prompt})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert("Error: " + data.error);
+                } else {
+                    alert(data.advice);
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert("An error occurred while fetching advice. Please try again.");
+            });
+        }
     </script>
 </body>
 </html>
