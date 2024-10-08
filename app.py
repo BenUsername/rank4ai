@@ -290,12 +290,18 @@ def get_advice():
     prompt = data.get('prompt')
     
     try:
-        advice = f"To improve visibility for {domain} regarding '{prompt}':\n\n"
-        advice += "1. Optimize your content for this specific query\n"
-        advice += "2. Improve your website's overall SEO\n"
-        advice += "3. Create high-quality, relevant content\n"
-        advice += "4. Build authoritative backlinks\n"
-        advice += "5. Ensure your website is mobile-friendly and fast-loading"
+        # Make a call to OpenAI API
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are an expert in SEO and content strategy."},
+                {"role": "user", "content": f"Provide 5 specific pieces of advice with one example each to improve the visibility of {domain} regarding the search query '{prompt}'. Format the response as a numbered list."}
+            ],
+            max_tokens=500,
+            temperature=0.7,
+        )
+        
+        advice = response.choices[0].message.content.strip()
         
         return jsonify({'advice': advice})
     except Exception as e:

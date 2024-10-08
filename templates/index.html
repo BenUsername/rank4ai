@@ -296,6 +296,36 @@
             resultsContainer.appendChild(ctaContainer);
         }
 
+        function getAdvice(domain, prompt, element) {
+            const spinner = document.createElement('div');
+            spinner.className = 'advice-spinner';
+            element.appendChild(spinner);
+
+            fetch('/get_advice', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({domain: domain, prompt: prompt})
+            })
+            .then(response => response.json())
+            .then(data => {
+                spinner.remove();
+                if (data.error) {
+                    alert("Error: " + data.error);
+                } else {
+                    const adviceElement = document.createElement('div');
+                    adviceElement.innerHTML = `<h4>Advice to improve visibility:</h4><pre>${data.advice}</pre>`;
+                    element.appendChild(adviceElement);
+                }
+            })
+            .catch((error) => {
+                spinner.remove();
+                console.error('Error:', error);
+                alert("An error occurred while fetching advice. Please try again.");
+            });
+        }
+
         function formatVisibility(visible, domain, prompt, index) {
             if (visible.includes('Yes')) {
                 const rank = visible.match(/\d+/)[0];
@@ -315,7 +345,7 @@
                 }
                 return `<span style="color: green;">✓ Yes</span><br>Congrats, you're ${rankText}`;
             } else {
-                return `<span style="color: red;">✗ No</span><br><a href="#" class="advice-link" onclick="getAdvice('${domain}', '${prompt.replace(/'/g, "\\'")}'); return false;">Get Advice</a>`;
+                return `<span style="color: red;">✗ No</span><br><a href="#" class="advice-link" onclick="getAdvice('${domain}', '${prompt.replace(/'/g, "\\'")}', this.parentNode); return false;">Get Advice</a>`;
             }
         }
 
@@ -334,28 +364,6 @@
         backToTopButton.onclick = function() {
             document.body.scrollTop = 0; // For Safari
             document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
-        }
-
-        function getAdvice(domain, prompt) {
-            fetch('/get_advice', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({domain: domain, prompt: prompt})
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    alert("Error: " + data.error);
-                } else {
-                    alert(data.advice);
-                }
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-                alert("An error occurred while fetching advice. Please try again.");
-            });
         }
 
         // Add this code to handle closing the modal

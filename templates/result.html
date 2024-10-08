@@ -82,7 +82,8 @@
                                 <br>Congrats, you're {{ rank }}{{ 'st' if rank == 1 else 'nd' if rank == 2 else 'rd' if rank == 3 else 'th' }}! 
                                 {% if rank == 1 %}🥇{% elif rank == 2 %}🥈{% elif rank == 3 %}🥉{% else %}🎉{% endif %}
                             {% else %}
-                                <a href="#" class="advice-link" onclick="getAdvice('{{ domain }}', '{{ row.prompt }}'); return false;">✗ No</a>
+                                <span style="color: red;">✗ No</span>
+                                <br><a href="#" class="advice-link" onclick="getAdvice('{{ domain }}', '{{ row.prompt }}', this.parentNode); return false;">Get Advice</a>
                             {% endif %}
                         </td>
                     </tr>
@@ -149,7 +150,11 @@
             }
         }
 
-        function getAdvice(domain, prompt) {
+        function getAdvice(domain, prompt, element) {
+            const spinner = document.createElement('div');
+            spinner.className = 'advice-spinner';
+            element.appendChild(spinner);
+
             fetch('/get_advice', {
                 method: 'POST',
                 headers: {
@@ -159,13 +164,17 @@
             })
             .then(response => response.json())
             .then(data => {
+                spinner.remove();
                 if (data.error) {
                     alert("Error: " + data.error);
                 } else {
-                    alert(data.advice);
+                    const adviceElement = document.createElement('div');
+                    adviceElement.innerHTML = `<h4>Advice to improve visibility:</h4><pre>${data.advice}</pre>`;
+                    element.appendChild(adviceElement);
                 }
             })
             .catch((error) => {
+                spinner.remove();
                 console.error('Error:', error);
                 alert("An error occurred while fetching advice. Please try again.");
             });
