@@ -301,23 +301,10 @@ th {
 #adviceContent ol {
     padding-left: 20px;
     margin-bottom: 20px;
-    counter-reset: item;
 }
 
 #adviceContent li {
-    margin-bottom: 20px;
-    list-style-type: none;
-    counter-increment: item;
-    position: relative;
-}
-
-#adviceContent li:before {
-    content: counter(item) ".";
-    position: absolute;
-    left: -20px;
-    top: 0;
-    font-weight: bold;
-    color: #3498db;
+    margin-bottom: 15px;
 }
 
 #adviceContent p {
