@@ -83,7 +83,7 @@
                                 {% if rank == 1 %}🥇{% elif rank == 2 %}🥈{% elif rank == 3 %}🥉{% else %}🎉{% endif %}
                             {% else %}
                                 <span style="color: red;">✗ No</span>
-                                <br><a href="#" class="advice-link" onclick="getAdvice('{{ domain }}', '{{ row.prompt }}', this.parentNode); return false;">Get Advice</a>
+                                <a href="#" class="advice-link" onclick="getAdvice('{{ domain }}', '{{ row.prompt }}', this.parentNode); return false;">Get Advice</a>
                             {% endif %}
                         </td>
                     </tr>
