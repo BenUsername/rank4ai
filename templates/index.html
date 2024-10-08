@@ -136,27 +136,34 @@
             progressLog.innerHTML += `<p>${message}</p>`;
         }
 
+        function clearProgress() {
+            const progressLog = document.getElementById('progress-log');
+            progressLog.innerHTML = '';
+        }
+
         document.getElementById('analyzeForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const domain = document.getElementById('domainInput').value;
             const spinner = document.getElementById('spinner');
-            const progressLog = document.getElementById('progress-log');
             const errorMessage = document.getElementById('error-message');
             const analyzeButton = document.getElementById('analyzeButton');
+            const searchesLeftElement = document.getElementById('searches-left');
             
             spinner.style.display = 'block';
-            progressLog.innerHTML = '';
+            clearProgress();
             errorMessage.style.display = 'none';
             if (analyzeButton) {
                 analyzeButton.disabled = true;
             }
 
-            updateProgress('Fetching website content...');
-            
-            // Simulate progress updates (you may want to implement real progress tracking on the server side)
-            setTimeout(() => updateProgress('Analyzing content...'), 2000);
-            setTimeout(() => updateProgress('Generating prompts...'), 4000);
-            setTimeout(() => updateProgress('Simulating LLM responses...'), 6000);
+            // Check if there are searches left before showing progress
+            const searchesLeft = parseInt(searchesLeftElement.textContent);
+            if (searchesLeft > 0) {
+                updateProgress('Fetching website content...');
+                setTimeout(() => updateProgress('Analyzing content...'), 2000);
+                setTimeout(() => updateProgress('Generating prompts...'), 4000);
+                setTimeout(() => updateProgress('Simulating LLM responses...'), 6000);
+            }
 
             fetch('/analyze', {
                 method: 'POST',
@@ -168,7 +175,7 @@
             .then(response => response.json())
             .then(data => {
                 spinner.style.display = 'none';
-                progressLog.innerHTML = '';  // Clear the progress log
+                clearProgress();  // Clear progress log
                 if (analyzeButton) {
                     analyzeButton.disabled = false;
                 }
@@ -180,11 +187,12 @@
                     displayResults(data);
                 }
 
-                const searchesLeft = data.searches_left;
-                document.getElementById('searches-left').textContent = searchesLeft;
+                // Always update the searches left count
+                const searchesLeft = data.searches_left !== undefined ? data.searches_left : parseInt(searchesLeftElement.textContent) - 1;
+                searchesLeftElement.textContent = Math.max(searchesLeft, 0);
 
                 // Update the button if no searches are left
-                if (searchesLeft === 0) {
+                if (searchesLeft <= 0) {
                     const form = document.getElementById('analyzeForm');
                     const analyzeButton = document.getElementById('analyzeButton');
                     if (analyzeButton) {
@@ -202,7 +210,7 @@
             .catch((error) => {
                 console.error('Error:', error);
                 spinner.style.display = 'none';
-                progressLog.innerHTML = '';  // Clear the progress log
+                clearProgress();  // Clear progress log
                 if (analyzeButton) {
                     analyzeButton.disabled = false;
                 }

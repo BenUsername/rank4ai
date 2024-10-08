@@ -240,23 +240,24 @@ def index():
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    if session.get('searches_performed', 0) >= 3:
-        return jsonify({'error': "You've reached the maximum number of free searches. Please join the waiting list for more."}), 403
+    searches_left = 3 - session.get('searches_performed', 0)
+    if searches_left <= 0:
+        return jsonify({'error': "You've reached the maximum number of free searches. Please join the waiting list for more.", 'searches_left': 0}), 403
 
     domain = request.form.get('domain', '').strip()
     if not is_valid_domain(domain):
-        return jsonify({'error': 'Invalid domain name.'}), 400
+        return jsonify({'error': 'Invalid domain name.', 'searches_left': searches_left}), 400
 
     try:
         html_content = fetch_website_content(domain)
         if html_content is None:
-            return jsonify({'error': f"We couldn't fetch the content for {domain}. The website may be unavailable or blocking our requests. Please try another domain."}), 404
+            return jsonify({'error': f"We couldn't fetch the content for {domain}. The website may be unavailable or blocking our requests. Please try another domain.", 'searches_left': searches_left}), 404
 
         info = extract_main_info(html_content)
         prompts = generate_marketing_prompts(info['title'], info['description'], info['content'], domain)
         
         if not prompts:
-            return jsonify({'error': "We couldn't generate valid prompts for this website. Please try another domain."}), 500
+            return jsonify({'error': "We couldn't generate valid prompts for this website. Please try another domain.", 'searches_left': searches_left}), 500
 
         table = generate_prompt_answers(prompts, domain, info)
         
@@ -273,7 +274,7 @@ def analyze():
 
     except Exception as e:
         app.logger.error(f"Error processing {domain}: {str(e)}")
-        return jsonify({'error': f"An error occurred while processing your request for {domain}. The website may be unavailable or blocking our requests. Please try another domain."}), 500
+        return jsonify({'error': f"An error occurred while processing your request for {domain}. The website may be unavailable or blocking our requests. Please try another domain.", 'searches_left': searches_left}), 500
 
 @app.route('/robots.txt')
 def robots():

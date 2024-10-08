@@ -80,7 +80,7 @@
                                 <span style="color: green;">✓ Yes</span>
                                 {% set rank = row.visible.split('(Rank: ')[1].split(')')[0]|int %}
                                 <br>Congrats, you're {{ rank }}{{ 'st' if rank == 1 else 'nd' if rank == 2 else 'rd' if rank == 3 else 'th' }}! 
-                                {% if rank == 1 %}🥇{% elif rank == 2 %}🥈{% elif rank == 3 %}🥉{% else %}���{% endif %}
+                                {% if rank == 1 %}🥇{% elif rank == 2 %}🥈{% elif rank == 3 %}🥉{% else %}{% endif %}
                             {% else %}
                                 <span style="color: red;">✗ No</span>
                                 <br><a href="#" class="advice-link" onclick="getAdvice('{{ domain }}', '{{ row.prompt }}'); return false;">Get Advice</a>
