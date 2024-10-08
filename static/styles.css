@@ -288,43 +288,27 @@ th {
 }
 
 #adviceContent {
-    margin-top: 20px;
-    font-size: 16px;
-    line-height: 1.8;
-    color: #333;
+    font-family: inherit;
+    line-height: 1.6;
 }
 
 #adviceContent h3 {
     margin-bottom: 20px;
     color: #2c3e50;
-    font-size: 24px;
-}
-
-#adviceContent ol {
-    padding-left: 30px;
-    margin-bottom: 20px;
-    counter-reset: item;
-}
-
-#adviceContent li {
-    margin-bottom: 20px;
-    padding-left: 10px;
-    list-style-type: none;
-    counter-increment: item;
-    position: relative;
-}
-
-#adviceContent li:before {
-    content: counter(item) ".";
-    position: absolute;
-    left: -30px;
-    top: 0;
-    font-weight: bold;
-    color: #3498db;
+    font-size: 1.2em;
 }
 
 #adviceContent p {
     margin-bottom: 15px;
+}
+
+#adviceContent ol {
+    padding-left: 20px;
+    margin-bottom: 15px;
+}
+
+#adviceContent li {
+    margin-bottom: 10px;
 }
 
 #adviceContent pre {

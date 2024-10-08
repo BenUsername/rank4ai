@@ -392,7 +392,15 @@
             if (data.error) {
                 modalContent.innerHTML = `<p class="error">Error: ${data.error}</p>`;
             } else {
-                modalContent.innerHTML = `<h3>Advice for improving visibility of ${domain} for "${prompt}":</h3><pre>${data.advice}</pre>`;
+                const formattedAdvice = data.advice
+                    .split('\n')
+                    .filter(item => item.trim() !== '')
+                    .map(item => `<p>${item}</p>`)
+                    .join('');
+                modalContent.innerHTML = `
+                    <h3>Advice for improving visibility of ${domain} for "${prompt}":</h3>
+                    ${formattedAdvice}
+                `;
             }
         })
         .catch((error) => {
