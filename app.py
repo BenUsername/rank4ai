@@ -7,8 +7,8 @@ import validators
 from readability import Document
 from openai import OpenAI
 import re
-from aiohttp import ClientSession 
-from fuzzywuzzy import fuzz 
+#from aiohttp import ClientSession 
+#from fuzzywuzzy import fuzz 
 import logging
 from datetime import datetime, date
 
@@ -332,8 +332,20 @@ def format_visibility(visible, domain, prompt, row_index):
 # Don't forget to pass this function to your template context when rendering
 @app.route('/results')
 def results():
-    # ... your existing code ...
-    return render_template('result.html', format_visibility=format_visibility, ...)
+    # Retrieve necessary data from the session or database
+    domain = session.get('domain', '')
+    info = session.get('info', {})
+    prompts = session.get('prompts', [])
+    table = session.get('table', [])
+    searches_left = 3 - session.get('searches_performed', 0)
+
+    return render_template('result.html', 
+                           domain=domain,
+                           info=info,
+                           prompts=prompts,
+                           table=table,
+                           searches_left=searches_left,
+                           format_visibility=format_visibility)
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
