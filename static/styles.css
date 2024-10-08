@@ -259,11 +259,13 @@ th {
 
 .modal-content {
     background-color: #fefefe;
-    margin: 10% auto;
+    margin: 5% auto;
     padding: 20px;
     border: 1px solid #888;
     width: 80%;
     max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
     border-radius: 5px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
@@ -286,6 +288,22 @@ th {
 #adviceContent {
     margin-top: 20px;
     white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+#adviceContent h3 {
+    margin-bottom: 15px;
+    color: #333;
+}
+
+#adviceContent ol {
+    padding-left: 20px;
+}
+
+#adviceContent li {
+    margin-bottom: 10px;
 }
 
 /* Update the spinner style in the result table */

@@ -157,7 +157,11 @@
                 if (data.error) {
                     modalContent.innerHTML = `<p class="error">Error: ${data.error}</p>`;
                 } else {
-                    modalContent.innerHTML = `<h3>Advice for improving visibility of ${domain} for "${prompt}":</h3><pre>${data.advice}</pre>`;
+                    const formattedAdvice = data.advice.replace(/(\d+\.)/g, '<li>$1').replace(/\n/g, '</li><li>');
+                    modalContent.innerHTML = `
+                        <h3>Advice for improving visibility of ${domain} for "${prompt}":</h3>
+                        <ol>${formattedAdvice}</ol>
+                    `;
                 }
             })
             .catch((error) => {
