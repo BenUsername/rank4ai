@@ -310,21 +310,6 @@ def privacy_policy():
 def terms_of_service():
     return render_template('terms_of_service.html', contact_email=CONTACT_EMAIL)
 
-def format_visibility(visible, domain, prompt, row_index):
-    if 'Yes' in visible:
-        rank = int(re.search(r'\d+', visible).group())
-        rank_text = {
-            1: 'first! 🥇🎉',
-            2: 'second! 🥈🎉',
-            3: 'third! 🥉🎉'
-        }.get(rank, f'{rank}th! 🎉')
-        return Markup(f'<span style="color: green;">✓ Yes</span><br>Congrats, you\'re {rank_text}')
-    else:
-        return Markup(f'<span style="color: red;">✗ No</span>'
-                      f'<button class="info-button" onclick="showAdvice(\'{domain}\', \'{prompt.replace("\'", "\\\'")}\', {row_index})">i</button>'
-                      f'<div class="spinner" id="spinner-{row_index}" style="display: none;"></div>')
-
-# Don't forget to pass this function to your template context when rendering
 @app.route('/results')
 def results():
     # Retrieve necessary data from the session or database
@@ -339,8 +324,7 @@ def results():
                            info=info,
                            prompts=prompts,
                            table=table,
-                           searches_left=searches_left,
-                           format_visibility=format_visibility)
+                           searches_left=searches_left)
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))

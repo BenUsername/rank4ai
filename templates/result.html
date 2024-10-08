@@ -291,5 +291,51 @@
             });
         }
     </script>
+    <script>
+        function getAdvice(domain, prompt) {
+            fetch('/get_advice', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({domain: domain, prompt: prompt})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert("Error: " + data.error);
+                } else {
+                    alert(data.advice);
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert("An error occurred while fetching advice. Please try again.");
+            });
+        }
+    </script>
+    <script>
+        function getAdvice(domain, prompt) {
+            fetch('/get_advice', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({domain: domain, prompt: prompt})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert("Error: " + data.error);
+                } else {
+                    alert(data.advice);
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert("An error occurred while fetching advice. Please try again.");
+            });
+        }
+    </script>
 </body>
 </html>
