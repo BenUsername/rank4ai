@@ -126,10 +126,7 @@
     </a>
 
     <script>
-        function extractDomain(url) {
-            url = url.replace(/^(?:https?:\/\/)?(?:www\.)?/i, "");
-            return url.split('/')[0];
-        }
+        let progressInterval;
 
         function updateProgress(message) {
             const progressLog = document.getElementById('progress-log');
@@ -139,6 +136,10 @@
         function clearProgress() {
             const progressLog = document.getElementById('progress-log');
             progressLog.innerHTML = '';
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
         }
 
         document.getElementById('analyzeForm').addEventListener('submit', function(e) {
@@ -160,9 +161,21 @@
             const searchesLeft = parseInt(searchesLeftElement.textContent);
             if (searchesLeft > 0) {
                 updateProgress('Fetching website content...');
-                setTimeout(() => updateProgress('Analyzing content...'), 2000);
-                setTimeout(() => updateProgress('Generating prompts...'), 4000);
-                setTimeout(() => updateProgress('Simulating LLM responses...'), 6000);
+                let progressStep = 0;
+                progressInterval = setInterval(() => {
+                    progressStep++;
+                    switch(progressStep) {
+                        case 1:
+                            updateProgress('Analyzing content...');
+                            break;
+                        case 2:
+                            updateProgress('Generating prompts...');
+                            break;
+                        case 3:
+                            updateProgress('Simulating LLM responses...');
+                            break;
+                    }
+                }, 2000);
             }
 
             fetch('/analyze', {
