@@ -8,7 +8,7 @@ validators
 readability-lxml
 lxml_html_clean
 gunicorn==20.1.0
-# aiohttp
-# fuzzywuzzy
-# python-Levenshtein
-# nltk==3.6.5
+aiohttp
+fuzzywuzzy
+python-Levenshtein
+nltk==3.6.5
