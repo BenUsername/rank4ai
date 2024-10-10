@@ -81,7 +81,7 @@
         <section class="sample-result">
             <h3><i class="fas fa-chart-line icon-large"></i>Sample Result for ebay.com</h3>
             <p>This table shows an example of what our tool provides. It demonstrates how your website might appear in AI-powered search results for different queries, and how it compares to competitors.</p>
-            <table class="sample-table">
+            <table class="sample-table" id="sampleTable">
                 <thead>
                     <tr>
                         <th>
@@ -125,6 +125,7 @@
                     </tr>
                 </tbody>
             </table>
+            <div id="sampleTableDetails" class="sample-details"></div>
             <p>Interpretation: In this example, ebay.com appears in AI responses for 2 out of 3 queries. It ranks 2nd for "Best online shopping platforms" and 1st for "Where to buy used electronics online". However, it doesn't appear in results for "Reliable e-commerce websites", which might be an area for improvement.</p>
         </section>
     </section>
@@ -431,7 +432,7 @@
                 let rankText = '';
                 switch (rank) {
                     case '1':
-                        rankText = 'first! 🥇🎉';
+                        rankText = 'first! 🎉';
                         break;
                     case '2':
                         rankText = 'second! 🥈🎉';
@@ -530,6 +531,38 @@
     document.querySelector('.close').onclick = function() {
         document.getElementById('adviceModal').style.display = "none";
     }
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sampleTable = document.getElementById('sampleTable');
+            const sampleTableDetails = document.getElementById('sampleTableDetails');
+
+            sampleTable.addEventListener('click', function(e) {
+                const target = e.target.closest('tr');
+                if (!target) return;
+
+                const cells = target.cells;
+                const prompt = cells[0].textContent;
+                const competitors = cells[1].textContent;
+                const visibility = cells[2].textContent;
+
+                let detailsHTML = `
+                    <h4>Details for: "${prompt}"</h4>
+                    <p><strong>Top Competitors:</strong> ${competitors}</p>
+                    <p><strong>Visibility:</strong> ${visibility}</p>
+                `;
+
+                if (visibility.includes('Yes')) {
+                    detailsHTML += `<p class="advice">Great job! Your website is visible for this query. Keep optimizing your content to maintain or improve your ranking.</p>`;
+                } else {
+                    detailsHTML += `<p class="advice">Your website is not visible for this query. Consider creating content that specifically addresses this topic to improve your visibility.</p>`;
+                }
+
+                sampleTableDetails.innerHTML = detailsHTML;
+                sampleTableDetails.style.display = 'block';
+            });
+        });
     </script>
 </body>
 </html>

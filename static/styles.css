@@ -633,3 +633,31 @@ footer {
         font-size: 1em;
     }
 }
+
+.sample-table tr {
+    cursor: pointer;
+}
+
+.sample-table tr:hover {
+    background-color: #f5f5f5;
+}
+
+.sample-details {
+    display: none;
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f0f8ff;
+    border: 1px solid #b0d4ff;
+    border-radius: 5px;
+}
+
+.sample-details h4 {
+    margin-top: 0;
+    color: #2c3e50;
+}
+
+.sample-details .advice {
+    margin-top: 10px;
+    font-style: italic;
+    color: #34495e;
+}
