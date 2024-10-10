@@ -333,6 +333,11 @@ def results():
                            table=table,
                            searches_left=searches_left)
 
+# Add this new route to your app.py file
+@app.route('/blog/track-brand-visibility-ai-search')
+def blog_post():
+    return render_template('blog_post.html')
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
