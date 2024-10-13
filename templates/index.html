@@ -219,14 +219,28 @@
         </div>
     </section>
 
-    <footer style="text-align: center; padding: 20px 0;">
-        <p>&copy; 2024 LLM Search Performance Tracker. All rights reserved.</p>
-        <nav>
-            <a href="{{ url_for('privacy_policy') }}">Privacy Policy</a> |
-            <a href="{{ url_for('terms_of_service') }}">Terms of Service</a> |
-            <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank">Contact Us</a> |
-            <a href="{{ url_for('blog_post') }}">Read our blog: 10 Effective Ways to Track Your Brand's Visibility in AI-Powered Search Results</a>
-        </nav>
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>LLM Search Performance Tracker</h3>
+                <p>&copy; 2024 All rights reserved.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="{{ url_for('privacy_policy') }}">Privacy Policy</a></li>
+                    <li><a href="{{ url_for('terms_of_service') }}">Terms of Service</a></li>
+                    <li><a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank">Contact Us</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Our Blog</h3>
+                <ul>
+                    <li><a href="{{ url_for('blog_post') }}">10 Effective Ways to Track Your Brand's Visibility in AI-Powered Search Results</a></li>
+                    <li><a href="{{ url_for('aeo_blog_post') }}">Answer Engine Optimization: The Next Evolution of SEO</a></li>
+                </ul>
+            </div>
+        </div>
     </footer>
 
     <a href="#" id="back-to-top" class="back-to-top" aria-label="Back to top">
