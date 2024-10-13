@@ -109,6 +109,51 @@
                 <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button">Join Waiting List for Premium Access</a>
             </div>
         {% endif %}
+
+        <div class="share-container">
+            <h3>Share your results:</h3>
+            <button onclick="shareTwitter()" class="share-button twitter">
+                <i class="fab fa-twitter"></i> Twitter
+            </button>
+            <button onclick="shareLinkedIn()" class="share-button linkedin">
+                <i class="fab fa-linkedin"></i> LinkedIn
+            </button>
+            <button onclick="shareFacebook()" class="share-button facebook">
+                <i class="fab fa-facebook"></i> Facebook
+            </button>
+            <button onclick="copyLink()" class="share-button copy-link">
+                <i class="fas fa-link"></i> Copy Link
+            </button>
+        </div>
+
+        <script>
+        function shareTwitter() {
+            var text = "I just analyzed my website's visibility in AI search results using LLM Search Performance Tracker! Check it out:";
+            var url = window.location.href;
+            window.open("https://twitter.com/intent/tweet?text=" + encodeURIComponent(text) + "&url=" + encodeURIComponent(url), "_blank");
+        }
+
+        function shareLinkedIn() {
+            var url = window.location.href;
+            window.open("https://www.linkedin.com/sharing/share-offsite/?url=" + encodeURIComponent(url), "_blank");
+        }
+
+        function shareFacebook() {
+            var url = window.location.href;
+            window.open("https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(url), "_blank");
+        }
+
+        function copyLink() {
+            var dummy = document.createElement("input");
+            document.body.appendChild(dummy);
+            dummy.value = window.location.href;
+            dummy.select();
+            document.execCommand("copy");
+            document.body.removeChild(dummy);
+            alert("Link copied to clipboard!");
+        }
+        </script>
+
     </main>
 
     <footer style="text-align: center; padding: 20px 0;">
