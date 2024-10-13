@@ -98,18 +98,6 @@
             </div>
         </div>
 
-        {% if searches_left > 0 %}
-            <div class="cta-container">
-                <p class="cta-text">You have {{ searches_left }} free searches left. Want to analyze more domains?</p>
-                <a href="{{ url_for('index') }}" class="cta-button">Analyze Another Domain</a>
-            </div>
-        {% else %}
-            <div class="cta-container">
-                <p class="cta-text">You've used all your free searches. Want to analyze more domains and get deeper insights?</p>
-                <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button">Join Waiting List for Premium Access</a>
-            </div>
-        {% endif %}
-
         <div class="share-container">
             <h3>Share your results:</h3>
             <button onclick="shareTwitter()" class="share-button twitter">
@@ -154,30 +142,19 @@
         }
         </script>
 
-    </main>
+        {% if searches_left > 0 %}
+            <div class="cta-container">
+                <p class="cta-text">You have {{ searches_left }} free searches left. Want to analyze more domains?</p>
+                <a href="{{ url_for('index') }}" class="cta-button">Analyze Another Domain</a>
+            </div>
+        {% else %}
+            <div class="cta-container">
+                <p class="cta-text">You've used all your free searches. Want to analyze more domains and get deeper insights?</p>
+                <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button">Join Waiting List for Premium Access</a>
+            </div>
+        {% endif %}
 
-    <footer style="text-align: center; padding: 20px 0;">
-        <p>&copy; 2024 LLM Search Performance Tracker. All rights reserved.</p>
-        <nav>
-            <a href="{{ url_for('privacy_policy') }}">Privacy Policy</a> |
-            <a href="{{ url_for('terms_of_service') }}">Terms of Service</a> |
-            <a href="mailto:{{ contact_email }}">Contact Us</a>
-        </nav>
-    </footer>
-
-    <a href="#" id="back-to-top" class="back-to-top" aria-label="Back to top">
-        <i class="fas fa-chevron-up" aria-hidden="true"></i>
-    </a>
-
-    <script>
-        document.querySelectorAll('.expand-btn').forEach(button => {
-            button.addEventListener('click', function() {
-                const content = this.previousElementSibling;
-                content.classList.toggle('expanded');
-                this.textContent = content.classList.contains('expanded') ? '-' : '+';
-            });
-        });
-
+        <script>
         function getAdvice(domain, prompt) {
             const modal = document.getElementById('adviceModal');
             const modalContent = document.getElementById('adviceContent');
@@ -249,5 +226,35 @@
             document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
         }
     </script>
+</main>
+
+<footer>
+    <div class="footer-content">
+        <div class="footer-section">
+            <h3>LLM Search Performance Tracker</h3>
+            <p>&copy; 2024 All rights reserved.</p>
+        </div>
+        <div class="footer-section">
+            <h3>Quick Links</h3>
+            <ul>
+                <li><a href="{{ url_for('privacy_policy') }}">Privacy Policy</a></li>
+                <li><a href="{{ url_for('terms_of_service') }}">Terms of Service</a></li>
+                <li><a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank">Contact Us</a></li>
+            </ul>
+        </div>
+        <div class="footer-section">
+            <h3>Our Blog</h3>
+            <ul>
+                <li><a href="{{ url_for('blog_post') }}">10 Effective Ways to Track Your Brand's Visibility in AI-Powered Search Results</a></li>
+                <li><a href="{{ url_for('aeo_blog_post') }}">Answer Engine Optimization: The Next Evolution of SEO</a></li>
+            </ul>
+        </div>
+    </div>
+</footer>
+
+<a href="#" id="back-to-top" class="back-to-top" aria-label="Back to top">
+    <i class="fas fa-chevron-up" aria-hidden="true"></i>
+</a>
+
 </body>
 </html>
