@@ -362,58 +362,96 @@
             // Clear the progress log
             progressLog.innerHTML = '';
             
-            resultsContainer.innerHTML = `
-                <h1>Results for ${data.domain}</h1>
-                <h2>Website Information</h2>
-                <p><strong>Title:</strong> ${data.info.title}</p>
-                <p><strong>Description:</strong> ${data.info.description}</p>
-                
-                <h2>Relevant Searches</h2>
-                <ol>
-                    ${data.prompts.map(prompt => `<li>${prompt.replace(/^\d+\.\s*/, '')}</li>`).join('')}
-                </ol>
-                
-                <h2>Visibility and Competitors</h2>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Prompt</th>
-                                <th>Answer</th>
-                                <th>Top Competitors</th>
-                                <th>Visible in LLM?</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${data.table.map((row, index) => `
+            // Replace the entire content of the page with the results
+            document.body.innerHTML = `
+                <header>
+                    <nav>
+                        <a href="/" class="home-link"><i class="fas fa-home" aria-hidden="true"></i> Home</a>
+                    </nav>
+                </header>
+                <main>
+                    <h1>Results for ${data.domain}</h1>
+                    
+                    <h2>Website Information</h2>
+                    <p><strong>Title:</strong> ${data.info.title}</p>
+                    <p><strong>Description:</strong> ${data.info.description}</p>
+                    
+                    <h2>Relevant Searches</h2>
+                    <ol>
+                        ${data.prompts.map(prompt => `<li>${prompt.replace(/^\d+\.\s*/, '')}</li>`).join('')}
+                    </ol>
+                    
+                    <h2>Visibility and Competitors</h2>
+                    <div class="table-container">
+                        <table>
+                            <thead>
                                 <tr>
-                                    <td class="expandable">
-                                        <div class="content">${row.prompt}</div>
-                                        <button class="expand-btn" aria-label="Expand">+</button>
-                                    </td>
-                                    <td class="expandable">
-                                        <div class="content">${row.answer}</div>
-                                        <button class="expand-btn" aria-label="Expand">+</button>
-                                    </td>
-                                    <td>
-                                        ${row.competitors !== 'None mentioned' ? 
-                                            `<ol>${row.competitors.split(', ').map(comp => `<li>${comp}</li>`).join('')}</ol>` :
-                                            row.competitors
-                                        }
-                                    </td>
-                                    <td class="visibility-status ${row.visible.includes('Yes') ? 'visible' : 'not-visible'}">
-                                        ${formatVisibility(row.visible, data.domain, row.prompt, index)}
-                                    </td>
+                                    <th>Prompt</th>
+                                    <th>Answer</th>
+                                    <th>Top Competitors</th>
+                                    <th>Visible in LLM?</th>
                                 </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody>
+                                ${data.table.map((row, index) => `
+                                    <tr>
+                                        <td class="expandable">
+                                            <div class="content">${row.prompt}</div>
+                                            <button class="expand-btn" aria-label="Expand">+</button>
+                                        </td>
+                                        <td class="expandable">
+                                            <div class="content">${row.answer}</div>
+                                            <button class="expand-btn" aria-label="Expand">+</button>
+                                        </td>
+                                        <td>
+                                            ${row.competitors !== 'None mentioned' ? 
+                                                `<ol>${row.competitors.split(', ').map(comp => `<li>${comp}</li>`).join('')}</ol>` :
+                                                row.competitors
+                                            }
+                                        </td>
+                                        <td class="visibility-status ${row.visible.includes('Yes') ? 'visible' : 'not-visible'}">
+                                            ${formatVisibility(row.visible, data.domain, row.prompt, index)}
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="share-container">
+                        <h3>Share your results:</h3>
+                        <button onclick="shareTwitter()" class="share-button twitter">
+                            <i class="fab fa-twitter"></i> Twitter
+                        </button>
+                        <button onclick="shareLinkedIn()" class="share-button linkedin">
+                            <i class="fab fa-linkedin"></i> LinkedIn
+                        </button>
+                        <button onclick="shareFacebook()" class="share-button facebook">
+                            <i class="fab fa-facebook"></i> Facebook
+                        </button>
+                        <button onclick="copyLink()" class="share-button copy-link">
+                            <i class="fas fa-link"></i> Copy Link
+                        </button>
+                    </div>
+
+                    ${data.searches_left > 0 ? `
+                        <div class="cta-container">
+                            <p class="cta-text">You have ${data.searches_left} free searches left. Want to analyze more domains?</p>
+                            <a href="/" class="cta-button">Analyze Another Domain</a>
+                        </div>
+                    ` : `
+                        <div class="cta-container">
+                            <p class="cta-text">You've used all your free searches. Want to analyze more domains and get deeper insights?</p>
+                            <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button">Join Waiting List for Premium Access</a>
+                        </div>
+                    `}
+                </main>
+                <footer>
+                    <!-- Add your footer content here -->
+                </footer>
             `;
-            resultsContainer.style.display = 'block';
-            landingContent.style.display = 'none';
-            
-            // Re-attach event listeners for expandable content
+
+            // Re-attach event listeners
             document.querySelectorAll('.expand-btn').forEach(button => {
                 button.addEventListener('click', function() {
                     const content = this.previousElementSibling;
@@ -421,22 +459,6 @@
                     this.textContent = content.classList.contains('expanded') ? '-' : '+';
                 });
             });
-
-            // Add CTA based on searches left
-            const ctaContainer = document.createElement('div');
-            ctaContainer.className = 'cta-container';
-            if (data.searches_left > 0) {
-                ctaContainer.innerHTML = `
-                    <p class="cta-text">You have ${data.searches_left} free searches left. Want to analyze more domains?</p>
-                    <a href="#" class="cta-button" onclick="document.getElementById('domainInput').focus(); return false;">Analyze Another Domain</a>
-                `;
-            } else {
-                ctaContainer.innerHTML = `
-                    <p class="cta-text">You've used all your free searches. Want to analyze more domains and get deeper insights?</p>
-                    <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button">Join Waiting List for Premium Access</a>
-                `;
-            }
-            resultsContainer.appendChild(ctaContainer);
         }
 
         function formatVisibility(visible, domain, prompt, index) {
