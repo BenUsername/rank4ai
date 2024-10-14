@@ -123,16 +123,16 @@ function displayResults(data) {
 
         <div class="share-container">
             <h3>Share your results:</h3>
-            <button onclick="shareTwitter()" class="share-button twitter">
+            <button onclick="window.shareTwitter()" class="share-button twitter">
                 <i class="fab fa-twitter"></i> Twitter
             </button>
-            <button onclick="shareLinkedIn()" class="share-button linkedin">
+            <button onclick="window.shareLinkedIn()" class="share-button linkedin">
                 <i class="fab fa-linkedin"></i> LinkedIn
             </button>
-            <button onclick="shareFacebook()" class="share-button facebook">
+            <button onclick="window.shareFacebook()" class="share-button facebook">
                 <i class="fab fa-facebook"></i> Facebook
             </button>
-            <button onclick="copyLink()" class="share-button copy-link">
+            <button onclick="window.copyLink()" class="share-button copy-link">
                 <i class="fas fa-link"></i> Copy Link
             </button>
         </div>
@@ -148,6 +148,78 @@ function displayResults(data) {
                </div>`
         }
     `;
+
+    // Attach the functions to the window object
+    window.shareTwitter = function() {
+        var text = "I just analyzed my website's visibility in AI search results using LLM Search Performance Tracker! Check it out:";
+        var url = window.location.href;
+        window.open("https://twitter.com/intent/tweet?text=" + encodeURIComponent(text) + "&url=" + encodeURIComponent(url), "_blank");
+    };
+
+    window.shareLinkedIn = function() {
+        var url = window.location.href;
+        window.open("https://www.linkedin.com/sharing/share-offsite/?url=" + encodeURIComponent(url), "_blank");
+    };
+
+    window.shareFacebook = function() {
+        var url = window.location.href;
+        window.open("https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(url), "_blank");
+    };
+
+    window.copyLink = function() {
+        var dummy = document.createElement("input");
+        document.body.appendChild(dummy);
+        dummy.value = window.location.href;
+        dummy.select();
+        document.execCommand("copy");
+        document.body.removeChild(dummy);
+        alert("Link copied to clipboard!");
+    };
+
+    window.getAdvice = function(domain, prompt) {
+        const modal = document.getElementById('adviceModal');
+        const modalContent = document.getElementById('adviceContent');
+        if (!modal || !modalContent) {
+            console.error('Modal elements not found');
+            return;
+        }
+        const spinner = document.createElement('div');
+        spinner.className = 'advice-spinner';
+        modalContent.innerHTML = '';
+        modalContent.appendChild(spinner);
+        modal.style.display = "block";
+
+        fetch('/get_advice', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({domain: domain, prompt: prompt})
+        })
+        .then(response => response.json())
+        .then(data => {
+            spinner.remove();
+            if (data.error) {
+                modalContent.innerHTML = `<p class="error">Error: ${data.error}</p>`;
+            } else {
+                const formattedAdvice = data.advice
+                    .replace(/^\d+\.\s*/gm, '')  // Remove numbering
+                    .split('\n')
+                    .filter(item => item.trim() !== '')  // Remove empty lines
+                    .map(item => `<li>${item}</li>`)
+                    .join('');
+                modalContent.innerHTML = `
+                    <h3>Advice for improving visibility of ${domain} for "${prompt}":</h3>
+                    <ol>${formattedAdvice}</ol>
+                `;
+            }
+        })
+        .catch((error) => {
+            spinner.remove();
+            console.error('Error:', error);
+            modalContent.innerHTML = `<p class="error">An error occurred while fetching advice. Please try again.</p>`;
+        });
+    };
 
     // Re-attach event listeners
     attachEventListeners();
@@ -165,7 +237,7 @@ function formatVisibility(visible, domain, prompt, index) {
         }
         return `<span style="color: green;">✓ Yes</span><br>Congrats, you're ${rankText}`;
     } else {
-        return `<span style="color: red;">✗ No</span><br><a href="#" class="advice-link" data-domain="${domain}" data-prompt="${prompt}">Get Advice</a>`;
+        return `<span style="color: red;">✗ No</span><br><a href="#" class="advice-link" onclick="window.getAdvice('${domain}', '${prompt.replace(/'/g, "\\'")}'); return false;">Get Advice</a>`;
     }
 }
 
@@ -181,7 +253,7 @@ function attachEventListeners() {
     document.querySelectorAll('.advice-link').forEach(link => {
         link.addEventListener('click', function(e) {
             e.preventDefault();
-            getAdvice(this.dataset.domain, this.dataset.prompt);
+            window.getAdvice(this.dataset.domain, this.dataset.prompt);
         });
     });
 
