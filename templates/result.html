@@ -17,8 +17,6 @@
     
     <!-- Font Awesome CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </head>
 <body>
     <header>
@@ -59,5 +57,30 @@
         <i class="fas fa-chevron-up" aria-hidden="true"></i>
     </a>
 
+    <!-- Modal for displaying advice -->
+    <div id="adviceModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="adviceContent"></div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            init();
+            // If there's data in the session, display it
+            {% if domain %}
+                displayResults({
+                    domain: "{{ domain }}",
+                    info: {{ info|tojson }},
+                    prompts: {{ prompts|tojson }},
+                    table: {{ table|tojson }},
+                    searches_left: {{ searches_left }}
+                });
+            {% endif %}
+        });
+    </script>
 </body>
 </html>

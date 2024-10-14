@@ -25,6 +25,51 @@ function copyLink() {
     alert("Link copied to clipboard!");
 }
 
+function getAdvice(domain, prompt) {
+    const modal = document.getElementById('adviceModal');
+    const modalContent = document.getElementById('adviceContent');
+    if (!modal || !modalContent) {
+        console.error('Modal elements not found');
+        return;
+    }
+    const spinner = document.createElement('div');
+    spinner.className = 'advice-spinner';
+    modalContent.innerHTML = '';
+    modalContent.appendChild(spinner);
+    modal.style.display = "block";
+
+    fetch('/get_advice', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({domain: domain, prompt: prompt})
+    })
+    .then(response => response.json())
+    .then(data => {
+        spinner.remove();
+        if (data.error) {
+            modalContent.innerHTML = `<p class="error">Error: ${data.error}</p>`;
+        } else {
+            const formattedAdvice = data.advice
+                .replace(/^\d+\.\s*/gm, '')  // Remove numbering
+                .split('\n')
+                .filter(item => item.trim() !== '')  // Remove empty lines
+                .map(item => `<li>${item}</li>`)
+                .join('');
+            modalContent.innerHTML = `
+                <h3>Advice for improving visibility of ${domain} for "${prompt}":</h3>
+                <ol>${formattedAdvice}</ol>
+            `;
+        }
+    })
+    .catch((error) => {
+        spinner.remove();
+        console.error('Error:', error);
+        modalContent.innerHTML = `<p class="error">An error occurred while fetching advice. Please try again.</p>`;
+    });
+}
+
 // Function to load and display results
 function displayResults(data) {
     const mainContent = document.getElementById('main-content');
@@ -37,7 +82,7 @@ function displayResults(data) {
         
         <h2>Relevant Searches</h2>
         <ol>
-        ${data.prompts.map((prompt, index) => `<li><a href="#result-${index + 1}">${prompt.split('.', 1)[-1].trim().replace(/^"|"$/g, '')}</a></li>`).join('')}
+        ${data.prompts.map((prompt, index) => `<li><a href="#result-${index + 1}">${prompt.split('.', 1)[1].trim().replace(/^"|"$/g, '')}</a></li>`).join('')}
         </ol>
         
         <h2>Visibility and Competitors</h2>
@@ -55,7 +100,7 @@ function displayResults(data) {
                 ${data.table.map((row, index) => `
                     <tr id="result-${index + 1}">
                         <td class="expandable">
-                            <div class="content">${row.prompt.split('.', 1)[-1].trim().replace(/^"|"$/g, '')}</div>
+                            <div class="content">${row.prompt.split('.', 1)[1].trim().replace(/^"|"$/g, '')}</div>
                             <button class="expand-btn" aria-label="Expand">+</button>
                         </td>
                         <td class="expandable">
@@ -139,6 +184,22 @@ function attachEventListeners() {
             getAdvice(this.dataset.domain, this.dataset.prompt);
         });
     });
+
+    // Close modal when clicking outside of it
+    window.onclick = function(event) {
+        const modal = document.getElementById('adviceModal');
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
+
+    // Close modal when clicking the close button
+    const closeButton = document.querySelector('.close');
+    if (closeButton) {
+        closeButton.onclick = function() {
+            document.getElementById('adviceModal').style.display = "none";
+        }
+    }
 }
 
 // Main initialization function
