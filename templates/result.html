@@ -115,34 +115,6 @@
             </button>
         </div>
 
-        <script>
-        function shareTwitter() {
-            var text = "I just analyzed my website's visibility in AI search results using LLM Search Performance Tracker! Check it out:";
-            var url = window.location.href;
-            window.open("https://twitter.com/intent/tweet?text=" + encodeURIComponent(text) + "&url=" + encodeURIComponent(url), "_blank");
-        }
-
-        function shareLinkedIn() {
-            var url = window.location.href;
-            window.open("https://www.linkedin.com/sharing/share-offsite/?url=" + encodeURIComponent(url), "_blank");
-        }
-
-        function shareFacebook() {
-            var url = window.location.href;
-            window.open("https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(url), "_blank");
-        }
-
-        function copyLink() {
-            var dummy = document.createElement("input");
-            document.body.appendChild(dummy);
-            dummy.value = window.location.href;
-            dummy.select();
-            document.execCommand("copy");
-            document.body.removeChild(dummy);
-            alert("Link copied to clipboard!");
-        }
-        </script>
-
         {% if searches_left > 0 %}
             <div class="cta-container">
                 <p class="cta-text">You have {{ searches_left }} free searches left. Want to analyze more domains?</p>
@@ -154,139 +126,135 @@
                 <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button">Join Waiting List for Premium Access</a>
             </div>
         {% endif %}
+    </main>
 
-        <script>
-        function getAdvice(domain, prompt) {
-            const modal = document.getElementById('adviceModal');
-            const modalContent = document.getElementById('adviceContent');
-            const spinner = document.createElement('div');
-            spinner.className = 'advice-spinner';
-            modalContent.innerHTML = '';
-            modalContent.appendChild(spinner);
-            modal.style.display = "block";
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>LLM Search Performance Tracker</h3>
+                <p>&copy; 2024 All rights reserved.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="{{ url_for('privacy_policy') }}">Privacy Policy</a></li>
+                    <li><a href="{{ url_for('terms_of_service') }}">Terms of Service</a></li>
+                    <li><a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank">Contact Us</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Our Blog</h3>
+                <ul>
+                    <li><a href="{{ url_for('blog_post') }}">10 Effective Ways to Track Your Brand's Visibility in AI-Powered Search Results</a></li>
+                    <li><a href="{{ url_for('aeo_blog_post') }}">Answer Engine Optimization: The Next Evolution of SEO</a></li>
+                </ul>
+            </div>
+        </div>
+    </footer>
 
-            fetch('/get_advice', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({domain: domain, prompt: prompt})
-            })
-            .then(response => response.json())
-            .then(data => {
-                spinner.remove();
-                if (data.error) {
-                    modalContent.innerHTML = `<p class="error">Error: ${data.error}</p>`;
-                } else {
-                    const formattedAdvice = data.advice
-                        .replace(/^\d+\.\s*/gm, '')  // Remove numbering
-                        .split('\n')
-                        .filter(item => item.trim() !== '')  // Remove empty lines
-                        .map(item => `<li>${item}</li>`)
-                        .join('');
-                    modalContent.innerHTML = `
-                        <h3>Advice for improving visibility of ${domain} for "${prompt}":</h3>
-                        <ol>${formattedAdvice}</ol>
-                    `;
-                }
-            })
-            .catch((error) => {
-                spinner.remove();
-                console.error('Error:', error);
-                modalContent.innerHTML = `<p class="error">An error occurred while fetching advice. Please try again.</p>`;
-            });
-        }
+    <a href="#" id="back-to-top" class="back-to-top" aria-label="Back to top">
+        <i class="fas fa-chevron-up" aria-hidden="true"></i>
+    </a>
 
-        // Close modal when clicking outside of it
-        window.onclick = function(event) {
-            const modal = document.getElementById('adviceModal');
-            if (event.target == modal) {
-                modal.style.display = "none";
-            }
-        }
+    <!-- Add this script block just before the closing </body> tag -->
+    <script>
+    function shareTwitter() {
+        var text = "I just analyzed my website's visibility in AI search results using LLM Search Performance Tracker! Check it out:";
+        var url = window.location.href;
+        window.open("https://twitter.com/intent/tweet?text=" + encodeURIComponent(text) + "&url=" + encodeURIComponent(url), "_blank");
+    }
 
-        // Close modal when clicking the close button
-        document.querySelector('.close').onclick = function() {
-            document.getElementById('adviceModal').style.display = "none";
-        }
+    function shareLinkedIn() {
+        var url = window.location.href;
+        window.open("https://www.linkedin.com/sharing/share-offsite/?url=" + encodeURIComponent(url), "_blank");
+    }
 
-        // Back to top button functionality
-        var backToTopButton = document.getElementById("back-to-top");
-        window.onscroll = function() {scrollFunction()};
+    function shareFacebook() {
+        var url = window.location.href;
+        window.open("https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(url), "_blank");
+    }
 
-        function scrollFunction() {
-            if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
-                backToTopButton.style.display = "block";
+    function copyLink() {
+        var dummy = document.createElement("input");
+        document.body.appendChild(dummy);
+        dummy.value = window.location.href;
+        dummy.select();
+        document.execCommand("copy");
+        document.body.removeChild(dummy);
+        alert("Link copied to clipboard!");
+    }
+
+    function getAdvice(domain, prompt) {
+        const modal = document.getElementById('adviceModal');
+        const modalContent = document.getElementById('adviceContent');
+        const spinner = document.createElement('div');
+        spinner.className = 'advice-spinner';
+        modalContent.innerHTML = '';
+        modalContent.appendChild(spinner);
+        modal.style.display = "block";
+
+        fetch('/get_advice', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({domain: domain, prompt: prompt})
+        })
+        .then(response => response.json())
+        .then(data => {
+            spinner.remove();
+            if (data.error) {
+                modalContent.innerHTML = `<p class="error">Error: ${data.error}</p>`;
             } else {
-                backToTopButton.style.display = "none";
+                const formattedAdvice = data.advice
+                    .replace(/^\d+\.\s*/gm, '')  // Remove numbering
+                    .split('\n')
+                    .filter(item => item.trim() !== '')  // Remove empty lines
+                    .map(item => `<li>${item}</li>`)
+                    .join('');
+                modalContent.innerHTML = `
+                    <h3>Advice for improving visibility of ${domain} for "${prompt}":</h3>
+                    <ol>${formattedAdvice}</ol>
+                `;
             }
-        }
+        })
+        .catch((error) => {
+            spinner.remove();
+            console.error('Error:', error);
+            modalContent.innerHTML = `<p class="error">An error occurred while fetching advice. Please try again.</p>`;
+        });
+    }
 
-        backToTopButton.onclick = function() {
-            document.body.scrollTop = 0; // For Safari
-            document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+    // Close modal when clicking outside of it
+    window.onclick = function(event) {
+        const modal = document.getElementById('adviceModal');
+        if (event.target == modal) {
+            modal.style.display = "none";
         }
+    }
+
+    // Close modal when clicking the close button
+    document.querySelector('.close').onclick = function() {
+        document.getElementById('adviceModal').style.display = "none";
+    }
+
+    // Back to top button functionality
+    var backToTopButton = document.getElementById("back-to-top");
+    window.onscroll = function() {scrollFunction()};
+
+    function scrollFunction() {
+        if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+            backToTopButton.style.display = "block";
+        } else {
+            backToTopButton.style.display = "none";
+        }
+    }
+
+    backToTopButton.onclick = function() {
+        document.body.scrollTop = 0; // For Safari
+        document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+    }
     </script>
-</main>
-
-<footer>
-    <div class="footer-content">
-        <div class="footer-section">
-            <h3>LLM Search Performance Tracker</h3>
-            <p>&copy; 2024 All rights reserved.</p>
-        </div>
-        <div class="footer-section">
-            <h3>Quick Links</h3>
-            <ul>
-                <li><a href="{{ url_for('privacy_policy') }}">Privacy Policy</a></li>
-                <li><a href="{{ url_for('terms_of_service') }}">Terms of Service</a></li>
-                <li><a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank">Contact Us</a></li>
-            </ul>
-        </div>
-        <div class="footer-section">
-            <h3>Our Blog</h3>
-            <ul>
-                <li><a href="{{ url_for('blog_post') }}">10 Effective Ways to Track Your Brand's Visibility in AI-Powered Search Results</a></li>
-                <li><a href="{{ url_for('aeo_blog_post') }}">Answer Engine Optimization: The Next Evolution of SEO</a></li>
-            </ul>
-        </div>
-    </div>
-</footer>
-
-<a href="#" id="back-to-top" class="back-to-top" aria-label="Back to top">
-    <i class="fas fa-chevron-up" aria-hidden="true"></i>
-</a>
-
-<!-- Add this script block just before the closing </body> tag -->
-<script>
-function shareTwitter() {
-    var text = "I just analyzed my website's visibility in AI search results using LLM Search Performance Tracker! Check it out:";
-    var url = window.location.href;
-    window.open("https://twitter.com/intent/tweet?text=" + encodeURIComponent(text) + "&url=" + encodeURIComponent(url), "_blank");
-}
-
-function shareLinkedIn() {
-    var url = window.location.href;
-    window.open("https://www.linkedin.com/sharing/share-offsite/?url=" + encodeURIComponent(url), "_blank");
-}
-
-function shareFacebook() {
-    var url = window.location.href;
-    window.open("https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(url), "_blank");
-}
-
-function copyLink() {
-    var dummy = document.createElement("input");
-    document.body.appendChild(dummy);
-    dummy.value = window.location.href;
-    dummy.select();
-    document.execCommand("copy");
-    document.body.removeChild(dummy);
-    alert("Link copied to clipboard!");
-}
-
-// Other existing functions (getAdvice, scrollFunction, etc.) should also be moved here
-</script>
 
 </body>
 </html>
