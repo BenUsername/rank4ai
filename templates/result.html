@@ -257,5 +257,34 @@
     <i class="fas fa-chevron-up" aria-hidden="true"></i>
 </a>
 
+<!-- Add this script block just before the closing </body> tag -->
+<script>
+function shareTwitter() {
+    var text = "I just analyzed my website's visibility in AI search results using LLM Search Performance Tracker! Check it out:";
+    var url = window.location.href;
+    window.open("https://twitter.com/intent/tweet?text=" + encodeURIComponent(text) + "&url=" + encodeURIComponent(url), "_blank");
+}
+
+function shareLinkedIn() {
+    var url = window.location.href;
+    window.open("https://www.linkedin.com/sharing/share-offsite/?url=" + encodeURIComponent(url), "_blank");
+}
+
+function shareFacebook() {
+    var url = window.location.href;
+    window.open("https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(url), "_blank");
+}
+
+function copyLink() {
+    var dummy = document.createElement("input");
+    document.body.appendChild(dummy);
+    dummy.value = window.location.href;
+    dummy.select();
+    document.execCommand("copy");
+    document.body.removeChild(dummy);
+    alert("Link copied to clipboard!");
+}
+</script>
+
 </body>
 </html>
