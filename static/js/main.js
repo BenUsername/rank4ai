@@ -73,6 +73,11 @@ function getAdvice(domain, prompt) {
 // Function to load and display results
 function displayResults(data) {
     const mainContent = document.getElementById('main-content');
+    if (!mainContent) {
+        console.error('Main content element not found');
+        return;
+    }
+    
     mainContent.innerHTML = `
         <h1>Results for ${data.domain}</h1>
         
@@ -123,16 +128,16 @@ function displayResults(data) {
 
         <div class="share-container">
             <h3>Share your results:</h3>
-            <button onclick="window.shareTwitter()" class="share-button twitter">
+            <button onclick="shareTwitter()" class="share-button twitter">
                 <i class="fab fa-twitter"></i> Twitter
             </button>
-            <button onclick="window.shareLinkedIn()" class="share-button linkedin">
+            <button onclick="shareLinkedIn()" class="share-button linkedin">
                 <i class="fab fa-linkedin"></i> LinkedIn
             </button>
-            <button onclick="window.shareFacebook()" class="share-button facebook">
+            <button onclick="shareFacebook()" class="share-button facebook">
                 <i class="fab fa-facebook"></i> Facebook
             </button>
-            <button onclick="window.copyLink()" class="share-button copy-link">
+            <button onclick="copyLink()" class="share-button copy-link">
                 <i class="fas fa-link"></i> Copy Link
             </button>
         </div>
@@ -165,7 +170,7 @@ function formatVisibility(visible, domain, prompt, index) {
         }
         return `<span style="color: green;">✓ Yes</span><br>Congrats, you're ${rankText}`;
     } else {
-        return `<span style="color: red;">✗ No</span><br><a href="#" class="advice-link" onclick="window.getAdvice('${domain}', '${prompt.replace(/'/g, "\\'")}'); return false;">Get Advice</a>`;
+        return `<span style="color: red;">✗ No</span><br><a href="#" class="get-advice-btn" data-domain="${domain}" data-prompt="${prompt}">Get Advice</a>`;
     }
 }
 
@@ -178,10 +183,12 @@ function attachEventListeners() {
         });
     });
 
-    document.querySelectorAll('.advice-link').forEach(link => {
-        link.addEventListener('click', function(e) {
+    document.querySelectorAll('.get-advice-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
             e.preventDefault();
-            window.getAdvice(this.dataset.domain, this.dataset.prompt);
+            const domain = this.getAttribute('data-domain');
+            const prompt = this.getAttribute('data-prompt');
+            getAdvice(domain, prompt);
         });
     });
 

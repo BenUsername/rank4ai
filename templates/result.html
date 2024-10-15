@@ -29,6 +29,14 @@
         <!-- Content will be dynamically inserted here -->
     </main>
 
+    <!-- Modal for displaying advice -->
+    <div id="adviceModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="adviceContent"></div>
+        </div>
+    </div>
+
     <footer>
         <div class="footer-content">
             <div class="footer-section">
@@ -57,14 +65,6 @@
         <i class="fas fa-chevron-up" aria-hidden="true"></i>
     </a>
 
-    <!-- Modal for displaying advice -->
-    <div id="adviceModal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <div id="adviceContent"></div>
-        </div>
-    </div>
-
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -78,67 +78,7 @@
                     searches_left: {{ searches_left }}
                 });
             {% endif %}
-
-            // Add event listeners for "Get advice" buttons
-            document.querySelectorAll('.get-advice-btn').forEach(button => {
-                button.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const prompt = this.getAttribute('data-prompt');
-                    getAdvice("{{ domain }}", prompt);
-                });
-            });
         });
-
-        function getAdvice(domain, prompt) {
-            const modal = document.getElementById('adviceModal');
-            const modalContent = document.getElementById('adviceContent');
-            if (!modal || !modalContent) {
-                console.error('Modal elements not found');
-                return;
-            }
-            const spinner = document.createElement('div');
-            spinner.className = 'advice-spinner';
-            modalContent.innerHTML = '';
-            modalContent.appendChild(spinner);
-            modal.style.display = "block";
-
-            fetch('/get_advice', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({domain: domain, prompt: prompt})
-            })
-            .then(response => response.json())
-            .then(data => {
-                spinner.remove();
-                if (data.error) {
-                    modalContent.innerHTML = `<p class="error">Error: ${data.error}</p>`;
-                } else {
-                    modalContent.innerHTML = `
-                        <h3>Advice for improving visibility of ${domain} for "${prompt}":</h3>
-                        <p>${data.advice}</p>
-                    `;
-                }
-            })
-            .catch((error) => {
-                spinner.remove();
-                console.error('Error:', error);
-                modalContent.innerHTML = `<p class="error">An error occurred while fetching advice. Please try again.</p>`;
-            });
-        }
-
-        // Close modal when clicking on <span> (x)
-        document.querySelector('.close').onclick = function() {
-            document.getElementById('adviceModal').style.display = 'none';
-        }
-
-        // Close modal when clicking outside of it
-        window.onclick = function(event) {
-            if (event.target == document.getElementById('adviceModal')) {
-                document.getElementById('adviceModal').style.display = 'none';
-            }
-        }
     </script>
 </body>
 </html>
