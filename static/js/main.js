@@ -280,15 +280,39 @@ function init() {
     if (analyzeForm) {
         analyzeForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            // Your existing form submission code here
-            // ...
-            // When you receive the response:
-            // displayResults(data);
+            const domain = document.getElementById('domain').value;
+            const submitButton = document.querySelector('button[type="submit"]');
+            const originalButtonText = submitButton.textContent;
+            submitButton.disabled = true;
+            submitButton.textContent = 'Analyzing...';
+
+            fetch('/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `domain=${encodeURIComponent(domain)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    displayResults(data);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            })
+            .finally(() => {
+                submitButton.disabled = false;
+                submitButton.textContent = originalButtonText;
+            });
         });
     }
 
-    // Other initialization code
-    // ...
+    attachEventListeners();
 }
 
 // Call init when the DOM is fully loaded

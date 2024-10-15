@@ -58,7 +58,7 @@
     </a>
 
     <!-- Modal for displaying advice -->
-    <div id="adviceModal" class="modal">
+    <div id="adviceModal" class="modal" style="display: none;">
         <div class="modal-content">
             <span class="close">&times;</span>
             <div id="adviceContent"></div>
@@ -67,10 +67,8 @@
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script>
-        // Initialize the page
         document.addEventListener('DOMContentLoaded', function() {
             init();
-            // If there's data in the session, display it
             {% if domain %}
                 displayResults({
                     domain: "{{ domain }}",
@@ -83,7 +81,8 @@
 
             // Add event listeners for "Get advice" buttons
             document.querySelectorAll('.get-advice-btn').forEach(button => {
-                button.addEventListener('click', function() {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
                     const prompt = this.getAttribute('data-prompt');
                     getAdvice("{{ domain }}", prompt);
                 });
@@ -92,55 +91,52 @@
 
         function getAdvice(domain, prompt) {
             const modal = document.getElementById('adviceModal');
-            const adviceContent = document.getElementById('adviceContent');
-            
-            if (!modal || !adviceContent) {
+            const modalContent = document.getElementById('adviceContent');
+            if (!modal || !modalContent) {
                 console.error('Modal elements not found');
-                alert('An error occurred. Please try again.');
                 return;
             }
-
             const spinner = document.createElement('div');
             spinner.className = 'advice-spinner';
-            adviceContent.innerHTML = '';
-            adviceContent.appendChild(spinner);
-            modal.style.display = 'block';
+            modalContent.innerHTML = '';
+            modalContent.appendChild(spinner);
+            modal.style.display = "block";
 
             fetch('/get_advice', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ domain: domain, prompt: prompt }),
+                body: JSON.stringify({domain: domain, prompt: prompt})
             })
             .then(response => response.json())
             .then(data => {
                 spinner.remove();
-                if (data.advice) {
-                    adviceContent.innerHTML = data.advice;
+                if (data.error) {
+                    modalContent.innerHTML = `<p class="error">Error: ${data.error}</p>`;
                 } else {
-                    adviceContent.innerHTML = '<p>Failed to get advice. Please try again.</p>';
+                    modalContent.innerHTML = `
+                        <h3>Advice for improving visibility of ${domain} for "${prompt}":</h3>
+                        <p>${data.advice}</p>
+                    `;
                 }
             })
-            .catch(error => {
+            .catch((error) => {
                 spinner.remove();
                 console.error('Error:', error);
-                adviceContent.innerHTML = '<p>An error occurred. Please try again.</p>';
+                modalContent.innerHTML = `<p class="error">An error occurred while fetching advice. Please try again.</p>`;
             });
+        }
 
-            // Close modal when clicking on <span> (x)
-            const span = modal.querySelector('.close');
-            if (span) {
-                span.onclick = function() {
-                    modal.style.display = 'none';
-                }
-            }
+        // Close modal when clicking on <span> (x)
+        document.querySelector('.close').onclick = function() {
+            document.getElementById('adviceModal').style.display = 'none';
+        }
 
-            // Close modal when clicking outside of it
-            window.onclick = function(event) {
-                if (event.target == modal) {
-                    modal.style.display = 'none';
-                }
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            if (event.target == document.getElementById('adviceModal')) {
+                document.getElementById('adviceModal').style.display = 'none';
             }
         }
     </script>
