@@ -225,22 +225,6 @@ function attachEventListeners() {
             getAdvice(domain, prompt);
         });
     });
-
-    // Close modal when clicking outside of it
-    window.onclick = function(event) {
-        const modal = document.getElementById('adviceModal');
-        if (event.target == modal) {
-            modal.style.display = "none";
-        }
-    }
-
-    // Close modal when clicking the close button
-    const closeButton = document.querySelector('.close');
-    if (closeButton) {
-        closeButton.onclick = function() {
-            document.getElementById('adviceModal').style.display = "none";
-        }
-    }
 }
 
 // Main initialization function
