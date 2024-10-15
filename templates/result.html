@@ -91,6 +91,21 @@
         });
 
         function getAdvice(domain, prompt) {
+            const modal = document.getElementById('adviceModal');
+            const adviceContent = document.getElementById('adviceContent');
+            
+            if (!modal || !adviceContent) {
+                console.error('Modal elements not found');
+                alert('An error occurred. Please try again.');
+                return;
+            }
+
+            const spinner = document.createElement('div');
+            spinner.className = 'advice-spinner';
+            adviceContent.innerHTML = '';
+            adviceContent.appendChild(spinner);
+            modal.style.display = 'block';
+
             fetch('/get_advice', {
                 method: 'POST',
                 headers: {
@@ -100,32 +115,33 @@
             })
             .then(response => response.json())
             .then(data => {
+                spinner.remove();
                 if (data.advice) {
-                    const modal = document.getElementById('adviceModal');
-                    const adviceContent = document.getElementById('adviceContent');
                     adviceContent.innerHTML = data.advice;
-                    modal.style.display = 'block';
-
-                    // Close modal when clicking on <span> (x)
-                    const span = document.getElementsByClassName('close')[0];
-                    span.onclick = function() {
-                        modal.style.display = 'none';
-                    }
-
-                    // Close modal when clicking outside of it
-                    window.onclick = function(event) {
-                        if (event.target == modal) {
-                            modal.style.display = 'none';
-                        }
-                    }
                 } else {
-                    alert('Failed to get advice. Please try again.');
+                    adviceContent.innerHTML = '<p>Failed to get advice. Please try again.</p>';
                 }
             })
             .catch(error => {
+                spinner.remove();
                 console.error('Error:', error);
-                alert('An error occurred. Please try again.');
+                adviceContent.innerHTML = '<p>An error occurred. Please try again.</p>';
             });
+
+            // Close modal when clicking on <span> (x)
+            const span = modal.querySelector('.close');
+            if (span) {
+                span.onclick = function() {
+                    modal.style.display = 'none';
+                }
+            }
+
+            // Close modal when clicking outside of it
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                }
+            }
         }
     </script>
 </body>
