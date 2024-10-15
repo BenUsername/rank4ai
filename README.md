@@ -14,7 +14,7 @@ Rank4AI is an open-source LLM-friendly tool for tracking and optimizing your web
 
 ## Quick Start 🚀
 
-[Coming soon]
+See the website site live at promptboostai.com
 
 ## Documentation 📚
 
