@@ -69,15 +69,10 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             init();
-            {% if domain %}
-                displayResults({
-                    domain: "{{ domain }}",
-                    info: {{ info|tojson }},
-                    prompts: {{ prompts|tojson }},
-                    table: {{ table|tojson }},
-                    searches_left: {{ searches_left }}
-                });
-            {% endif %}
+            var resultData = JSON.parse('{{ result_data|tojson|safe }}');
+            if (resultData.domain) {
+                displayResults(resultData);
+            }
         });
     </script>
 </body>

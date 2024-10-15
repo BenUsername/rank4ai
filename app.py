@@ -326,12 +326,15 @@ def results():
     table = session.get('table', [])
     searches_left = 3 - session.get('searches_performed', 0)
 
-    return render_template('result.html', 
-                           domain=domain,
-                           info=info,
-                           prompts=prompts,
-                           table=table,
-                           searches_left=searches_left)
+    result_data = {
+        'domain': domain,
+        'info': info,
+        'prompts': prompts,
+        'table': table,
+        'searches_left': searches_left
+    }
+
+    return render_template('result.html', result_data=result_data)
 
 # Add this new route to your app.py file
 @app.route('/blog/track-brand-visibility-ai-search')
