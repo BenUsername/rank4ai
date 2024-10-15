@@ -26,19 +26,50 @@ function copyLink() {
 }
 
 function getAdvice(domain, prompt) {
-    const modal = document.getElementById('adviceModal');
-    const modalContent = document.getElementById('adviceContent');
-    
-    if (!modal || !modalContent) {
-        console.error('Modal elements not found');
-        alert('An error occurred. Please try again.');
-        return;
+    // Remove any existing modal
+    let existingModal = document.getElementById('adviceModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    // Create modal elements
+    const modal = document.createElement('div');
+    modal.id = 'adviceModal';
+    modal.className = 'modal';
+
+    const modalContent = document.createElement('div');
+    modalContent.className = 'modal-content';
+
+    const closeSpan = document.createElement('span');
+    closeSpan.className = 'close';
+    closeSpan.innerHTML = '&times;';
+
+    const adviceContent = document.createElement('div');
+    adviceContent.id = 'adviceContent';
+
+    modalContent.appendChild(closeSpan);
+    modalContent.appendChild(adviceContent);
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+
+    // Add event listener to close button
+    closeSpan.onclick = function() {
+        modal.style.display = 'none';
+        modal.remove();
+    }
+
+    // Close modal when clicking outside of it
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = 'none';
+            modal.remove();
+        }
     }
 
     const spinner = document.createElement('div');
     spinner.className = 'advice-spinner';
-    modalContent.innerHTML = '';
-    modalContent.appendChild(spinner);
+    adviceContent.innerHTML = '';
+    adviceContent.appendChild(spinner);
     modal.style.display = 'block';
 
     fetch('/get_advice', {
@@ -58,34 +89,19 @@ function getAdvice(domain, prompt) {
                 .filter(item => item.trim() !== '')  // Remove empty lines
                 .map(item => `<li>${item}</li>`)
                 .join('');
-            modalContent.innerHTML = `
+            adviceContent.innerHTML = `
                 <h3>Advice for improving visibility of ${domain} for "${prompt}":</h3>
                 <ol>${formattedAdvice}</ol>
             `;
         } else {
-            modalContent.innerHTML = '<p>Failed to get advice. Please try again.</p>';
+            adviceContent.innerHTML = '<p>Failed to get advice. Please try again.</p>';
         }
     })
     .catch(error => {
         spinner.remove();
         console.error('Error:', error);
-        modalContent.innerHTML = '<p>An error occurred. Please try again.</p>';
+        adviceContent.innerHTML = '<p>An error occurred. Please try again.</p>';
     });
-
-    // Close modal when clicking on <span> (x)
-    const span = modal.querySelector('.close');
-    if (span) {
-        span.onclick = function() {
-            modal.style.display = 'none';
-        }
-    }
-
-    // Close modal when clicking outside of it
-    window.onclick = function(event) {
-        if (event.target == modal) {
-            modal.style.display = 'none';
-        }
-    }
 }
 
 // Function to load and display results
