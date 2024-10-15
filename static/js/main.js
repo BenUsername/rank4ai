@@ -28,29 +28,30 @@ function copyLink() {
 function getAdvice(domain, prompt) {
     const modal = document.getElementById('adviceModal');
     const modalContent = document.getElementById('adviceContent');
+    
     if (!modal || !modalContent) {
         console.error('Modal elements not found');
+        alert('An error occurred. Please try again.');
         return;
     }
+
     const spinner = document.createElement('div');
     spinner.className = 'advice-spinner';
     modalContent.innerHTML = '';
     modalContent.appendChild(spinner);
-    modal.style.display = "block";
+    modal.style.display = 'block';
 
     fetch('/get_advice', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({domain: domain, prompt: prompt})
+        body: JSON.stringify({ domain: domain, prompt: prompt }),
     })
     .then(response => response.json())
     .then(data => {
         spinner.remove();
-        if (data.error) {
-            modalContent.innerHTML = `<p class="error">Error: ${data.error}</p>`;
-        } else {
+        if (data.advice) {
             const formattedAdvice = data.advice
                 .replace(/^\d+\.\s*/gm, '')  // Remove numbering
                 .split('\n')
@@ -61,13 +62,30 @@ function getAdvice(domain, prompt) {
                 <h3>Advice for improving visibility of ${domain} for "${prompt}":</h3>
                 <ol>${formattedAdvice}</ol>
             `;
+        } else {
+            modalContent.innerHTML = '<p>Failed to get advice. Please try again.</p>';
         }
     })
-    .catch((error) => {
+    .catch(error => {
         spinner.remove();
         console.error('Error:', error);
-        modalContent.innerHTML = `<p class="error">An error occurred while fetching advice. Please try again.</p>`;
+        modalContent.innerHTML = '<p>An error occurred. Please try again.</p>';
     });
+
+    // Close modal when clicking on <span> (x)
+    const span = modal.querySelector('.close');
+    if (span) {
+        span.onclick = function() {
+            modal.style.display = 'none';
+        }
+    }
+
+    // Close modal when clicking outside of it
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
+    }
 }
 
 // Function to load and display results
