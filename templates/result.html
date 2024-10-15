@@ -80,7 +80,53 @@
                     searches_left: {{ searches_left }}
                 });
             {% endif %}
+
+            // Add event listeners for "Get advice" buttons
+            document.querySelectorAll('.get-advice-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const prompt = this.getAttribute('data-prompt');
+                    getAdvice("{{ domain }}", prompt);
+                });
+            });
         });
+
+        function getAdvice(domain, prompt) {
+            fetch('/get_advice', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ domain: domain, prompt: prompt }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.advice) {
+                    const modal = document.getElementById('adviceModal');
+                    const adviceContent = document.getElementById('adviceContent');
+                    adviceContent.innerHTML = data.advice;
+                    modal.style.display = 'block';
+
+                    // Close modal when clicking on <span> (x)
+                    const span = document.getElementsByClassName('close')[0];
+                    span.onclick = function() {
+                        modal.style.display = 'none';
+                    }
+
+                    // Close modal when clicking outside of it
+                    window.onclick = function(event) {
+                        if (event.target == modal) {
+                            modal.style.display = 'none';
+                        }
+                    }
+                } else {
+                    alert('Failed to get advice. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+        }
     </script>
 </body>
 </html>
