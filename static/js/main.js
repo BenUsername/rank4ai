@@ -152,6 +152,32 @@ function afterDOMLoaded() {
             submitButton.disabled = true;
             submitButton.textContent = 'Analyzing...';
 
+            // Show spinner and progress log
+            const spinner = document.getElementById('spinner');
+            const progressLog = document.getElementById('progress-log');
+            spinner.style.display = 'block';
+            progressLog.innerHTML = '';
+
+            // Start progress updates
+            let progressStep = 0;
+            const progressInterval = setInterval(() => {
+                progressStep++;
+                switch(progressStep) {
+                    case 1:
+                        updateProgress('Fetching website content...');
+                        break;
+                    case 2:
+                        updateProgress('Analyzing content...');
+                        break;
+                    case 3:
+                        updateProgress('Generating prompts...');
+                        break;
+                    case 4:
+                        updateProgress('Simulating LLM responses...');
+                        break;
+                }
+            }, 2000);
+
             fetch('/analyze', {
                 method: 'POST',
                 headers: {
@@ -161,6 +187,9 @@ function afterDOMLoaded() {
             })
             .then(response => response.json())
             .then(data => {
+                clearInterval(progressInterval);
+                spinner.style.display = 'none';
+                progressLog.innerHTML = '';
                 if (data.error) {
                     alert(data.error);
                 } else {
@@ -168,6 +197,9 @@ function afterDOMLoaded() {
                 }
             })
             .catch(error => {
+                clearInterval(progressInterval);
+                spinner.style.display = 'none';
+                progressLog.innerHTML = '';
                 console.error('Error:', error);
                 alert('An error occurred. Please try again.');
             })
@@ -179,6 +211,11 @@ function afterDOMLoaded() {
     }
 
     attachEventListeners();
+}
+
+function updateProgress(message) {
+    const progressLog = document.getElementById('progress-log');
+    progressLog.innerHTML += `<p>${message}</p>`;
 }
 
 // Call init immediately
