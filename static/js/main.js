@@ -41,9 +41,6 @@ function getAdvice(domain, prompt) {
         const closeSpan = document.createElement('span');
         closeSpan.className = 'close';
         closeSpan.innerHTML = '&times;';
-        closeSpan.onclick = function() {
-            modal.style.display = 'none';
-        };
         
         modalContent = document.createElement('div');
         modalContent.id = 'adviceContent';
@@ -52,20 +49,30 @@ function getAdvice(domain, prompt) {
         modalInner.appendChild(modalContent);
         modal.appendChild(modalInner);
         document.body.appendChild(modal);
-
-        // Close modal when clicking outside of it
-        window.onclick = function(event) {
-            if (event.target == modal) {
-                modal.style.display = 'none';
-            }
-        };
     } else {
+        // Use modal.querySelector to find adviceContent within the modal
         modalContent = modal.querySelector('#adviceContent');
-        if (!modalContent) {
-            console.error('Modal content element not found');
-            return;
-        }
     }
+
+    if (!modalContent) {
+        console.error('Modal content element not found');
+        return;
+    }
+
+    // Set up event listeners
+    const closeSpan = modal.querySelector('.close');
+    if (closeSpan) {
+        closeSpan.onclick = function() {
+            modal.style.display = 'none';
+        };
+    }
+
+    // Close modal when clicking outside of it
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
+    };
 
     const spinner = document.createElement('div');
     spinner.className = 'advice-spinner';
