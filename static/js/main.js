@@ -29,72 +29,30 @@ function copyLink() {
 
 // Function to load and display results
 function displayResults(data) {
-    const mainContent = document.getElementById('main-content');
-    if (!mainContent) {
-        console.error('Main content element not found');
-        return;
-    }
+    const resultsSection = document.getElementById('results');
+    let html = `<h2>Results for ${data.domain}</h2>`;
+    html += `<h3>Website Information</h3>`;
+    html += `<p><strong>Title:</strong> ${data.info.title}</p>`;
+    html += `<p><strong>Description:</strong> ${data.info.description}</p>`;
     
-    // Clear previous content
-    mainContent.innerHTML = '';
-
-    // Add domain information
-    mainContent.innerHTML += `<h2>Results for ${data.domain}</h2>`;
-
-    // Add website information
-    mainContent.innerHTML += `
-        <h3>Website Information</h3>
-        <p><strong>Title:</strong> ${data.info.title}</p>
-        <p><strong>Description:</strong> ${data.info.description}</p>
-    `;
-
-    // Add table of results
-    mainContent.innerHTML += `
-        <h3>AI Search Visibility Results</h3>
-        <table>
-            <thead>
+    html += `<h3>Search Results</h3>`;
+    html += `<table>
                 <tr>
                     <th>Prompt</th>
-                    <th>AI Response</th>
-                    <th>Visibility Score</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${data.table.map(row => `
-                    <tr>
-                        <td>${row.prompt}</td>
-                        <td class="truncate">${row.response}</td>
-                        <td>${row.visibility_score}</td>
-                    </tr>
-                `).join('')}
-            </tbody>
-        </table>
-    `;
-
-    // Add sharing buttons
-    mainContent.innerHTML += `
-        <div class="share-container">
-            <h3>Share Your Results</h3>
-            <button onclick="shareTwitter()" class="share-button twitter"><i class="fab fa-twitter"></i> Share on Twitter</button>
-            <button onclick="shareLinkedIn()" class="share-button linkedin"><i class="fab fa-linkedin"></i> Share on LinkedIn</button>
-            <button onclick="shareFacebook()" class="share-button facebook"><i class="fab fa-facebook"></i> Share on Facebook</button>
-            <button onclick="copyLink()" class="share-button copy-link"><i class="fas fa-link"></i> Copy Link</button>
-        </div>
-    `;
-
-    // Add CTA
-    mainContent.innerHTML += `
-        <div class="cta-container">
-            <p class="cta-text">Want to improve your AI search visibility?</p>
-            <a href="#" class="cta-button" id="getAdviceButton">Get Personalized Advice</a>
-        </div>
-    `;
-
-    // Add event listener for the "Get Personalized Advice" button
-    document.getElementById('getAdviceButton').addEventListener('click', function(e) {
-        e.preventDefault();
-        showAdviceModal();
+                    <th>Answer</th>
+                    <th>Visible</th>
+                </tr>`;
+    
+    data.results.forEach(result => {
+        html += `<tr>
+                    <td>${result.prompt}</td>
+                    <td>${result.answer}</td>
+                    <td>${result.visible ? 'Yes' : 'No'}</td>
+                </tr>`;
     });
+    
+    html += `</table>`;
+    resultsSection.innerHTML = html;
 }
 
 function init() {
@@ -119,44 +77,30 @@ function handleFormSubmit(e) {
     submitButton.textContent = 'Analyzing...';
     
     const spinner = document.getElementById('spinner');
-    const progressLog = document.getElementById('progress-log');
+    const resultsSection = document.getElementById('results');
     spinner.style.display = 'block';
-    progressLog.innerHTML = '';
-    
-    let progress = 0;
-    const progressInterval = setInterval(() => {
-        progress += 10;
-        if (progress <= 100) {
-            updateProgress(`Analyzing... ${progress}%`);
-        }
-    }, 2000);
+    resultsSection.innerHTML = '';
 
-    fetchWithRetry('/analyze', {
+    fetch('/analyze', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: `domain=${encodeURIComponent(domain)}`
     })
-    .then(data => {
-        clearInterval(progressInterval);
-        spinner.style.display = 'none';
-        progressLog.innerHTML = '';
-        if (data.error) {
-            throw new Error(data.error);
-        } else {
-            console.log('Received data:', data);
-            displayResults(data);
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
+        return response.json();
+    })
+    .then(data => {
+        spinner.style.display = 'none';
+        displayResults(data);
     })
     .catch(error => {
-        clearInterval(progressInterval);
         spinner.style.display = 'none';
-        progressLog.innerHTML = '';
-        console.error('Error:', error);
-        const errorMessage = document.getElementById('error-message');
-        errorMessage.textContent = `An error occurred: ${error.message}. Please try again later.`;
-        errorMessage.style.display = 'block';
+        resultsSection.innerHTML = `<p class="error">Error: ${error.message}</p>`;
     })
     .finally(() => {
         submitButton.disabled = false;
@@ -164,31 +108,10 @@ function handleFormSubmit(e) {
     });
 }
 
-function updateProgress(message) {
-    const progressLog = document.getElementById('progress-log');
-    progressLog.innerHTML += `<p>${message}</p>`;
-}
-
 function showAdviceModal() {
     // Implementation for showing advice modal
     console.log('Showing advice modal');
     // You can implement the modal functionality here
-}
-
-function fetchWithRetry(url, options, retries = 3) {
-    return fetch(url, options)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .catch(error => {
-            if (retries > 0) {
-                return fetchWithRetry(url, options, retries - 1);
-            }
-            throw error;
-        });
 }
 
 // Make sure init() is called when the DOM is loaded
