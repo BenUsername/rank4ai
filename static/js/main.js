@@ -27,17 +27,20 @@ function copyLink() {
     alert("Link copied to clipboard!");
 }
 
+// New implementation of getAdvice
 function getAdvice(domain, prompt) {
     console.log('getAdvice called for domain:', domain, 'prompt:', prompt);
 
-    // Create modal elements
+    // Create modal
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.style.display = 'block';
 
+    // Create modal content
     const modalContent = document.createElement('div');
     modalContent.className = 'modal-content';
 
+    // Create close button
     const closeBtn = document.createElement('span');
     closeBtn.className = 'close';
     closeBtn.innerHTML = '&times;';
@@ -45,9 +48,11 @@ function getAdvice(domain, prompt) {
         document.body.removeChild(modal);
     };
 
+    // Create advice content container
     const adviceContent = document.createElement('div');
     adviceContent.id = 'adviceContent';
 
+    // Assemble modal
     modalContent.appendChild(closeBtn);
     modalContent.appendChild(adviceContent);
     modal.appendChild(modalContent);
@@ -204,16 +209,6 @@ function formatVisibility(visible, domain, prompt, index) {
 
 function attachEventListeners() {
     console.log('Attaching event listeners');
-    document.querySelectorAll('.get-advice-btn').forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            const domain = this.getAttribute('data-domain');
-            const prompt = decodeURIComponent(this.getAttribute('data-prompt'));
-            console.log('Get advice button clicked for domain:', domain, 'and prompt:', prompt);
-            getAdvice(domain, prompt);
-        });
-    });
-
     document.querySelectorAll('.expand-btn').forEach(button => {
         button.addEventListener('click', function() {
             const content = this.previousElementSibling;
