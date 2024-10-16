@@ -60,7 +60,11 @@ function getAdvice(domain, prompt) {
             }
         };
     } else {
-        modalContent = document.getElementById('adviceContent');
+        modalContent = modal.querySelector('#adviceContent');
+        if (!modalContent) {
+            console.error('Modal content element not found');
+            return;
+        }
     }
 
     const spinner = document.createElement('div');
