@@ -131,18 +131,12 @@ function handleFormSubmit(e) {
         }
     }, 2000);
 
-    fetch('/analyze', {
+    fetchWithRetry('/analyze', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: `domain=${encodeURIComponent(domain)}`
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
     })
     .then(data => {
         clearInterval(progressInterval);
@@ -160,7 +154,9 @@ function handleFormSubmit(e) {
         spinner.style.display = 'none';
         progressLog.innerHTML = '';
         console.error('Error:', error);
-        alert(`An error occurred: ${error.message}. Please try again.`);
+        const errorMessage = document.getElementById('error-message');
+        errorMessage.textContent = `An error occurred: ${error.message}. Please try again later.`;
+        errorMessage.style.display = 'block';
     })
     .finally(() => {
         submitButton.disabled = false;
@@ -177,6 +173,22 @@ function showAdviceModal() {
     // Implementation for showing advice modal
     console.log('Showing advice modal');
     // You can implement the modal functionality here
+}
+
+function fetchWithRetry(url, options, retries = 3) {
+    return fetch(url, options)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .catch(error => {
+            if (retries > 0) {
+                return fetchWithRetry(url, options, retries - 1);
+            }
+            throw error;
+        });
 }
 
 // Make sure init() is called when the DOM is loaded

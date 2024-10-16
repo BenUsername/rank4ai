@@ -241,17 +241,17 @@ def index():
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    start_time = time.time()
-    domain = request.form['domain']
-    searches_left = session.get('searches_left', 3)
-
-    if searches_left <= 0:
-        return jsonify({'error': 'No searches left. Please try again later.', 'searches_left': 0}), 403
-
-    if not is_valid_domain(domain):
-        return jsonify({'error': 'Invalid domain name.', 'searches_left': searches_left}), 400
-
     try:
+        start_time = time.time()
+        domain = request.form['domain']
+        searches_left = session.get('searches_left', 3)
+
+        if searches_left <= 0:
+            return jsonify({'error': 'No searches left. Please try again later.', 'searches_left': 0}), 403
+
+        if not is_valid_domain(domain):
+            return jsonify({'error': 'Invalid domain name.', 'searches_left': searches_left}), 400
+
         logging.info(f"Fetching content for {domain}")
         html_content = fetch_website_content(domain)
         if html_content is None:
@@ -284,8 +284,8 @@ def analyze():
         })
 
     except Exception as e:
-        logging.error(f"Error processing {domain}: {str(e)}")
-        return jsonify({'error': f"An error occurred while processing your request for {domain}. The website may be unavailable or blocking our requests. Please try another domain.", 'searches_left': searches_left}), 500
+        app.logger.error(f"Error processing {domain}: {str(e)}")
+        return jsonify({'error': f"An error occurred while processing your request. Please try again later."}), 503
 
 @app.route('/robots.txt')
 def robots():
