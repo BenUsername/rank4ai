@@ -26,15 +26,78 @@ function copyLink() {
 }
 
 function getAdvice(domain, prompt) {
-    const modal = document.getElementById('adviceModal');
-    const modalContent = document.getElementById('adviceContent');
+    console.log('getAdvice called with domain:', domain, 'and prompt:', prompt);
 
-    if (!modal || !modalContent) {
-        console.error('Modal or modal content not found');
+    const modal = document.getElementById('adviceModal');
+    console.log('Modal element:', modal);
+
+    if (!modal) {
+        console.error('Modal element not found');
+        alert('An error occurred. Please try again.');
         return;
     }
 
-    // ... rest of the function
+    let modalContent = modal.querySelector('#adviceContent');
+    console.log('Modal content element:', modalContent);
+
+    if (!modalContent) {
+        console.log('Modal content not found, creating it');
+        modalContent = document.createElement('div');
+        modalContent.id = 'adviceContent';
+        modal.querySelector('.modal-content').appendChild(modalContent);
+    }
+
+    const spinner = document.createElement('div');
+    spinner.className = 'advice-spinner';
+    modalContent.innerHTML = '';
+    modalContent.appendChild(spinner);
+    modal.style.display = 'block';
+
+    // Set up the close button event listener if not already set
+    const closeSpan = modal.querySelector('.close');
+    if (closeSpan && !closeSpan.onclick) {
+        closeSpan.onclick = function() {
+            modal.style.display = 'none';
+        };
+    }
+
+    // Close modal when clicking outside of it
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
+    };
+
+    fetch('/get_advice', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ domain: domain, prompt: prompt })
+    })
+    .then(response => response.json())
+    .then(data => {
+        spinner.remove();
+        if (data.advice) {
+            const formattedAdvice = data.advice
+                .replace(/^\d+\.\s*/gm, '')  // Remove numbering
+                .split('\n')
+                .filter(item => item.trim() !== '')  // Remove empty lines
+                .map(item => `<li>${item}</li>`)
+                .join('');
+            modalContent.innerHTML = `
+                <h3>Advice for improving visibility of ${domain} for "${prompt}":</h3>
+                <ol>${formattedAdvice}</ol>
+            `;
+        } else {
+            modalContent.innerHTML = '<p>Failed to get advice. Please try again.</p>';
+        }
+    })
+    .catch((error) => {
+        spinner.remove();
+        console.error('Error:', error);
+        modalContent.innerHTML = '<p class="error">An error occurred while fetching advice. Please try again.</p>';
+    });
 }
 
 // Function to load and display results
@@ -144,6 +207,17 @@ function formatVisibility(visible, domain, prompt, index) {
 }
 
 function attachEventListeners() {
+    console.log('Attaching event listeners');
+    document.querySelectorAll('.get-advice-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const domain = this.getAttribute('data-domain');
+            const prompt = decodeURIComponent(this.getAttribute('data-prompt'));
+            console.log('Get advice button clicked for domain:', domain, 'and prompt:', prompt);
+            getAdvice(domain, prompt);
+        });
+    });
+
     document.querySelectorAll('.expand-btn').forEach(button => {
         button.addEventListener('click', function() {
             const content = this.previousElementSibling;
@@ -151,20 +225,19 @@ function attachEventListeners() {
             this.textContent = content.classList.contains('expanded') ? '-' : '+';
         });
     });
-
-    document.querySelectorAll('.get-advice-btn').forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            const domain = this.getAttribute('data-domain');
-            // Decode the prompt
-            const prompt = decodeURIComponent(this.getAttribute('data-prompt'));
-            getAdvice(domain, prompt);
-        });
-    });
 }
 
-// Main initialization function
 function init() {
+    console.log('Initializing');
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', afterDOMLoaded);
+    } else {
+        afterDOMLoaded();
+    }
+}
+
+function afterDOMLoaded() {
+    console.log('DOM fully loaded');
     const analyzeForm = document.getElementById('analyzeForm');
     if (analyzeForm) {
         analyzeForm.addEventListener('submit', function(e) {
@@ -204,8 +277,8 @@ function init() {
     attachEventListeners();
 }
 
-// Call init when the DOM is fully loaded
-document.addEventListener('DOMContentLoaded', init);
+// Call init immediately
+init();
 
 function closeModal() {
     const modal = document.getElementById('adviceModal');

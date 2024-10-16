@@ -68,9 +68,11 @@
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOMContentLoaded event fired');
             init();
             var resultData = JSON.parse('{{ result_data|tojson|safe }}');
             if (resultData.domain) {
+                console.log('Displaying results for domain:', resultData.domain);
                 displayResults(resultData);
             }
         });
