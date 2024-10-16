@@ -197,7 +197,16 @@ def generate_prompt_answer(prompt, domain, info):
                 rank = i
                 break
         
-        visibility_str = f"Yes (Rank: {rank})" if visible == 'Yes' else 'No'
+        visibility_str = 'No'
+        if rank > 0:
+            if rank == 1:
+                visibility_str = "🎉 Congratulations! You're first!"
+            elif rank == 2:
+                visibility_str = "🥈 Great job! You're second!"
+            elif rank == 3:
+                visibility_str = "🥉 Nice! You're third!"
+            else:
+                visibility_str = f"✅ You're {rank}th"
         
         # Log the rank
         if rank > 0:

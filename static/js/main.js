@@ -99,20 +99,6 @@ function displayResults(data) {
         </div>
     `;
 
-    // Add CTA
-    mainContent.innerHTML += `
-        <div class="cta-container">
-            <p class="cta-text">Want to improve your AI search visibility?</p>
-            <a href="#" class="cta-button" id="getAdviceButton">Get Personalized Advice</a>
-        </div>
-    `;
-
-    // Add event listener for the "Get Personalized Advice" button
-    document.getElementById('getAdviceButton').addEventListener('click', function(e) {
-        e.preventDefault();
-        showAdviceModal();
-    });
-
     // Update searches left
     const searchesLeftElement = document.getElementById('searches-left');
     if (searchesLeftElement) {
@@ -140,7 +126,8 @@ function getAdvice(domain, prompt, rowIndex) {
     .then(response => response.json())
     .then(data => {
         spinner.style.display = 'none';
-        adviceContent.innerHTML = `<h3>Advice for improving visibility:</h3>${data.advice}`;
+        const formattedAdvice = data.advice.replace(/(\d+\.)/g, '<br><br>$1').replace(/Example:/g, '<br>Example:');
+        adviceContent.innerHTML = `<h3>Advice for improving visibility:</h3>${formattedAdvice}`;
     })
     .catch(error => {
         spinner.style.display = 'none';
@@ -282,3 +269,21 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
+
+let progressSteps = [
+    'Fetching website content...',
+    'Analyzing content...',
+    'Generating prompts...',
+    'Simulating AI responses...',
+    'Compiling results...'
+];
+
+let currentStep = 0;
+const progressInterval = setInterval(() => {
+    if (currentStep < progressSteps.length) {
+        updateProgress(progressSteps[currentStep]);
+        currentStep++;
+    } else {
+        clearInterval(progressInterval);
+    }
+}, 2000);
