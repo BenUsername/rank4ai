@@ -183,13 +183,18 @@ function afterDOMLoaded() {
                 },
                 body: `domain=${encodeURIComponent(domain)}`
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 clearInterval(progressInterval);
                 spinner.style.display = 'none';
                 progressLog.innerHTML = '';
                 if (data.error) {
-                    alert(data.error);
+                    throw new Error(data.error);
                 } else {
                     displayResults(data);
                 }

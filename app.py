@@ -240,11 +240,12 @@ def index():
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    searches_left = 3 - session.get('searches_performed', 0)
-    if searches_left <= 0:
-        return jsonify({'error': "You've reached the maximum number of free searches. Please join the waiting list for more.", 'searches_left': 0}), 403
+    domain = request.form['domain']
+    searches_left = session.get('searches_left', 3)
 
-    domain = request.form.get('domain', '').strip()
+    if searches_left <= 0:
+        return jsonify({'error': 'No searches left. Please try again later.', 'searches_left': 0}), 403
+
     if not is_valid_domain(domain):
         return jsonify({'error': 'Invalid domain name.', 'searches_left': searches_left}), 400
 
@@ -261,8 +262,8 @@ def analyze():
 
         table = generate_prompt_answers(prompts, domain, info)
         
-        session['searches_performed'] = session.get('searches_performed', 0) + 1
-        searches_left = 3 - session['searches_performed']
+        session['searches_left'] = searches_left - 1
+        searches_left = session['searches_left']
 
         return jsonify({
             'domain': domain,
