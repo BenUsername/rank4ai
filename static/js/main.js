@@ -26,8 +26,13 @@ function copyLink() {
 }
 
 function getAdvice(domain, prompt) {
+    console.log(`getAdvice called for domain: ${domain}, prompt: ${prompt}`);
+
     const modal = document.getElementById('adviceModal');
     const modalContent = document.getElementById('adviceContent');
+
+    console.log('Modal element:', modal);
+    console.log('Modal content element:', modalContent);
 
     // Check if modal and modalContent exist
     if (!modal || !modalContent) {
@@ -35,12 +40,10 @@ function getAdvice(domain, prompt) {
         return;
     }
 
-    console.log('Modal:', modal);
-    console.log('Modal Content:', modalContent);
-
     // Set up the close button event listener if not already set
     const closeSpan = modal.querySelector('.close');
     if (closeSpan && !closeSpan.onclick) {
+        console.log('Setting up close button event listener');
         closeSpan.onclick = function() {
             modal.style.display = 'none';
         };
@@ -49,17 +52,20 @@ function getAdvice(domain, prompt) {
     // Close modal when clicking outside of it
     window.onclick = function(event) {
         if (event.target == modal) {
+            console.log('Closing modal by clicking outside');
             modal.style.display = 'none';
         }
     };
 
     // Proceed to use modalContent
+    console.log('Creating spinner');
     const spinner = document.createElement('div');
     spinner.className = 'advice-spinner';
     modalContent.innerHTML = '';
     modalContent.appendChild(spinner);
     modal.style.display = 'block';
 
+    console.log('Fetching advice from server');
     // Fetch advice from the server
     fetch('/get_advice', {
         method: 'POST',
@@ -68,29 +74,38 @@ function getAdvice(domain, prompt) {
         },
         body: JSON.stringify({ domain: domain, prompt: prompt })
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('Received response from server');
+        return response.json();
+    })
     .then(data => {
+        console.log('Parsed response data:', data);
         spinner.remove();
         if (data.advice) {
+            console.log('Formatting advice');
             const formattedAdvice = data.advice
                 .replace(/^\d+\.\s*/gm, '')  // Remove numbering
                 .split('\n')
                 .filter(item => item.trim() !== '')  // Remove empty lines
                 .map(item => `<li>${item}</li>`)
                 .join('');
+            console.log('Setting innerHTML of modalContent');
             modalContent.innerHTML = `
                 <h3>Advice for improving visibility of ${domain} for "${prompt}":</h3>
                 <ol>${formattedAdvice}</ol>
             `;
         } else {
+            console.log('No advice received, showing error message');
             modalContent.innerHTML = '<p>Failed to get advice. Please try again.</p>';
         }
     })
     .catch((error) => {
+        console.error('Error in fetch operation:', error);
         spinner.remove();
-        console.error('Error:', error);
         modalContent.innerHTML = '<p class="error">An error occurred while fetching advice. Please try again.</p>';
     });
+
+    console.log('getAdvice function completed');
 }
 
 // Function to load and display results
