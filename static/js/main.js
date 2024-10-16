@@ -26,73 +26,15 @@ function copyLink() {
 }
 
 function getAdvice(domain, prompt) {
-    console.log('getAdvice called with domain:', domain, 'and prompt:', prompt);
-
     const modal = document.getElementById('adviceModal');
     const modalContent = document.getElementById('adviceContent');
 
-    console.log('Modal:', modal);
-    console.log('Modal Content:', modalContent);
-
-    // Check if modal and modalContent exist
     if (!modal || !modalContent) {
-        console.error('Modal or modal content not found in the DOM.');
+        console.error('Modal or modal content not found');
         return;
     }
 
-    // Set up the close button event listener if not already set
-    const closeSpan = modal.querySelector('.close');
-    if (closeSpan && !closeSpan.onclick) {
-        closeSpan.onclick = function() {
-            modal.style.display = 'none';
-        };
-    }
-
-    // Close modal when clicking outside of it
-    window.onclick = function(event) {
-        if (event.target == modal) {
-            modal.style.display = 'none';
-        }
-    };
-
-    // Proceed to use modalContent
-    const spinner = document.createElement('div');
-    spinner.className = 'advice-spinner';
-    modalContent.innerHTML = '';
-    modalContent.appendChild(spinner);
-    modal.style.display = 'block';
-
-    // Fetch advice from the server
-    fetch('/get_advice', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ domain: domain, prompt: prompt })
-    })
-    .then(response => response.json())
-    .then(data => {
-        spinner.remove();
-        if (data.advice) {
-            const formattedAdvice = data.advice
-                .replace(/^\d+\.\s*/gm, '')  // Remove numbering
-                .split('\n')
-                .filter(item => item.trim() !== '')  // Remove empty lines
-                .map(item => `<li>${item}</li>`)
-                .join('');
-            modalContent.innerHTML = `
-                <h3>Advice for improving visibility of ${domain} for "${prompt}":</h3>
-                <ol>${formattedAdvice}</ol>
-            `;
-        } else {
-            modalContent.innerHTML = '<p>Failed to get advice. Please try again.</p>';
-        }
-    })
-    .catch((error) => {
-        spinner.remove();
-        console.error('Error:', error);
-        modalContent.innerHTML = '<p class="error">An error occurred while fetching advice. Please try again.</p>';
-    });
+    // ... rest of the function
 }
 
 // Function to load and display results
@@ -264,3 +206,21 @@ function init() {
 
 // Call init when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', init);
+
+function closeModal() {
+    const modal = document.getElementById('adviceModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+const closeBtn = document.querySelector('.close');
+if (closeBtn) {
+    closeBtn.onclick = closeModal;
+}
+
+window.onclick = function(event) {
+    if (event.target == document.getElementById('adviceModal')) {
+        closeModal();
+    }
+}
