@@ -26,50 +26,47 @@ function copyLink() {
 }
 
 function getAdvice(domain, prompt) {
-    // Remove any existing modal
-    let existingModal = document.getElementById('adviceModal');
-    if (existingModal) {
-        existingModal.remove();
-    }
+    let modal = document.getElementById('adviceModal');
+    let modalContent;
 
-    // Create modal elements
-    const modal = document.createElement('div');
-    modal.id = 'adviceModal';
-    modal.className = 'modal';
-
-    const modalContent = document.createElement('div');
-    modalContent.className = 'modal-content';
-
-    const closeSpan = document.createElement('span');
-    closeSpan.className = 'close';
-    closeSpan.innerHTML = '&times;';
-
-    const adviceContent = document.createElement('div');
-    adviceContent.id = 'adviceContent';
-
-    modalContent.appendChild(closeSpan);
-    modalContent.appendChild(adviceContent);
-    modal.appendChild(modalContent);
-    document.body.appendChild(modal);
-
-    // Add event listener to close button
-    closeSpan.onclick = function() {
-        modal.style.display = 'none';
-        modal.remove();
-    }
-
-    // Close modal when clicking outside of it
-    window.onclick = function(event) {
-        if (event.target == modal) {
+    if (!modal) {
+        // Create modal if it doesn't exist
+        modal = document.createElement('div');
+        modal.id = 'adviceModal';
+        modal.className = 'modal';
+        
+        const modalInner = document.createElement('div');
+        modalInner.className = 'modal-content';
+        
+        const closeSpan = document.createElement('span');
+        closeSpan.className = 'close';
+        closeSpan.innerHTML = '&times;';
+        closeSpan.onclick = function() {
             modal.style.display = 'none';
-            modal.remove();
-        }
+        };
+        
+        modalContent = document.createElement('div');
+        modalContent.id = 'adviceContent';
+        
+        modalInner.appendChild(closeSpan);
+        modalInner.appendChild(modalContent);
+        modal.appendChild(modalInner);
+        document.body.appendChild(modal);
+
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        };
+    } else {
+        modalContent = document.getElementById('adviceContent');
     }
 
     const spinner = document.createElement('div');
     spinner.className = 'advice-spinner';
-    adviceContent.innerHTML = '';
-    adviceContent.appendChild(spinner);
+    modalContent.innerHTML = '';
+    modalContent.appendChild(spinner);
     modal.style.display = 'block';
 
     fetch('/get_advice', {
@@ -77,7 +74,7 @@ function getAdvice(domain, prompt) {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ domain: domain, prompt: prompt }),
+        body: JSON.stringify({domain: domain, prompt: prompt})
     })
     .then(response => response.json())
     .then(data => {
@@ -89,18 +86,18 @@ function getAdvice(domain, prompt) {
                 .filter(item => item.trim() !== '')  // Remove empty lines
                 .map(item => `<li>${item}</li>`)
                 .join('');
-            adviceContent.innerHTML = `
+            modalContent.innerHTML = `
                 <h3>Advice for improving visibility of ${domain} for "${prompt}":</h3>
                 <ol>${formattedAdvice}</ol>
             `;
         } else {
-            adviceContent.innerHTML = '<p>Failed to get advice. Please try again.</p>';
+            modalContent.innerHTML = '<p>Failed to get advice. Please try again.</p>';
         }
     })
-    .catch(error => {
+    .catch((error) => {
         spinner.remove();
         console.error('Error:', error);
-        adviceContent.innerHTML = '<p>An error occurred. Please try again.</p>';
+        modalContent.innerHTML = '<p class="error">An error occurred while fetching advice. Please try again.</p>';
     });
 }
 
