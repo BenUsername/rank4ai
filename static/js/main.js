@@ -205,6 +205,10 @@ function handleFormSubmit(e) {
         } else {
             console.log('Received data:', data);
             displayResults(data);
+            // Clear any previous error messages
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.textContent = '';
+            errorMessage.style.display = 'none';
         }
     })
     .catch(error => {
@@ -213,8 +217,11 @@ function handleFormSubmit(e) {
         progressLog.innerHTML = '';
         console.error('Error:', error);
         const errorMessage = document.getElementById('error-message');
-        errorMessage.textContent = `An error occurred: ${error.message}. Please try again later.`;
-        errorMessage.style.display = 'block';
+        // Only display the error message if no data was received
+        if (!document.querySelector('#main-content h2')) {
+            errorMessage.textContent = `An error occurred: ${error.message}. Please try again later.`;
+            errorMessage.style.display = 'block';
+        }
     })
     .finally(() => {
         submitButton.disabled = false;
