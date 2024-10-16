@@ -29,14 +29,6 @@
         <!-- Content will be dynamically inserted here -->
     </main>
 
-    <!-- Modal for displaying advice, placed outside of main-content -->
-    <div id="adviceModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <div id="adviceContent"></div>
-        </div>
-    </div>
-
     <footer>
         <div class="footer-content">
             <div class="footer-section">
@@ -69,8 +61,6 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOMContentLoaded event fired');
-            console.log('Modal in DOM:', document.getElementById('adviceModal'));
-            console.log('Modal content in DOM:', document.getElementById('adviceContent'));
             init();
             var resultData = JSON.parse('{{ result_data|tojson|safe }}');
             if (resultData.domain) {
