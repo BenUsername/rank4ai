@@ -99,76 +99,73 @@ function displayResults(data) {
 
 function init() {
     console.log('Initializing');
-    
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('DOM fully loaded');
-        attachEventListeners();
-    });
+    attachEventListeners();
 }
 
 function attachEventListeners() {
     console.log('Attaching event listeners');
     const form = document.getElementById('analyzeForm');
-    const submitButton = document.getElementById('analyzeButton');
-    
     if (form) {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const domain = document.getElementById('domainInput').value;
-            const originalButtonText = submitButton.textContent;
-            submitButton.disabled = true;
-            submitButton.textContent = 'Analyzing...';
-            
-            const spinner = document.getElementById('spinner');
-            const progressLog = document.getElementById('progress-log');
-            spinner.style.display = 'block';
-            progressLog.innerHTML = '';
-            
-            let progress = 0;
-            const progressInterval = setInterval(() => {
-                progress += 10;
-                if (progress <= 100) {
-                    updateProgress(`Analyzing... ${progress}%`);
-                }
-            }, 2000);
-
-            fetch('/analyze', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `domain=${encodeURIComponent(domain)}`
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                clearInterval(progressInterval);
-                spinner.style.display = 'none';
-                progressLog.innerHTML = '';
-                if (data.error) {
-                    throw new Error(data.error);
-                } else {
-                    console.log('Received data:', data); // Add this line for debugging
-                    displayResults(data);
-                }
-            })
-            .catch(error => {
-                clearInterval(progressInterval);
-                spinner.style.display = 'none';
-                progressLog.innerHTML = '';
-                console.error('Error:', error);
-                alert(`An error occurred: ${error.message}. Please try again.`);
-            })
-            .finally(() => {
-                submitButton.disabled = false;
-                submitButton.textContent = originalButtonText;
-            });
-        });
+        form.addEventListener('submit', handleFormSubmit);
     }
+}
+
+function handleFormSubmit(e) {
+    e.preventDefault();
+    const domain = document.getElementById('domainInput').value;
+    const submitButton = document.getElementById('analyzeButton');
+    const originalButtonText = submitButton.textContent;
+    submitButton.disabled = true;
+    submitButton.textContent = 'Analyzing...';
+    
+    const spinner = document.getElementById('spinner');
+    const progressLog = document.getElementById('progress-log');
+    spinner.style.display = 'block';
+    progressLog.innerHTML = '';
+    
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+        progress += 10;
+        if (progress <= 100) {
+            updateProgress(`Analyzing... ${progress}%`);
+        }
+    }, 2000);
+
+    fetch('/analyze', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `domain=${encodeURIComponent(domain)}`
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        clearInterval(progressInterval);
+        spinner.style.display = 'none';
+        progressLog.innerHTML = '';
+        if (data.error) {
+            throw new Error(data.error);
+        } else {
+            console.log('Received data:', data);
+            displayResults(data);
+        }
+    })
+    .catch(error => {
+        clearInterval(progressInterval);
+        spinner.style.display = 'none';
+        progressLog.innerHTML = '';
+        console.error('Error:', error);
+        alert(`An error occurred: ${error.message}. Please try again.`);
+    })
+    .finally(() => {
+        submitButton.disabled = false;
+        submitButton.textContent = originalButtonText;
+    });
 }
 
 function updateProgress(message) {
@@ -182,5 +179,5 @@ function showAdviceModal() {
     // You can implement the modal functionality here
 }
 
-// Call init immediately
-init();
+// Make sure init() is called when the DOM is loaded
+document.addEventListener('DOMContentLoaded', init);
