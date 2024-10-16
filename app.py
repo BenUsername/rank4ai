@@ -284,31 +284,6 @@ def robots():
 def sitemap():
     return send_from_directory(app.static_folder, 'sitemap.xml')
 
-@app.route('/get_advice', methods=['POST'])
-def get_advice():
-    data = request.json
-    domain = data.get('domain')
-    prompt = data.get('prompt')
-    
-    try:
-        # Make a call to OpenAI API
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are an expert in SEO and content strategy."},
-                {"role": "user", "content": f"Provide 5 specific pieces of advice with one example each to improve the visibility of {domain} regarding the search query '{prompt}'. Format the response as a numbered list."}
-            ],
-            max_tokens=500,
-            temperature=0.7,
-        )
-        
-        advice = response.choices[0].message.content.strip()
-        
-        return jsonify({'advice': advice})
-    except Exception as e:
-        app.logger.error(f"Error generating advice: {str(e)}")
-        return jsonify({'error': 'An error occurred while generating advice. Please try again.'}), 500
-
 @app.route('/privacy-policy')
 def privacy_policy():
     return render_template('privacy_policy.html', contact_email=CONTACT_EMAIL)

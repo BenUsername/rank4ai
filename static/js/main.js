@@ -208,8 +208,7 @@ function formatVisibility(visible, domain, prompt, index) {
         }
         return `<span style="color: green;">✓ Yes</span><br>Congrats, you're ${rankText}`;
     } else {
-        const encodedPrompt = encodeURIComponent(prompt);
-        return `<span style="color: red;">✗ No</span><br><a href="#" onclick="getAdvice('${domain}', '${encodedPrompt}'); return false;">Get Advice</a>`;
+        return `<span style="color: red;">✗ No</span>`;
     }
 }
 
