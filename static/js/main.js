@@ -111,24 +111,11 @@ function displayResults(data) {
         }
     `;
 
-    // Re-attach event listeners after updating the DOM
     attachEventListeners();
 }
 
 function formatVisibility(visible) {
-    if (visible.includes('Yes')) {
-        const rank = visible.match(/\d+/)[0];
-        let rankText = '';
-        switch (rank) {
-            case '1': rankText = 'first! 🥇🎉'; break;
-            case '2': rankText = 'second! 🥈🎉'; break;
-            case '3': rankText = 'third! 🥉🎉'; break;
-            default: rankText = `${rank}th! 🎉`;
-        }
-        return `<span style="color: green;">✓ Yes</span><br>Congrats, you're ${rankText}`;
-    } else {
-        return `<span style="color: red;">✗ No</span>`;
-    }
+    return visible.includes('Yes') ? '<span style="color: green;">✓ Yes</span>' : '<span style="color: red;">✗ No</span>';
 }
 
 function attachEventListeners() {
