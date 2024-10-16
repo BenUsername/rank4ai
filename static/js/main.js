@@ -63,15 +63,17 @@ function displayResults(data) {
                     <th>AI Response</th>
                     <th>Competitors</th>
                     <th>Visible</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
-                ${data.table.map(row => `
+                ${data.table.map((row, index) => `
                     <tr>
                         <td>${row.prompt}</td>
                         <td class="truncate">${row.answer}</td>
                         <td>${row.competitors}</td>
                         <td>${row.visible}</td>
+                        <td>${row.visible === 'No' ? `<button onclick="getAdvice('${data.domain}', '${row.prompt}', ${index})" class="advice-button">Get Advice</button>` : ''}</td>
                     </tr>
                 `).join('')}
             </tbody>
@@ -108,6 +110,34 @@ function displayResults(data) {
     if (searchesLeftElement) {
         searchesLeftElement.textContent = data.searches_left;
     }
+}
+
+function getAdvice(domain, prompt, rowIndex) {
+    const modal = document.getElementById('adviceModal');
+    const modalContent = document.getElementById('adviceModalContent');
+    const spinner = document.getElementById('adviceSpinner');
+    const adviceContent = document.getElementById('adviceContent');
+
+    modal.style.display = 'block';
+    spinner.style.display = 'block';
+    adviceContent.innerHTML = '';
+
+    fetch('/get_advice', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ domain, prompt })
+    })
+    .then(response => response.json())
+    .then(data => {
+        spinner.style.display = 'none';
+        adviceContent.innerHTML = `<h3>Advice for improving visibility:</h3>${data.advice}`;
+    })
+    .catch(error => {
+        spinner.style.display = 'none';
+        adviceContent.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+    });
 }
 
 function init() {
@@ -215,3 +245,19 @@ function fetchWithRetry(url, options, retries = 3) {
 
 // Make sure init() is called when the DOM is loaded
 document.addEventListener('DOMContentLoaded', init);
+
+// Add this at the end of your file
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('adviceModal');
+    const closeBtn = document.getElementsByClassName('close')[0];
+
+    closeBtn.onclick = function() {
+        modal.style.display = 'none';
+    }
+
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
+    }
+});

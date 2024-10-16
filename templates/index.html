@@ -229,5 +229,16 @@
     </a>
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    <!-- Add this just before the closing </body> tag -->
+    <div id="adviceModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="adviceModalContent">
+                <div id="adviceSpinner" class="advice-spinner"></div>
+                <div id="adviceContent"></div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
