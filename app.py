@@ -10,6 +10,7 @@ from openai import OpenAI
 import re
 import logging
 from datetime import date
+import time
 
 # Load environment variables from .env file
 load_dotenv()
@@ -240,6 +241,7 @@ def index():
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
+    start_time = time.time()
     domain = request.form['domain']
     searches_left = session.get('searches_left', 3)
 
@@ -250,20 +252,28 @@ def analyze():
         return jsonify({'error': 'Invalid domain name.', 'searches_left': searches_left}), 400
 
     try:
+        logging.info(f"Fetching content for {domain}")
         html_content = fetch_website_content(domain)
         if html_content is None:
             return jsonify({'error': f"We couldn't fetch the content for {domain}. The website may be unavailable or blocking our requests. Please try another domain.", 'searches_left': searches_left}), 404
 
+        logging.info(f"Extracting main info for {domain}")
         info = extract_main_info(html_content)
+        
+        logging.info(f"Generating marketing prompts for {domain}")
         prompts = generate_marketing_prompts(info['title'], info['description'], info['content'], domain)
         
         if not prompts:
             return jsonify({'error': "We couldn't generate valid prompts for this website. Please try another domain.", 'searches_left': searches_left}), 500
 
+        logging.info(f"Generating prompt answers for {domain}")
         table = generate_prompt_answers(prompts, domain, info)
         
         session['searches_left'] = searches_left - 1
         searches_left = session['searches_left']
+
+        end_time = time.time()
+        logging.info(f"Total processing time for {domain}: {end_time - start_time} seconds")
 
         return jsonify({
             'domain': domain,
@@ -274,7 +284,7 @@ def analyze():
         })
 
     except Exception as e:
-        app.logger.error(f"Error processing {domain}: {str(e)}")
+        logging.error(f"Error processing {domain}: {str(e)}")
         return jsonify({'error': f"An error occurred while processing your request for {domain}. The website may be unavailable or blocking our requests. Please try another domain.", 'searches_left': searches_left}), 500
 
 @app.route('/robots.txt')

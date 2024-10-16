@@ -185,6 +185,9 @@ function afterDOMLoaded() {
             })
             .then(response => {
                 if (!response.ok) {
+                    if (response.status === 503) {
+                        throw new Error('The server is currently unavailable. Please try again later.');
+                    }
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 return response.json();
@@ -204,7 +207,7 @@ function afterDOMLoaded() {
                 spinner.style.display = 'none';
                 progressLog.innerHTML = '';
                 console.error('Error:', error);
-                alert('An error occurred. Please try again.');
+                alert(`An error occurred: ${error.message}. Please try again.`);
             })
             .finally(() => {
                 submitButton.disabled = false;
