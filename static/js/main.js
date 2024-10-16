@@ -48,98 +48,87 @@ function displayResults(data) {
         <p><strong>Description:</strong> ${data.info.description}</p>
     `;
 
-    // Add prompts
+    // Add table of results
     mainContent.innerHTML += `
-        <h3>Generated Prompts</h3>
-        <ol>
-            ${data.prompts.map(prompt => `<li>${prompt}</li>`).join('')}
-        </ol>
-    `;
-
-    // Add results table
-    mainContent.innerHTML += `
-        <h3>Analysis Results</h3>
+        <h3>AI Search Visibility Results</h3>
         <table>
             <thead>
                 <tr>
                     <th>Prompt</th>
-                    <th>Answer</th>
+                    <th>AI Response</th>
+                    <th>Visibility Score</th>
                 </tr>
             </thead>
             <tbody>
                 ${data.table.map(row => `
                     <tr>
                         <td>${row.prompt}</td>
-                        <td>${row.answer}</td>
+                        <td class="truncate">${row.response}</td>
+                        <td>${row.visibility_score}</td>
                     </tr>
                 `).join('')}
             </tbody>
         </table>
     `;
 
-    // Make sure the main content is visible
-    mainContent.style.display = 'block';
-}
+    // Add sharing buttons
+    mainContent.innerHTML += `
+        <div class="share-container">
+            <h3>Share Your Results</h3>
+            <button onclick="shareTwitter()" class="share-button twitter"><i class="fab fa-twitter"></i> Share on Twitter</button>
+            <button onclick="shareLinkedIn()" class="share-button linkedin"><i class="fab fa-linkedin"></i> Share on LinkedIn</button>
+            <button onclick="shareFacebook()" class="share-button facebook"><i class="fab fa-facebook"></i> Share on Facebook</button>
+            <button onclick="copyLink()" class="share-button copy-link"><i class="fas fa-link"></i> Copy Link</button>
+        </div>
+    `;
 
-function formatVisibility(visible) {
-    return visible.includes('Yes') ? '<span style="color: green;">✓ Yes</span>' : '<span style="color: red;">✗ No</span>';
-}
+    // Add CTA
+    mainContent.innerHTML += `
+        <div class="cta-container">
+            <p class="cta-text">Want to improve your AI search visibility?</p>
+            <a href="#" class="cta-button" id="getAdviceButton">Get Personalized Advice</a>
+        </div>
+    `;
 
-function attachEventListeners() {
-    console.log('Attaching event listeners');
-    document.querySelectorAll('.expand-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const content = this.previousElementSibling;
-            content.classList.toggle('expanded');
-            this.textContent = content.classList.contains('expanded') ? '-' : '+';
-        });
+    // Add event listener for the "Get Personalized Advice" button
+    document.getElementById('getAdviceButton').addEventListener('click', function(e) {
+        e.preventDefault();
+        showAdviceModal();
     });
 }
 
 function init() {
     console.log('Initializing');
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', afterDOMLoaded);
-    } else {
-        afterDOMLoaded();
-    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM fully loaded');
+        attachEventListeners();
+    });
 }
 
-function afterDOMLoaded() {
-    console.log('DOM fully loaded');
-    const analyzeForm = document.getElementById('analyzeForm');
-    if (analyzeForm) {
-        analyzeForm.addEventListener('submit', function(e) {
+function attachEventListeners() {
+    console.log('Attaching event listeners');
+    const form = document.getElementById('analyzeForm');
+    const submitButton = document.getElementById('analyzeButton');
+    
+    if (form) {
+        form.addEventListener('submit', function(e) {
             e.preventDefault();
             const domain = document.getElementById('domainInput').value;
-            const submitButton = document.querySelector('button[type="submit"]');
             const originalButtonText = submitButton.textContent;
             submitButton.disabled = true;
             submitButton.textContent = 'Analyzing...';
-
-            // Show spinner and progress log
+            
             const spinner = document.getElementById('spinner');
             const progressLog = document.getElementById('progress-log');
             spinner.style.display = 'block';
             progressLog.innerHTML = '';
-
-            // Start progress updates
-            let progressStep = 0;
+            
+            let progress = 0;
             const progressInterval = setInterval(() => {
-                progressStep++;
-                switch(progressStep) {
-                    case 1:
-                        updateProgress('Fetching website content...');
-                        break;
-                    case 2:
-                        updateProgress('Analyzing content...');
-                        break;
-                    case 3:
-                        updateProgress('Generating prompts...');
-                        break;
-                    case 4:
-                        updateProgress('Simulating LLM responses...');
-                        break;
+                progress += 10;
+                if (progress <= 100) {
+                    updateProgress(`Analyzing... ${progress}%`);
                 }
             }, 2000);
 
@@ -180,13 +169,17 @@ function afterDOMLoaded() {
             });
         });
     }
-
-    attachEventListeners();
 }
 
 function updateProgress(message) {
     const progressLog = document.getElementById('progress-log');
     progressLog.innerHTML += `<p>${message}</p>`;
+}
+
+function showAdviceModal() {
+    // Implementation for showing advice modal
+    console.log('Showing advice modal');
+    // You can implement the modal functionality here
 }
 
 // Call init immediately
