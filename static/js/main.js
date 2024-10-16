@@ -31,6 +31,12 @@ function copyLink() {
 function getAdvice(domain, prompt) {
     console.log('getAdvice called for domain:', domain, 'prompt:', prompt);
 
+    // Remove any existing modal
+    let existingModal = document.querySelector('.modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
     // Create modal
     const modal = document.createElement('div');
     modal.className = 'modal';
@@ -45,7 +51,7 @@ function getAdvice(domain, prompt) {
     closeBtn.className = 'close';
     closeBtn.innerHTML = '&times;';
     closeBtn.onclick = function() {
-        document.body.removeChild(modal);
+        modal.remove();
     };
 
     // Create advice content container
@@ -97,7 +103,7 @@ function getAdvice(domain, prompt) {
     // Close modal when clicking outside
     window.onclick = function(event) {
         if (event.target == modal) {
-            document.body.removeChild(modal);
+            modal.remove();
         }
     };
 }
