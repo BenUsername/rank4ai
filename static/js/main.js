@@ -26,57 +26,32 @@ function copyLink() {
 }
 
 function getAdvice(domain, prompt) {
-    let modal = document.getElementById('adviceModal');
-    let modalContent = document.getElementById('adviceContent');
+    const modal = document.getElementById('adviceModal');
+    const modalContent = document.getElementById('adviceContent');
 
-    // Create modal if it doesn't exist
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'adviceModal';
-        modal.className = 'modal';
-        
-        const modalInner = document.createElement('div');
-        modalInner.className = 'modal-content';
-        
-        const closeSpan = document.createElement('span');
-        closeSpan.className = 'close';
-        closeSpan.innerHTML = '&times;';
+    // Check if modal and modalContent exist
+    if (!modal || !modalContent) {
+        console.error('Modal or modal content not found in the DOM.');
+        return;
+    }
+
+    console.log('Modal:', modal);
+    console.log('Modal Content:', modalContent);
+
+    // Set up the close button event listener if not already set
+    const closeSpan = modal.querySelector('.close');
+    if (closeSpan && !closeSpan.onclick) {
         closeSpan.onclick = function() {
             modal.style.display = 'none';
         };
-        
-        modalContent = document.createElement('div');
-        modalContent.id = 'adviceContent';
-        
-        modalInner.appendChild(closeSpan);
-        modalInner.appendChild(modalContent);
-        modal.appendChild(modalInner);
-        document.body.appendChild(modal);
+    }
 
-        // Close modal when clicking outside of it
-        window.onclick = function(event) {
-            if (event.target == modal) {
-                modal.style.display = 'none';
-            }
-        };
-    } else if (!modalContent) {
-        // If modal exists but modalContent doesn't, create it
-        modalContent = document.createElement('div');
-        modalContent.id = 'adviceContent';
-        const modalInner = modal.querySelector('.modal-content');
-        if (modalInner) {
-            modalInner.appendChild(modalContent);
-        } else {
-            console.error('Modal inner content not found');
-            return;
+    // Close modal when clicking outside of it
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = 'none';
         }
-    }
-
-    // Ensure modalContent exists before proceeding
-    if (!modalContent) {
-        console.error('Modal content not found');
-        return;
-    }
+    };
 
     // Proceed to use modalContent
     const spinner = document.createElement('div');
@@ -91,7 +66,7 @@ function getAdvice(domain, prompt) {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({domain: domain, prompt: prompt})
+        body: JSON.stringify({ domain: domain, prompt: prompt })
     })
     .then(response => response.json())
     .then(data => {
