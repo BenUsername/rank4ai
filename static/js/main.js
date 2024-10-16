@@ -30,11 +30,16 @@ function copyLink() {
 // Function to load and display results
 function displayResults(data) {
     const mainContent = document.getElementById('main-content');
+    const landingContent = document.getElementById('landing-content');
     if (!mainContent) {
         console.error('Main content element not found');
         return;
     }
     
+    // Hide landing content and show main content
+    landingContent.style.display = 'none';
+    mainContent.style.display = 'block';
+
     // Clear previous content
     mainContent.innerHTML = '';
 
@@ -56,15 +61,17 @@ function displayResults(data) {
                 <tr>
                     <th>Prompt</th>
                     <th>AI Response</th>
-                    <th>Visibility Score</th>
+                    <th>Competitors</th>
+                    <th>Visible</th>
                 </tr>
             </thead>
             <tbody>
                 ${data.table.map(row => `
                     <tr>
                         <td>${row.prompt}</td>
-                        <td class="truncate">${row.response}</td>
-                        <td>${row.visibility_score}</td>
+                        <td class="truncate">${row.answer}</td>
+                        <td>${row.competitors}</td>
+                        <td>${row.visible}</td>
                     </tr>
                 `).join('')}
             </tbody>
@@ -95,6 +102,12 @@ function displayResults(data) {
         e.preventDefault();
         showAdviceModal();
     });
+
+    // Update searches left
+    const searchesLeftElement = document.getElementById('searches-left');
+    if (searchesLeftElement) {
+        searchesLeftElement.textContent = data.searches_left;
+    }
 }
 
 function init() {
@@ -131,12 +144,21 @@ function handleFormSubmit(e) {
         }
     }, 2000);
 
-    fetchWithRetry('/analyze', {
+    fetch('/analyze', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: `domain=${encodeURIComponent(domain)}`
+    })
+    .then(response => {
+        if (!response.ok) {
+            if (response.status === 503) {
+                throw new Error('The server is currently unavailable. Please try again later.');
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
     })
     .then(data => {
         clearInterval(progressInterval);
