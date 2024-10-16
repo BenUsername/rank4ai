@@ -345,6 +345,16 @@ def get_advice():
         app.logger.error(f"Error generating advice: {str(e)}")
         return jsonify({'error': 'An error occurred while generating advice. Please try again later.'}), 500
 
+@app.errorhandler(500)
+def internal_server_error(error):
+    app.logger.error('Server Error: %s', (error))
+    return render_template('500.html'), 500
+
+@app.errorhandler(Exception)
+def unhandled_exception(e):
+    app.logger.error('Unhandled Exception: %s', (e))
+    return render_template('500.html'), 500
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
