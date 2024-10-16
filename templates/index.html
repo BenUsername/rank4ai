@@ -240,5 +240,17 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            init();
+            const domain = "{{ domain }}";
+            const showResults = "{{ show_results }}";
+            if (domain && showResults === 'true') {
+                document.getElementById('domainInput').value = domain;
+                document.getElementById('analyzeForm').dispatchEvent(new Event('submit'));
+            }
+        });
+    </script>
 </body>
 </html>

@@ -18,9 +18,17 @@ function shareFacebook() {
 }
 
 function copyLink() {
+    var currentUrl = new URL(window.location.href);
+    var analyzedDomain = document.querySelector('h2')?.textContent.split(' ')[2]; // Extracts the domain from the results heading
+    
+    if (analyzedDomain) {
+        currentUrl.searchParams.set('domain', analyzedDomain);
+        currentUrl.searchParams.set('showResults', 'true');
+    }
+
     var dummy = document.createElement("input");
     document.body.appendChild(dummy);
-    dummy.value = window.location.href;
+    dummy.value = currentUrl.toString();
     dummy.select();
     document.execCommand("copy");
     document.body.removeChild(dummy);
@@ -62,7 +70,7 @@ function displayResults(data) {
                     <th>Prompt</th>
                     <th>AI Response</th>
                     <th>Competitors</th>
-                    <th>Visible</th>
+                    <th>Are You Visible?</th>
                     <th>Action</th>
                 </tr>
             </thead>
@@ -143,6 +151,7 @@ function getAdvice(domain, prompt, rowIndex) {
 function init() {
     console.log('Initializing');
     attachEventListeners();
+    handleUrlParams();
 }
 
 function attachEventListeners() {
@@ -241,6 +250,18 @@ function fetchWithRetry(url, options, retries = 3) {
             }
             throw error;
         });
+}
+
+// Add this function to handle URL parameters when the page loads
+function handleUrlParams() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const domain = urlParams.get('domain');
+    const showResults = urlParams.get('showResults');
+
+    if (domain && showResults === 'true') {
+        document.getElementById('domainInput').value = domain;
+        document.getElementById('analyzeForm').dispatchEvent(new Event('submit'));
+    }
 }
 
 // Make sure init() is called when the DOM is loaded

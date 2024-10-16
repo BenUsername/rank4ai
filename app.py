@@ -237,7 +237,9 @@ def before_request():
 def index():
     searches_left = 3 - session.get('searches_performed', 0)
     user_count = get_user_count()
-    return render_template('index.html', searches_left=searches_left, user_count=user_count)
+    domain = request.args.get('domain')
+    show_results = request.args.get('showResults')
+    return render_template('index.html', searches_left=searches_left, user_count=user_count, domain=domain, show_results=show_results)
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
