@@ -1,3 +1,5 @@
+console.log('main.js loaded');
+
 // Global functions for sharing
 function shareTwitter() {
     var text = "I just analyzed my website's visibility in AI search results using LLM Search Performance Tracker! Check it out:";
@@ -26,7 +28,9 @@ function copyLink() {
 }
 
 function getAdvice(domain, prompt) {
-    console.log('getAdvice called with domain:', domain, 'and prompt:', prompt);
+    console.log('getAdvice function called');
+    console.log('Domain:', domain);
+    console.log('Prompt:', prompt);
 
     const modal = document.getElementById('adviceModal');
     console.log('Modal element:', modal);
