@@ -35,83 +35,50 @@ function displayResults(data) {
         return;
     }
     
-    mainContent.innerHTML = `
-        <h1>Results for ${data.domain}</h1>
-        
-        <h2>Website Information</h2>
+    // Clear previous content
+    mainContent.innerHTML = '';
+
+    // Add domain information
+    mainContent.innerHTML += `<h2>Results for ${data.domain}</h2>`;
+
+    // Add website information
+    mainContent.innerHTML += `
+        <h3>Website Information</h3>
         <p><strong>Title:</strong> ${data.info.title}</p>
         <p><strong>Description:</strong> ${data.info.description}</p>
-        
-        <h2>Relevant Searches</h2>
-        <ol>
-        ${data.prompts.map((prompt, index) => `<li><a href="#result-${index + 1}">${prompt}</a></li>`).join('')}
-        </ol>
-        
-        <h2>Visibility and Competitors</h2>
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Prompt</th>
-                        <th>Answer</th>
-                        <th>Top Competitors</th>
-                        <th>Visible in LLM?</th>
-                    </tr>
-                </thead>
-                <tbody>
-                ${data.table.map((row, index) => `
-                    <tr id="result-${index + 1}">
-                        <td class="expandable">
-                            <div class="content">${row.prompt}</div>
-                            <button class="expand-btn" aria-label="Expand">+</button>
-                        </td>
-                        <td class="expandable">
-                            <div class="content">${row.answer}</div>
-                            <button class="expand-btn" aria-label="Expand">+</button>
-                        </td>
-                        <td>
-                            ${row.competitors !== 'None mentioned' 
-                                ? `<ol>${row.competitors.split(', ').map(comp => `<li>${comp}</li>`).join('')}</ol>`
-                                : row.competitors}
-                        </td>
-                        <td class="visibility-status ${row.visible.includes('Yes') ? 'visible' : 'not-visible'}">
-                            ${formatVisibility(row.visible)}
-                        </td>
-                    </tr>
-                `).join('')}
-                </tbody>
-            </table>
-        </div>
-
-        <div class="share-container">
-            <h3>Share your results:</h3>
-            <button onclick="shareTwitter()" class="share-button twitter">
-                <i class="fab fa-twitter"></i> Twitter
-            </button>
-            <button onclick="shareLinkedIn()" class="share-button linkedin">
-                <i class="fab fa-linkedin"></i> LinkedIn
-            </button>
-            <button onclick="shareFacebook()" class="share-button facebook">
-                <i class="fab fa-facebook"></i> Facebook
-            </button>
-            <button onclick="copyLink()" class="share-button copy-link">
-                <i class="fas fa-link"></i> Copy Link
-            </button>
-        </div>
-
-        ${data.searches_left > 0 
-            ? `<div class="cta-container">
-                <p class="cta-text">You have ${data.searches_left} free searches left. Want to analyze more domains?</p>
-                <a href="/" class="cta-button">Analyze Another Domain</a>
-               </div>`
-            : `<div class="cta-container">
-                <p class="cta-text">You've used all your free searches. Want to analyze more domains and get deeper insights?</p>
-                <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button">Join Waiting List for Premium Access</a>
-               </div>`
-        }
     `;
 
-    attachEventListeners();
+    // Add prompts
+    mainContent.innerHTML += `
+        <h3>Generated Prompts</h3>
+        <ol>
+            ${data.prompts.map(prompt => `<li>${prompt}</li>`).join('')}
+        </ol>
+    `;
+
+    // Add results table
+    mainContent.innerHTML += `
+        <h3>Analysis Results</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Prompt</th>
+                    <th>Answer</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${data.table.map(row => `
+                    <tr>
+                        <td>${row.prompt}</td>
+                        <td>${row.answer}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+
+    // Make sure the main content is visible
+    mainContent.style.display = 'block';
 }
 
 function formatVisibility(visible) {
@@ -185,9 +152,6 @@ function afterDOMLoaded() {
             })
             .then(response => {
                 if (!response.ok) {
-                    if (response.status === 503) {
-                        throw new Error('The server is currently unavailable. Please try again later.');
-                    }
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 return response.json();
@@ -199,6 +163,7 @@ function afterDOMLoaded() {
                 if (data.error) {
                     throw new Error(data.error);
                 } else {
+                    console.log('Received data:', data); // Add this line for debugging
                     displayResults(data);
                 }
             })
