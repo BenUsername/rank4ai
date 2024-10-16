@@ -28,52 +28,37 @@ function copyLink() {
 }
 
 function getAdvice(domain, prompt) {
-    console.log('getAdvice function called');
-    console.log('Domain:', domain);
-    console.log('Prompt:', prompt);
+    console.log('getAdvice called for domain:', domain, 'prompt:', prompt);
 
-    let modal = document.getElementById('adviceModal');
-    let modalContent = document.getElementById('adviceContent');
-
-    if (!modal) {
-        console.log('Modal not found, creating it');
-        modal = document.createElement('div');
-        modal.id = 'adviceModal';
-        modal.className = 'modal';
-        document.body.appendChild(modal);
-    }
-
-    if (!modalContent) {
-        console.log('Modal content not found, creating it');
-        modalContent = document.createElement('div');
-        modalContent.id = 'adviceContent';
-        modal.appendChild(modalContent);
-    }
-
-    console.log('Modal:', modal);
-    console.log('Modal Content:', modalContent);
-
-    const spinner = document.createElement('div');
-    spinner.className = 'advice-spinner';
-    modalContent.innerHTML = '';
-    modalContent.appendChild(spinner);
+    // Create modal elements
+    const modal = document.createElement('div');
+    modal.className = 'modal';
     modal.style.display = 'block';
 
-    // Set up the close button event listener if not already set
-    const closeSpan = modal.querySelector('.close');
-    if (closeSpan && !closeSpan.onclick) {
-        closeSpan.onclick = function() {
-            modal.style.display = 'none';
-        };
-    }
+    const modalContent = document.createElement('div');
+    modalContent.className = 'modal-content';
 
-    // Close modal when clicking outside of it
-    window.onclick = function(event) {
-        if (event.target == modal) {
-            modal.style.display = 'none';
-        }
+    const closeBtn = document.createElement('span');
+    closeBtn.className = 'close';
+    closeBtn.innerHTML = '&times;';
+    closeBtn.onclick = function() {
+        document.body.removeChild(modal);
     };
 
+    const adviceContent = document.createElement('div');
+    adviceContent.id = 'adviceContent';
+
+    modalContent.appendChild(closeBtn);
+    modalContent.appendChild(adviceContent);
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+
+    // Create and add spinner
+    const spinner = document.createElement('div');
+    spinner.className = 'advice-spinner';
+    adviceContent.appendChild(spinner);
+
+    // Fetch advice
     fetch('/get_advice', {
         method: 'POST',
         headers: {
@@ -86,24 +71,30 @@ function getAdvice(domain, prompt) {
         spinner.remove();
         if (data.advice) {
             const formattedAdvice = data.advice
-                .replace(/^\d+\.\s*/gm, '')  // Remove numbering
+                .replace(/^\d+\.\s*/gm, '')
                 .split('\n')
-                .filter(item => item.trim() !== '')  // Remove empty lines
+                .filter(item => item.trim() !== '')
                 .map(item => `<li>${item}</li>`)
                 .join('');
-            modalContent.innerHTML = `
+            adviceContent.innerHTML = `
                 <h3>Advice for improving visibility of ${domain} for "${prompt}":</h3>
                 <ol>${formattedAdvice}</ol>
             `;
         } else {
-            modalContent.innerHTML = '<p>Failed to get advice. Please try again.</p>';
+            adviceContent.innerHTML = '<p>Failed to get advice. Please try again.</p>';
         }
     })
     .catch((error) => {
-        spinner.remove();
         console.error('Error:', error);
-        modalContent.innerHTML = '<p class="error">An error occurred while fetching advice. Please try again.</p>';
+        adviceContent.innerHTML = '<p class="error">An error occurred while fetching advice. Please try again.</p>';
     });
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            document.body.removeChild(modal);
+        }
+    };
 }
 
 // Function to load and display results
@@ -206,9 +197,8 @@ function formatVisibility(visible, domain, prompt, index) {
         }
         return `<span style="color: green;">✓ Yes</span><br>Congrats, you're ${rankText}`;
     } else {
-        // Properly encode the prompt to handle special characters
         const encodedPrompt = encodeURIComponent(prompt);
-        return `<span style="color: red;">✗ No</span><br><a href="#" class="get-advice-btn" data-domain="${domain}" data-prompt="${encodedPrompt}">Get Advice</a>`;
+        return `<span style="color: red;">✗ No</span><br><a href="#" onclick="getAdvice('${domain}', '${encodedPrompt}'); return false;">Get Advice</a>`;
     }
 }
 
