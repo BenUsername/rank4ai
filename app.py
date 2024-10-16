@@ -292,35 +292,6 @@ def privacy_policy():
 def terms_of_service():
     return render_template('terms_of_service.html', contact_email=CONTACT_EMAIL)
 
-@app.route('/results')
-def results():
-    # Retrieve necessary data from the session or database
-    domain = session.get('domain', '')
-    info = session.get('info', {})
-    prompts = session.get('prompts', [])
-    table = session.get('table', [])
-    searches_left = 3 - session.get('searches_performed', 0)
-
-    result_data = {
-        'domain': domain,
-        'info': info,
-        'prompts': prompts,
-        'table': table,
-        'searches_left': searches_left
-    }
-
-    return render_template('result.html', result_data=result_data)
-
-# Add this new route to your app.py file
-@app.route('/blog/track-brand-visibility-ai-search')
-def blog_post():
-    return render_template('blog_post.html')
-
-# Add this new route to your app.py file
-@app.route('/blog/answer-engine-optimization')
-def aeo_blog_post():
-    return render_template('aeo_blog_post.html')
-
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
