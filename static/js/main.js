@@ -143,12 +143,6 @@ function afterDOMLoaded() {
                 }
             }, 2000);
 
-            // Add this at the beginning of your fetch request
-            const loadingIndicator = document.createElement('div');
-            loadingIndicator.id = 'loading-indicator';
-            loadingIndicator.textContent = 'Loading results...';
-            document.body.appendChild(loadingIndicator);
-
             fetch('/analyze', {
                 method: 'POST',
                 headers: {
@@ -166,7 +160,6 @@ function afterDOMLoaded() {
                 clearInterval(progressInterval);
                 spinner.style.display = 'none';
                 progressLog.innerHTML = '';
-                document.body.removeChild(document.getElementById('loading-indicator'));
                 if (data.error) {
                     throw new Error(data.error);
                 } else {
@@ -178,7 +171,6 @@ function afterDOMLoaded() {
                 clearInterval(progressInterval);
                 spinner.style.display = 'none';
                 progressLog.innerHTML = '';
-                document.body.removeChild(document.getElementById('loading-indicator'));
                 console.error('Error:', error);
                 alert(`An error occurred: ${error.message}. Please try again.`);
             })
