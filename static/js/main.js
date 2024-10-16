@@ -75,7 +75,7 @@ function displayResults(data) {
                                 : row.competitors}
                         </td>
                         <td class="visibility-status ${row.visible.includes('Yes') ? 'visible' : 'not-visible'}">
-                            ${formatVisibility(row.visible, data.domain, row.prompt, index)}
+                            ${formatVisibility(row.visible)}
                         </td>
                     </tr>
                 `).join('')}
@@ -115,7 +115,7 @@ function displayResults(data) {
     attachEventListeners();
 }
 
-function formatVisibility(visible, domain, prompt, index) {
+function formatVisibility(visible) {
     if (visible.includes('Yes')) {
         const rank = visible.match(/\d+/)[0];
         let rankText = '';
@@ -194,21 +194,3 @@ function afterDOMLoaded() {
 
 // Call init immediately
 init();
-
-function closeModal() {
-    const modal = document.getElementById('adviceModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-}
-
-const closeBtn = document.querySelector('.close');
-if (closeBtn) {
-    closeBtn.onclick = closeModal;
-}
-
-window.onclick = function(event) {
-    if (event.target == document.getElementById('adviceModal')) {
-        closeModal();
-    }
-}
