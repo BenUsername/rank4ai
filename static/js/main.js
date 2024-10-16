@@ -27,10 +27,10 @@ function copyLink() {
 
 function getAdvice(domain, prompt) {
     let modal = document.getElementById('adviceModal');
-    let modalContent;
+    let modalContent = document.getElementById('adviceContent');
 
+    // Create modal if it doesn't exist
     if (!modal) {
-        // Create modal if it doesn't exist
         modal = document.createElement('div');
         modal.id = 'adviceModal';
         modal.className = 'modal';
@@ -41,6 +41,9 @@ function getAdvice(domain, prompt) {
         const closeSpan = document.createElement('span');
         closeSpan.className = 'close';
         closeSpan.innerHTML = '&times;';
+        closeSpan.onclick = function() {
+            modal.style.display = 'none';
+        };
         
         modalContent = document.createElement('div');
         modalContent.id = 'adviceContent';
@@ -49,37 +52,40 @@ function getAdvice(domain, prompt) {
         modalInner.appendChild(modalContent);
         modal.appendChild(modalInner);
         document.body.appendChild(modal);
-    } else {
-        // Use modal.querySelector to find adviceContent within the modal
-        modalContent = modal.querySelector('#adviceContent');
+
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        };
+    } else if (!modalContent) {
+        // If modal exists but modalContent doesn't, create it
+        modalContent = document.createElement('div');
+        modalContent.id = 'adviceContent';
+        const modalInner = modal.querySelector('.modal-content');
+        if (modalInner) {
+            modalInner.appendChild(modalContent);
+        } else {
+            console.error('Modal inner content not found');
+            return;
+        }
     }
 
+    // Ensure modalContent exists before proceeding
     if (!modalContent) {
-        console.error('Modal content element not found');
+        console.error('Modal content not found');
         return;
     }
 
-    // Set up event listeners
-    const closeSpan = modal.querySelector('.close');
-    if (closeSpan) {
-        closeSpan.onclick = function() {
-            modal.style.display = 'none';
-        };
-    }
-
-    // Close modal when clicking outside of it
-    window.onclick = function(event) {
-        if (event.target == modal) {
-            modal.style.display = 'none';
-        }
-    };
-
+    // Proceed to use modalContent
     const spinner = document.createElement('div');
     spinner.className = 'advice-spinner';
     modalContent.innerHTML = '';
     modalContent.appendChild(spinner);
     modal.style.display = 'block';
 
+    // Fetch advice from the server
     fetch('/get_advice', {
         method: 'POST',
         headers: {
