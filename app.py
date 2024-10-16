@@ -296,6 +296,10 @@ def terms_of_service():
 def blog_post():
     return render_template('blog_post.html')
 
+@app.route('/blog/answer-engine-optimization')
+def aeo_blog_post():
+    return render_template('aeo_blog_post.html')
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
