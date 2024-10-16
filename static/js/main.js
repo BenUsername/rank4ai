@@ -32,24 +32,26 @@ function getAdvice(domain, prompt) {
     console.log('Domain:', domain);
     console.log('Prompt:', prompt);
 
-    const modal = document.getElementById('adviceModal');
-    console.log('Modal element:', modal);
+    let modal = document.getElementById('adviceModal');
+    let modalContent = document.getElementById('adviceContent');
 
     if (!modal) {
-        console.error('Modal element not found');
-        alert('An error occurred. Please try again.');
-        return;
+        console.log('Modal not found, creating it');
+        modal = document.createElement('div');
+        modal.id = 'adviceModal';
+        modal.className = 'modal';
+        document.body.appendChild(modal);
     }
-
-    let modalContent = modal.querySelector('#adviceContent');
-    console.log('Modal content element:', modalContent);
 
     if (!modalContent) {
         console.log('Modal content not found, creating it');
         modalContent = document.createElement('div');
         modalContent.id = 'adviceContent';
-        modal.querySelector('.modal-content').appendChild(modalContent);
+        modal.appendChild(modalContent);
     }
+
+    console.log('Modal:', modal);
+    console.log('Modal Content:', modalContent);
 
     const spinner = document.createElement('div');
     spinner.className = 'advice-spinner';
@@ -188,7 +190,7 @@ function displayResults(data) {
         }
     `;
 
-    // Re-attach event listeners
+    // Re-attach event listeners after updating the DOM
     attachEventListeners();
 }
 

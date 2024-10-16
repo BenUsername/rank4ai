@@ -67,20 +67,8 @@
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script>
-        function testModal() {
-            console.log('Test function called');
-            const modal = document.getElementById('adviceModal');
-            const modalContent = document.getElementById('adviceContent');
-            console.log('Modal:', modal);
-            console.log('Modal Content:', modalContent);
-            if (modalContent) {
-                modalContent.innerHTML = 'Test content';
-            } else {
-                console.error('Modal content not found');
-            }
-        }
-
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOMContentLoaded event fired');
             console.log('Modal in DOM:', document.getElementById('adviceModal'));
             console.log('Modal content in DOM:', document.getElementById('adviceContent'));
             init();
@@ -89,11 +77,6 @@
                 console.log('Displaying results for domain:', resultData.domain);
                 displayResults(resultData);
             }
-            // Add a button to test the modal
-            const testButton = document.createElement('button');
-            testButton.textContent = 'Test Modal';
-            testButton.onclick = testModal;
-            document.body.appendChild(testButton);
         });
     </script>
 </body>
