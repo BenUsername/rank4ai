@@ -30,88 +30,90 @@ function copyLink() {
 // Function to load and display results
 function displayResults(data) {
     const mainContent = document.getElementById('main-content');
-    if (!mainContent) {
-        console.error('Main content element not found');
-        return;
+    const landingContent = document.getElementById('landing-content');
+    
+    if (landingContent) {
+        landingContent.style.display = 'none';
     }
     
-    mainContent.innerHTML = `
-        <h1>Results for ${data.domain}</h1>
-        
-        <h2>Website Information</h2>
-        <p><strong>Title:</strong> ${data.info.title}</p>
-        <p><strong>Description:</strong> ${data.info.description}</p>
-        
-        <h2>Relevant Searches</h2>
-        <ol>
-        ${data.prompts.map((prompt, index) => `<li><a href="#result-${index + 1}">${prompt.split('.', 1)[1].trim().replace(/^"|"$/g, '')}</a></li>`).join('')}
-        </ol>
-        
-        <h2>Visibility and Competitors</h2>
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Prompt</th>
-                        <th>Answer</th>
-                        <th>Top Competitors</th>
-                        <th>Visible in LLM?</th>
-                    </tr>
-                </thead>
-                <tbody>
-                ${data.table.map((row, index) => `
-                    <tr id="result-${index + 1}">
-                        <td class="expandable">
-                            <div class="content">${row.prompt.split('.', 1)[1].trim().replace(/^"|"$/g, '')}</div>
-                            <button class="expand-btn" aria-label="Expand">+</button>
-                        </td>
-                        <td class="expandable">
-                            <div class="content">${row.answer}</div>
-                            <button class="expand-btn" aria-label="Expand">+</button>
-                        </td>
-                        <td>
-                            ${row.competitors !== 'None mentioned' 
-                                ? `<ol>${row.competitors.split(', ').map(comp => `<li>${comp}</li>`).join('')}</ol>`
-                                : row.competitors}
-                        </td>
-                        <td class="visibility-status ${row.visible.includes('Yes') ? 'visible' : 'not-visible'}">
-                            ${formatVisibility(row.visible)}
-                        </td>
-                    </tr>
-                `).join('')}
-                </tbody>
-            </table>
-        </div>
+    if (mainContent) {
+        mainContent.style.display = 'block';
+        mainContent.innerHTML = `
+            <h1>Results for ${data.domain}</h1>
+            
+            <h2>Website Information</h2>
+            <p><strong>Title:</strong> ${data.info.title}</p>
+            <p><strong>Description:</strong> ${data.info.description}</p>
+            
+            <h2>Relevant Searches</h2>
+            <ol>
+            ${data.prompts.map((prompt, index) => `<li><a href="#result-${index + 1}">${prompt.split('.', 1)[1].trim().replace(/^"|"$/g, '')}</a></li>`).join('')}
+            </ol>
+            
+            <h2>Visibility and Competitors</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Prompt</th>
+                            <th>Answer</th>
+                            <th>Top Competitors</th>
+                            <th>Visible in LLM?</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    ${data.table.map((row, index) => `
+                        <tr id="result-${index + 1}">
+                            <td class="expandable">
+                                <div class="content">${row.prompt.split('.', 1)[1].trim().replace(/^"|"$/g, '')}</div>
+                                <button class="expand-btn" aria-label="Expand">+</button>
+                            </td>
+                            <td class="expandable">
+                                <div class="content">${row.answer}</div>
+                                <button class="expand-btn" aria-label="Expand">+</button>
+                            </td>
+                            <td>
+                                ${row.competitors !== 'None mentioned' 
+                                    ? `<ol>${row.competitors.split(', ').map(comp => `<li>${comp}</li>`).join('')}</ol>`
+                                    : row.competitors}
+                            </td>
+                            <td class="visibility-status ${row.visible.includes('Yes') ? 'visible' : 'not-visible'}">
+                                ${formatVisibility(row.visible)}
+                            </td>
+                        </tr>
+                    `).join('')}
+                    </tbody>
+                </table>
+            </div>
 
-        <div class="share-container">
-            <h3>Share your results:</h3>
-            <button onclick="shareTwitter()" class="share-button twitter">
-                <i class="fab fa-twitter"></i> Twitter
-            </button>
-            <button onclick="shareLinkedIn()" class="share-button linkedin">
-                <i class="fab fa-linkedin"></i> LinkedIn
-            </button>
-            <button onclick="shareFacebook()" class="share-button facebook">
-                <i class="fab fa-facebook"></i> Facebook
-            </button>
-            <button onclick="copyLink()" class="share-button copy-link">
-                <i class="fas fa-link"></i> Copy Link
-            </button>
-        </div>
+            <div class="share-container">
+                <h3>Share your results:</h3>
+                <button onclick="shareTwitter()" class="share-button twitter">
+                    <i class="fab fa-twitter"></i> Twitter
+                </button>
+                <button onclick="shareLinkedIn()" class="share-button linkedin">
+                    <i class="fab fa-linkedin"></i> LinkedIn
+                </button>
+                <button onclick="shareFacebook()" class="share-button facebook">
+                    <i class="fab fa-facebook"></i> Facebook
+                </button>
+                <button onclick="copyLink()" class="share-button copy-link">
+                    <i class="fas fa-link"></i> Copy Link
+                </button>
+            </div>
 
-        ${data.searches_left > 0 
-            ? `<div class="cta-container">
-                <p class="cta-text">You have ${data.searches_left} free searches left. Want to analyze more domains?</p>
-                <a href="/" class="cta-button">Analyze Another Domain</a>
-               </div>`
-            : `<div class="cta-container">
-                <p class="cta-text">You've used all your free searches. Want to analyze more domains and get deeper insights?</p>
-                <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button">Join Waiting List for Premium Access</a>
-               </div>`
-        }
-    `;
-
-    attachEventListeners();
+            ${data.searches_left > 0 
+                ? `<div class="cta-container">
+                    <p class="cta-text">You have ${data.searches_left} free searches left. Want to analyze more domains?</p>
+                    <a href="/" class="cta-button">Analyze Another Domain</a>
+                   </div>`
+                : `<div class="cta-container">
+                    <p class="cta-text">You've used all your free searches. Want to analyze more domains and get deeper insights?</p>
+                    <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button">Join Waiting List for Premium Access</a>
+                   </div>`
+            }
+        `;
+    }
 }
 
 function formatVisibility(visible) {
@@ -144,7 +146,7 @@ function afterDOMLoaded() {
     if (analyzeForm) {
         analyzeForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            const domain = document.getElementById('domain').value;
+            const domain = document.getElementById('domainInput').value;
             const submitButton = document.querySelector('button[type="submit"]');
             const originalButtonText = submitButton.textContent;
             submitButton.disabled = true;
