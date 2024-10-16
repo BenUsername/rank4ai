@@ -19,7 +19,7 @@ function shareFacebook() {
 
 function copyLink() {
     var currentUrl = new URL(window.location.href);
-    var analyzedDomain = document.querySelector('h2')?.textContent.split(' ')[2]; // Extracts the domain from the results heading
+    var analyzedDomain = document.getElementById('domainInput').value;
     
     if (analyzedDomain) {
         currentUrl.searchParams.set('domain', analyzedDomain);
@@ -162,11 +162,21 @@ function handleFormSubmit(e) {
     spinner.style.display = 'block';
     progressLog.innerHTML = '';
     
-    let progress = 0;
+    let progressSteps = [
+        'Fetching website content...',
+        'Analyzing content...',
+        'Generating prompts...',
+        'Simulating AI responses...',
+        'Compiling results...'
+    ];
+
+    let currentStep = 0;
     const progressInterval = setInterval(() => {
-        progress += 10;
-        if (progress <= 100) {
-            updateProgress(`Analyzing... ${progress}%`);
+        if (currentStep < progressSteps.length) {
+            updateProgress(progressSteps[currentStep]);
+            currentStep++;
+        } else {
+            clearInterval(progressInterval);
         }
     }, 2000);
 
@@ -214,7 +224,7 @@ function handleFormSubmit(e) {
 
 function updateProgress(message) {
     const progressLog = document.getElementById('progress-log');
-    progressLog.innerHTML += `<p>${message}</p>`;
+    progressLog.innerHTML = `<p>${message}</p>`;
 }
 
 function showAdviceModal() {
@@ -269,21 +279,3 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
-
-let progressSteps = [
-    'Fetching website content...',
-    'Analyzing content...',
-    'Generating prompts...',
-    'Simulating AI responses...',
-    'Compiling results...'
-];
-
-let currentStep = 0;
-const progressInterval = setInterval(() => {
-    if (currentStep < progressSteps.length) {
-        updateProgress(progressSteps[currentStep]);
-        currentStep++;
-    } else {
-        clearInterval(progressInterval);
-    }
-}, 2000);
