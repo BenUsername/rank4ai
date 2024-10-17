@@ -11,6 +11,7 @@ import re
 import logging
 from datetime import date
 import time
+from urllib.parse import quote_plus  # Ensure this import is present
 
 # Load environment variables from .env file
 load_dotenv()
@@ -34,6 +35,9 @@ DAILY_INCREASE = 5  # Number of users to add each day
 
 # Add this near the top of your file, after loading other environment variables
 CONTACT_EMAIL = os.getenv('mailto', 'support@promptboostai.com')
+
+# Logo.dev API token
+LOGO_DEV_TOKEN = os.getenv('LOGO_DEV_TOKEN')
 
 # Add this near the top of your file, after other imports
 from flask import send_from_directory
@@ -236,6 +240,16 @@ def get_user_count():
     days_passed = (date.today() - start_date).days
     return BASE_USER_COUNT + (days_passed * DAILY_INCREASE)
 
+def get_logo_dev_logo(domain):
+    """Constructs the Logo.dev API URL for a given domain."""
+    if not LOGO_DEV_TOKEN:
+        logger.error("Logo.dev token not found in environment variables.")
+        return None
+    # Ensure the domain is properly encoded
+    encoded_domain = quote_plus(domain)
+    logo_url = f"https://img.logo.dev/{encoded_domain}?token={LOGO_DEV_TOKEN}&size=200&format=png"
+    return logo_url
+
 @app.before_request
 def before_request():
     if not request.is_secure:
@@ -279,7 +293,10 @@ def analyze():
 
         logging.info(f"Generating prompt answers for {domain}")
         table = generate_prompt_answers(prompts, domain, info)
-        
+
+        # Fetch the high-resolution logo using Logo.dev
+        logo_url = get_logo_dev_logo(domain)
+
         session['searches_left'] = searches_left - 1
         searches_left = session['searches_left']
 
@@ -291,6 +308,7 @@ def analyze():
             'info': info,
             'prompts': prompts,
             'table': table,
+            'logo_url': logo_url,  # Include the logo URL in the response
             'searches_left': searches_left
         })
 
@@ -325,8 +343,11 @@ def aeo_blog_post():
 @app.route('/get_advice', methods=['POST'])
 def get_advice():
     data = request.json
-    domain = data['domain']
-    prompt = data['prompt']
+    domain = data.get('domain')
+    prompt = data.get('prompt')
+
+    if not domain or not prompt:
+        return jsonify({'error': 'Domain and prompt are required.'}), 400
 
     try:
         response = client.chat.completions.create(
