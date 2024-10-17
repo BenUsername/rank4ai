@@ -78,7 +78,7 @@ function displayResults(data) {
                 ${data.table.map((row, index) => `
                     <tr>
                         <td>${row.prompt}</td>
-                        <td class="truncate">${row.answer}</td>
+                        <td class="truncate">${formatMarkdown(row.answer)}</td>
                         <td>${row.competitors}</td>
                         <td>${row.visible}</td>
                         <td>${row.visible === 'No' ? `<button onclick="getAdvice('${data.domain}', '${row.prompt}', ${index})" class="advice-button">Get Advice</button>` : ''}</td>
@@ -106,6 +106,11 @@ function displayResults(data) {
     }
 }
 
+function formatMarkdown(text) {
+    // Replace **text** with <strong>text</strong>
+    return text.replace(/\*\*(\S(.*?\S)?)\*\*/g, '<strong>$1</strong>');
+}
+
 function getAdvice(domain, prompt, rowIndex) {
     const modal = document.getElementById('adviceModal');
     const modalContent = document.getElementById('adviceModalContent');
@@ -126,7 +131,7 @@ function getAdvice(domain, prompt, rowIndex) {
     .then(response => response.json())
     .then(data => {
         spinner.style.display = 'none';
-        const formattedAdvice = data.advice.replace(/(\d+\.)/g, '<br><br>$1').replace(/Example:/g, '<br>Example:');
+        const formattedAdvice = formatMarkdown(data.advice);
         adviceContent.innerHTML = `<h3>Advice for improving visibility:</h3>${formattedAdvice}`;
     })
     .catch(error => {
