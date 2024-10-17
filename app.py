@@ -294,9 +294,6 @@ def analyze():
         logging.info(f"Generating prompt answers for {domain}")
         table = generate_prompt_answers(prompts, domain, info)
 
-        # Fetch the high-resolution logo using Logo.dev
-        logo_url = get_logo_dev_logo(domain)
-
         session['searches_left'] = searches_left - 1
         searches_left = session['searches_left']
 
@@ -308,7 +305,6 @@ def analyze():
             'info': info,
             'prompts': prompts,
             'table': table,
-            'logo_url': logo_url,  # Include the logo URL in the response
             'searches_left': searches_left
         })
 

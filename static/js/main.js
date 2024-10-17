@@ -54,7 +54,7 @@ function displayResults(data) {
     // Add domain information with Logo.dev logo
     mainContent.innerHTML += `
         <h2>
-            ${data.logo_url ? `<img src="${data.logo_url}" alt="${data.domain} logo" style="vertical-align: middle; margin-right: 10px; max-height: 50px;">` : ''}
+            <img src="https://img.logo.dev/${data.domain}?token=pk_Iiu041TAThCqnelMWeRtDQ" alt="${data.domain} logo" style="vertical-align: middle; margin-right: 10px; max-height: 50px;" onerror="this.onerror=null; this.src='https://www.google.com/s2/favicons?domain=${data.domain}&sz=64';">
             Results for ${data.domain}
         </h2>
     `;
