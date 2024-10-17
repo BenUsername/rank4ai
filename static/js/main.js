@@ -66,18 +66,31 @@ function displayResults(data) {
         <p><strong>Description:</strong> ${data.info.description}</p>
     `;
 
-    // Add top-of-funnel table
+    // Add table of results
     mainContent.innerHTML += `
-        <h3>Top-of-Funnel AI Search Visibility Results</h3>
-        <p>These queries are broader and more informational, attracting a larger audience but with lower intent to convert.</p>
-        ${generateTable(data.top_funnel_table)}
-    `;
-
-    // Add mid-funnel table
-    mainContent.innerHTML += `
-        <h3>Mid-Funnel AI Search Visibility Results</h3>
-        <p>These queries are more specific, indicating that the user is considering solutions or comparing options, thus having a higher likelihood of conversion.</p>
-        ${generateTable(data.mid_funnel_table)}
+        <h3>AI Search Visibility Results</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Prompt</th>
+                    <th>AI Response</th>
+                    <th>Competitors</th>
+                    <th>Are You Visible?</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${data.table.map((row, index) => `
+                    <tr>
+                        <td>${row.prompt}</td>
+                        <td class="truncate">${formatMarkdown(row.answer)}</td>
+                        <td>${row.competitors}</td>
+                        <td>${row.visible}</td>
+                        <td>${row.visible === 'No' ? `<button onclick="getAdvice('${data.domain}', '${row.prompt}', ${index})" class="advice-button">Get Advice</button>` : ''}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
     `;
 
     // Add sharing buttons
@@ -96,33 +109,6 @@ function displayResults(data) {
     if (searchesLeftElement) {
         searchesLeftElement.textContent = data.searches_left;
     }
-}
-
-function generateTable(tableData) {
-    return `
-        <table>
-            <thead>
-                <tr>
-                    <th>Prompt</th>
-                    <th>AI Response</th>
-                    <th>Competitors</th>
-                    <th>Are You Visible?</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${tableData.map((row, index) => `
-                    <tr>
-                        <td>${row.prompt}</td>
-                        <td class="truncate">${formatMarkdown(row.answer)}</td>
-                        <td>${row.competitors}</td>
-                        <td>${row.visible}</td>
-                        <td>${row.visible === 'No' ? `<button onclick="getAdvice('${data.domain}', '${row.prompt}', ${index})" class="advice-button">Get Advice</button>` : ''}</td>
-                    </tr>
-                `).join('')}
-            </tbody>
-        </table>
-    `;
 }
 
 function formatMarkdown(text) {

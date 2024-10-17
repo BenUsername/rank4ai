@@ -98,24 +98,30 @@ def extract_main_info(html_content):
     }
 
 def generate_marketing_prompts(title, description, content, domain):
-    """Generate top-of-funnel and mid-funnel marketing prompts using OpenAI's API."""
-    MIN_WORD_COUNT = 30
-    total_word_count = len(title.split()) + len(description.split()) + len(content.split())
+    """Generate five marketing prompts using OpenAI's API."""
+    MIN_WORD_COUNT = 30  # Minimum total word count
+    title_word_count = len(title.split())
+    description_word_count = len(description.split())
+    content_word_count = len(content.split())
+    total_word_count = title_word_count + description_word_count + content_word_count
+    logger.info(f"Title word count: {title_word_count}")
+    logger.info(f"Description word count: {description_word_count}")
+    logger.info(f"Content word count: {content_word_count}")
     logger.info(f"Total content word count: {total_word_count}")
     
     if total_word_count < MIN_WORD_COUNT:
         logger.warning("Combined content is too short for meaningful prompt generation.")
-        return [], []
+        return []
     
     prompt = (
-        f"Based on the following information for {domain}, generate two sets of marketing prompts:\n"
-        "1. Five top-of-funnel prompts that are broader and more informational, attracting a larger audience but with lower intent to convert.\n"
-        "2. Five mid-funnel prompts that are more specific, indicating that the user is considering solutions or comparing options, thus having a higher likelihood of conversion.\n"
-        "Format the response as two separate numbered lists under the headings 'Top-of-Funnel Prompts:' and 'Mid-Funnel Prompts:'. Do not include any introductory text.\n\n"
+        f"Based on the following information for {domain}, imagine five marketing prompts "
+        "for which the chief marketing of the company would love to rank high in ChatGPT answers. The prompts should be as general as possible simulating a user searching for the service or product offered by {domain} but not necessarily mentioning the domain name. Do not include any introductory text such as Here are five marketing prompts that the chief marketing officer of domain would likely want to rank high for in ChatGPT answers:, just give the prompts straight\n\n"
         f"Title: {title}\n"
         f"Description: {description}\n"
         f"Content: {content}"
     )
+    
+    logger.debug(f"Constructed Prompt:\n{prompt}")
     
     try:
         response = client.chat.completions.create(
@@ -124,33 +130,31 @@ def generate_marketing_prompts(title, description, content, domain):
                 {"role": "system", "content": "You are an impartial LLM agent helping the users find the best website for their needs."},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=300,
+            max_tokens=200,
             n=1,
             temperature=0.7,
         )
         
+        logger.debug(f"OpenAI API Response:\n{response}")
+        
+        # Extract the text response
         prompts_text = response.choices[0].message.content.strip()
         logger.info(f"OpenAI response for marketing prompts: {prompts_text}")
         
-        top_funnel_prompts = []
-        mid_funnel_prompts = []
-        current_list = None
+        # Split the prompts into a list
+        prompts = [line.strip() for line in prompts_text.split('\n') if line.strip()]
         
-        for line in prompts_text.split('\n'):
-            if line.startswith("Top-of-Funnel Prompts:"):
-                current_list = top_funnel_prompts
-            elif line.startswith("Mid-Funnel Prompts:"):
-                current_list = mid_funnel_prompts
-            elif line.strip() and current_list is not None:
-                current_list.append(line.strip().split('. ', 1)[-1])
+        # Ensure only five prompts are returned
+        prompts = prompts[:5]
+        logger.info(f"Generated prompts: {prompts}")
         
-        logger.info(f"Generated top-funnel prompts: {top_funnel_prompts}")
-        logger.info(f"Generated mid-funnel prompts: {mid_funnel_prompts}")
+        if not prompts:
+            logger.warning("No valid prompts were generated.")
         
-        return top_funnel_prompts, mid_funnel_prompts
+        return prompts
     except Exception as e:
         logger.error(f"Error during OpenAI API call: {e}")
-        return [], []
+        return []
 
 def generate_prompt_answer(prompt, domain, info):
     # Check if the API call limit has been reached
@@ -281,13 +285,14 @@ def analyze():
         logging.info(f"Extracting main info for {domain}")
         info = extract_main_info(html_content)
         
-        top_funnel_prompts, mid_funnel_prompts = generate_marketing_prompts(info['title'], info['description'], info['content'], domain)
+        logging.info(f"Generating marketing prompts for {domain}")
+        prompts = generate_marketing_prompts(info['title'], info['description'], info['content'], domain)
         
-        if not top_funnel_prompts and not mid_funnel_prompts:
+        if not prompts:
             return jsonify({'error': "We couldn't generate valid prompts for this website. Please try another domain.", 'searches_left': searches_left}), 500
 
-        top_funnel_table = generate_prompt_answers(top_funnel_prompts, domain, info)
-        mid_funnel_table = generate_prompt_answers(mid_funnel_prompts, domain, info)
+        logging.info(f"Generating prompt answers for {domain}")
+        table = generate_prompt_answers(prompts, domain, info)
 
         session['searches_left'] = searches_left - 1
         searches_left = session['searches_left']
@@ -298,8 +303,8 @@ def analyze():
         return jsonify({
             'domain': domain,
             'info': info,
-            'top_funnel_table': top_funnel_table,
-            'mid_funnel_table': mid_funnel_table,
+            'prompts': prompts,
+            'table': table,
             'searches_left': searches_left
         })
 
