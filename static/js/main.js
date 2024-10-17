@@ -51,10 +51,10 @@ function displayResults(data) {
     // Clear previous content
     mainContent.innerHTML = '';
 
-    // Add domain information with favicon
+    // Add domain information with Logo.dev logo
     mainContent.innerHTML += `
         <h2>
-            <img src="https://www.google.com/s2/favicons?domain=${data.domain}" alt="${data.domain} favicon" style="vertical-align: middle; margin-right: 10px;">
+            ${data.logo_url ? `<img src="${data.logo_url}" alt="${data.domain} logo" style="vertical-align: middle; margin-right: 10px; max-height: 50px;">` : ''}
             Results for ${data.domain}
         </h2>
     `;
@@ -84,13 +84,7 @@ function displayResults(data) {
                     <tr>
                         <td>${row.prompt}</td>
                         <td class="truncate">${formatMarkdown(row.answer)}</td>
-                        <td>
-                            <ol>
-                                ${row.competitors.split(', ').map((competitor, i) => `
-                                    <li>${competitor}</li>
-                                `).join('')}
-                            </ol>
-                        </td>
+                        <td>${row.competitors}</td>
                         <td>${row.visible}</td>
                         <td>${row.visible === 'No' ? `<button onclick="getAdvice('${data.domain}', '${row.prompt}', ${index})" class="advice-button">Get Advice</button>` : ''}</td>
                     </tr>
