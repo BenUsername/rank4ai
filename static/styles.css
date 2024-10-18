@@ -1081,3 +1081,17 @@ img {
 }
 
 /* ... (keep other existing styles) ... */
+
+/* Testimonial styles */
+.testimonial-author {
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+.testimonial-author i {
+    font-size: 1.5em;
+    margin-right: 10px;
+    color: #3498db; /* You can change this color to match your theme */
+}

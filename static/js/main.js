@@ -178,53 +178,37 @@ function getContentUpdates(domain, prompt) {
     })
     .then(response => response.json())
     .then(data => {
-        clearInterval(progressInterval);
-        spinner.style.display = 'none';
-        progressLog.style.display = 'none';
-        if (data.error) {
-            adviceContent.innerHTML = `<p class="error">${data.error}</p>`;
+        if (data.job_id) {
+            pollForResults(data.job_id);
         } else {
-            let contentHtml = '<h3>Content Update Suggestions:</h3>';
-
-            if (data.existing_page_suggestions && data.existing_page_suggestions.length > 0) {
-                contentHtml += '<h4>Existing Pages to Update:</h4><ul>';
-                data.existing_page_suggestions.forEach((suggestion, index) => {
-                    let url = suggestion.url;
-                    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-                        url = `https://${domain}${url.startsWith('/') ? '' : '/'}${url}`;
-                    }
-                    contentHtml += `
-                        <li>
-                            <strong>${index < 3 ? `<a href="${url}" target="_blank" rel="noopener noreferrer">` : ''}${suggestion.url}${index < 3 ? '</a>' : ''}</strong>
-                            <p>Suggestion: ${suggestion.suggestion}</p>
-                        </li>
-                    `;
-                });
-                contentHtml += '</ul>';
-            }
-
-            if (data.new_blog_post_suggestions && data.new_blog_post_suggestions.length > 0) {
-                contentHtml += '<h4>New Blog Posts to Create:</h4><ul>';
-                data.new_blog_post_suggestions.forEach(suggestion => {
-                    contentHtml += `
-                        <li>
-                            <strong>${suggestion.title}</strong>
-                            <p>Outline: ${suggestion.outline.join(', ')}</p>
-                        </li>
-                    `;
-                });
-                contentHtml += '</ul>';
-            }
-
-            adviceContent.innerHTML = contentHtml;
+            // Handle error
+            adviceContent.innerHTML = `<p class="error">${data.error || 'An error occurred'}</p>`;
         }
     })
     .catch(error => {
-        clearInterval(progressInterval);
-        spinner.style.display = 'none';
-        progressLog.style.display = 'none';
         adviceContent.innerHTML = `<p class="error">Error: ${error.message}</p>`;
     });
+}
+
+function pollForResults(jobId) {
+    fetch(`/get_advice_result/${jobId}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === "processing") {
+            // If still processing, poll again after a delay
+            setTimeout(() => pollForResults(jobId), 2000);
+        } else {
+            // Results are ready, update the UI
+            updateAdviceContent(data);
+        }
+    })
+    .catch(error => {
+        adviceContent.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+    });
+}
+
+function updateAdviceContent(data) {
+    // Your existing code to update the UI with the advice content
 }
 
 function updateAdviceProgress(message) {

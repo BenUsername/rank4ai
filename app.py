@@ -17,6 +17,9 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from urllib.parse import urljoin
 import json
+import threading
+import uuid
+from werkzeug.serving import WSGIRequestHandler
 
 # Load environment variables from .env file
 load_dotenv()
@@ -323,6 +326,9 @@ def before_request():
 # Near the top of the file, update or add this constant
 MAX_SEARCHES_PER_SESSION = 3  # Keep it at 3 searches
 
+# Set a longer timeout for the /get_advice route
+WSGIRequestHandler.timeout = 120  # 120 seconds
+
 @app.route('/', methods=['GET'])
 def index():
     searches_left = session.get('searches_left', MAX_SEARCHES_PER_SESSION)
@@ -414,6 +420,16 @@ def blog_post():
 def aeo_blog_post():
     return render_template('aeo_blog_post.html')
 
+# Dictionary to store job results
+job_results = {}
+
+def background_task(job_id, domain, prompt, existing_content):
+    try:
+        content_suggestions = get_advice(domain, prompt, existing_content)
+        job_results[job_id] = content_suggestions
+    except Exception as e:
+        job_results[job_id] = {"error": str(e)}
+
 @app.route('/get_advice', methods=['POST'])
 def get_advice_route():
     data = request.json
@@ -423,14 +439,24 @@ def get_advice_route():
     if not domain or not prompt:
         return jsonify({'error': 'Domain and prompt are required.'}), 400
 
-    try:
-        existing_content = fetch_website_content(domain)
-        content_suggestions = get_advice(domain, prompt, existing_content)
+    job_id = str(uuid.uuid4())
+    existing_content = fetch_website_content(domain)
+    
+    # Start the background task
+    thread = threading.Thread(target=background_task, args=(job_id, domain, prompt, existing_content))
+    thread.start()
 
-        return jsonify(content_suggestions)
-    except Exception as e:
-        app.logger.error(f"Error generating advice: {str(e)}")
-        return jsonify({'error': 'An error occurred while generating advice. Please try again later.'}), 500
+    return jsonify({"job_id": job_id}), 202
+
+@app.route('/get_advice_result/<job_id>', methods=['GET'])
+def get_advice_result(job_id):
+    result = job_results.get(job_id)
+    if result is None:
+        return jsonify({"status": "processing"}), 202
+    else:
+        # Remove the result from storage after retrieving
+        del job_results[job_id]
+        return jsonify(result), 200
 
 @app.errorhandler(500)
 def internal_server_error(error):
@@ -526,6 +552,10 @@ def autocomplete(query):
     except requests.RequestException as e:
         app.logger.error(f"Error fetching autocomplete suggestions: {str(e)}")
         return jsonify([])
+
+@app.route('/blog/ultimate-guide-ranking-high-llm-results')
+def llm_ranking_blog_post():
+    return render_template('llm_ranking_blog_post.html')
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))

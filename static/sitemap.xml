@@ -12,4 +12,10 @@
     <changefreq>always</changefreq>
     <priority>0.8</priority>
   </url>
+  <url>
+    <loc>https://www.promptboostai.com/blog/ultimate-guide-ranking-high-llm-results</loc>
+    <lastmod>2024-10-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
 </urlset>
