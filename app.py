@@ -12,6 +12,11 @@ import logging
 from datetime import date
 import time
 from urllib.parse import quote_plus  # Add this import
+import difflib
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from urllib.parse import urljoin
+import json
 
 # Load environment variables from .env file
 load_dotenv()
@@ -53,25 +58,58 @@ def is_valid_domain(domain):
     return validators.domain(domain)
 
 def fetch_website_content(domain):
-    urls = [
-        f"https://{domain}",
-        f"http://{domain}",
-        f"https://www.{domain}",
-        f"http://www.{domain}",
+    base_url = f"https://{domain}"
+    pages_to_fetch = [
+        "",  # Homepage
+        "/blog",
+        "/about",
+        "/products",
+        "/services",
     ]
+    
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     }
     
-    for url in urls:
+    existing_content = {}
+    html_content = None
+    
+    for page in pages_to_fetch:
+        url = urljoin(base_url, page)
         try:
             response = requests.get(url, headers=headers, timeout=10)
             if response.status_code == 200:
-                return response.text
+                soup = BeautifulSoup(response.text, 'html.parser')
+                
+                # Extract main content (you might need to adjust this based on the website structure)
+                main_content = soup.find('main') or soup.find('article') or soup.find('div', class_='content')
+                
+                if main_content:
+                    existing_content[url] = main_content.get_text(strip=True)
+                else:
+                    existing_content[url] = soup.get_text(strip=True)
+                
+                # Store the HTML content of the homepage
+                if page == "":
+                    html_content = response.text
+                
+                # If it's the blog page, try to find and fetch individual blog posts
+                if page == "/blog":
+                    blog_links = soup.find_all('a', href=True)
+                    for link in blog_links:
+                        if '/blog/' in link['href']:
+                            blog_url = urljoin(base_url, link['href'])
+                            blog_response = requests.get(blog_url, headers=headers, timeout=10)
+                            if blog_response.status_code == 200:
+                                blog_soup = BeautifulSoup(blog_response.text, 'html.parser')
+                                blog_content = blog_soup.find('main') or blog_soup.find('article') or blog_soup.find('div', class_='content')
+                                if blog_content:
+                                    existing_content[blog_url] = blog_content.get_text(strip=True)
+        
         except requests.exceptions.RequestException as e:
             app.logger.error(f"Error fetching {url}: {str(e)}")
     
-    return None
+    return html_content, existing_content
 
 def extract_main_info(html_content):
     """Extract Title, Description, and Main Content from the HTML."""
@@ -156,7 +194,19 @@ def generate_marketing_prompts(title, description, content, domain):
         logger.error(f"Error during OpenAI API call: {e}")
         return []
 
-def generate_prompt_answer(prompt, domain, info):
+def analyze_content_gaps(domain, ai_response, existing_content):
+    suggestions = []
+    # Compare AI response with existing content
+    matches = difflib.get_close_matches(ai_response, existing_content.keys(), n=1, cutoff=0.6)
+    if matches:
+        closest_match = matches[0]
+        suggestion = f"Update '{closest_match}' to include information about: {ai_response}"
+    else:
+        suggestion = f"Consider creating new content about: {ai_response}"
+    suggestions.append(suggestion)
+    return suggestions
+
+def generate_prompt_answer(prompt, domain, info, existing_content):
     # Check if the API call limit has been reached
     if session.get('api_calls', 0) >= MAX_API_CALLS_PER_SESSION:
         app.logger.warning(f"API call limit reached for session")
@@ -164,7 +214,8 @@ def generate_prompt_answer(prompt, domain, info):
             'prompt': prompt,
             'answer': "API call limit reached. Please try again later.",
             'competitors': 'N/A',
-            'visible': 'N/A'
+            'visible': 'N/A',
+            'content_suggestions': []
         }
 
     try:
@@ -216,11 +267,15 @@ def generate_prompt_answer(prompt, domain, info):
         if rank > 0:
             app.logger.info(f"Domain {domain} found in competitors list at rank {rank}")
         
+        # Analyze content gaps
+        content_suggestions = analyze_content_gaps(domain, [answer], existing_content)
+
         return {
             'prompt': prompt,
             'answer': answer,
             'competitors': competitors_str,
-            'visible': visibility_str
+            'visible': visibility_str,
+            'content_suggestions': content_suggestions
         }
     except Exception as e:
         error_message = f"Error generating answer for prompt '{prompt}': {str(e)}"
@@ -229,11 +284,12 @@ def generate_prompt_answer(prompt, domain, info):
             'prompt': prompt,
             'answer': f'Error: {error_message}',
             'competitors': 'N/A',
-            'visible': 'N/A'
+            'visible': 'N/A',
+            'content_suggestions': []
         }
 
-def generate_prompt_answers(prompts, domain, info):
-    return [generate_prompt_answer(prompt, domain, info) for prompt in prompts]
+def generate_prompt_answers(prompts, domain, info, existing_content):
+    return [generate_prompt_answer(prompt, domain, info, existing_content) for prompt in prompts]
 
 def get_user_count():
     start_date = date(2024, 1, 1)  # Choose a start date
@@ -252,9 +308,15 @@ def get_logo_dev_logo(domain):
 
 @app.before_request
 def before_request():
-    if not request.is_secure:
-        url = request.url.replace('http://', 'https://', 1)
-        return redirect(url, code=301)
+    # Check if we're running on Heroku
+    if 'DYNO' in os.environ:
+        # We're on Heroku, force HTTPS
+        if request.url.startswith('http://'):
+            url = request.url.replace('http://', 'https://', 1)
+            return redirect(url, code=301)
+    else:
+        # We're running locally, allow HTTP
+        pass
 
 @app.route('/', methods=['GET'])
 def index():
@@ -264,7 +326,14 @@ def index():
     show_results = request.args.get('showResults')
     return render_template('index.html', searches_left=searches_left, user_count=user_count, domain=domain, show_results=show_results)
 
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"]
+)
+
 @app.route('/analyze', methods=['POST'])
+@limiter.limit("5 per minute")
 def analyze():
     try:
         start_time = time.time()
@@ -278,7 +347,7 @@ def analyze():
             return jsonify({'error': 'Invalid domain name.', 'searches_left': searches_left}), 400
 
         logging.info(f"Fetching content for {domain}")
-        html_content = fetch_website_content(domain)
+        html_content, existing_content = fetch_website_content(domain)
         if html_content is None:
             return jsonify({'error': f"We couldn't fetch the content for {domain}. The website may be unavailable or blocking our requests. Please try another domain.", 'searches_left': searches_left}), 404
 
@@ -292,7 +361,7 @@ def analyze():
             return jsonify({'error': "We couldn't generate valid prompts for this website. Please try another domain.", 'searches_left': searches_left}), 500
 
         logging.info(f"Generating prompt answers for {domain}")
-        table = generate_prompt_answers(prompts, domain, info)
+        table = generate_prompt_answers(prompts, domain, info, existing_content)
 
         session['searches_left'] = searches_left - 1
         searches_left = session['searches_left']
@@ -309,7 +378,7 @@ def analyze():
         })
 
     except Exception as e:
-        app.logger.error(f"Error processing {domain}: {str(e)}")
+        logger.error(f"Error processing {domain}: {str(e)}")
         return jsonify({'error': f"An error occurred while processing your request. Please try again later."}), 503
 
 @app.route('/robots.txt')
@@ -337,7 +406,7 @@ def aeo_blog_post():
     return render_template('aeo_blog_post.html')
 
 @app.route('/get_advice', methods=['POST'])
-def get_advice():
+def get_advice_route():
     data = request.json
     domain = data.get('domain')
     prompt = data.get('prompt')
@@ -346,18 +415,10 @@ def get_advice():
         return jsonify({'error': 'Domain and prompt are required.'}), 400
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are an expert in SEO and content strategy."},
-                {"role": "user", "content": f"Provide 5 specific pieces of advice with one example each to improve the visibility of {domain} regarding the search query '{prompt}'. Format the response as a numbered list."}
-            ],
-            max_tokens=500,
-            temperature=0.7,
-        )
+        existing_content = fetch_website_content(domain)
+        content_suggestions = get_advice(domain, prompt, existing_content)
 
-        advice = response.choices[0].message.content.strip()
-        return jsonify({'advice': advice})
+        return jsonify(content_suggestions)
     except Exception as e:
         app.logger.error(f"Error generating advice: {str(e)}")
         return jsonify({'error': 'An error occurred while generating advice. Please try again later.'}), 500
@@ -372,6 +433,55 @@ def unhandled_exception(e):
     app.logger.error('Unhandled Exception: %s', (e))
     return render_template('500.html'), 500
 
+def get_advice(domain, prompt, existing_content):
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are an expert in SEO and content strategy."},
+                {"role": "user", "content": f"""
+                Analyze the following prompt and existing content for {domain}. 
+                Provide specific suggestions for content updates:
+                1. Suggest updates for up to 3 existing pages, including the main landing page and up to 2 blog posts.
+                2. Suggest 3 new blog posts to create.
+
+                Prompt: {prompt}
+
+                Existing content:
+                {json.dumps(existing_content, indent=2)}
+
+                Format your response as a JSON object with two keys: 'existing_page_suggestions' and 'new_blog_post_suggestions'.
+                For existing pages, include 'url' and 'suggestion'.
+                For new blog posts, include 'title' and 'outline'.
+                Limit your response to a maximum of 3 existing page suggestions and 3 new blog post suggestions.
+                """}
+            ],
+            max_tokens=1000,
+            temperature=0.7,
+        )
+        
+        content = response.choices[0].message.content.strip()
+        app.logger.info(f"OpenAI API response: {content}")
+        
+        # Remove the triple backticks and "json" if present
+        content = content.replace("```json", "").replace("```", "").strip()
+        
+        content_suggestions = json.loads(content)
+        
+        # Ensure we have at most 3 suggestions for each category
+        content_suggestions['existing_page_suggestions'] = content_suggestions.get('existing_page_suggestions', [])[:3]
+        content_suggestions['new_blog_post_suggestions'] = content_suggestions.get('new_blog_post_suggestions', [])[:3]
+
+        return content_suggestions
+    except json.JSONDecodeError as e:
+        app.logger.error(f"JSON Decode Error: {e}")
+        app.logger.error(f"Response content: {content}")
+        return {"error": "An error occurred while parsing the advice. Please try again later."}
+    except Exception as e:
+        app.logger.error(f"Error generating advice: {str(e)}")
+        return {"error": "An error occurred while generating advice. Please try again later."}
+
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 5001))
+    # In development, set debug to True and allow all hosts
     app.run(host='0.0.0.0', port=port, debug=True)

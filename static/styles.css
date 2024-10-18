@@ -873,3 +873,25 @@ img {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+.result-note {
+    font-style: italic;
+    color: #666;
+    margin-bottom: 15px;
+    font-size: 0.9em;
+}
+
+.result-note i {
+    margin-right: 5px;
+    color: #3498db;
+}
+
+#advice-progress-log {
+    margin-top: 10px;
+    font-size: 0.9em;
+    color: #666;
+}
+
+#advice-progress-log p {
+    margin: 5px 0;
+}

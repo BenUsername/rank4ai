@@ -69,6 +69,7 @@ function displayResults(data) {
     // Add table of results
     mainContent.innerHTML += `
         <h3>AI Search Visibility Results</h3>
+        <p class="result-note"><i class="fas fa-info-circle"></i> These are usually middle-of-funnel results. They typically bring less traffic than top-of-funnel queries but are much more likely to convert.</p>
         <table>
             <thead>
                 <tr>
@@ -84,7 +85,11 @@ function displayResults(data) {
                     <tr>
                         <td>${row.prompt}</td>
                         <td class="truncate">${formatMarkdown(row.answer)}</td>
-                        <td>${row.competitors}</td>
+                        <td>
+                            <ol>
+                                ${row.competitors.split(', ').map(competitor => `<li>${competitor}</li>`).join('')}
+                            </ol>
+                        </td>
                         <td>${row.visible}</td>
                         <td>${row.visible === 'No' ? `<button onclick="getAdvice('${data.domain}', '${row.prompt}', ${index})" class="advice-button">Get Advice</button>` : ''}</td>
                     </tr>
@@ -126,6 +131,28 @@ function getAdvice(domain, prompt, rowIndex) {
     spinner.style.display = 'block';
     adviceContent.innerHTML = '';
 
+    // Add progress log to the modal
+    const progressLog = document.createElement('div');
+    progressLog.id = 'advice-progress-log';
+    modalContent.insertBefore(progressLog, adviceContent);
+
+    let progressSteps = [
+        'Analyzing existing content...',
+        'Generating content suggestions...',
+        'Compiling advice...',
+        'Finalizing recommendations...'
+    ];
+
+    let currentStep = 0;
+    const progressInterval = setInterval(() => {
+        if (currentStep < progressSteps.length) {
+            updateAdviceProgress(progressSteps[currentStep]);
+            currentStep++;
+        } else {
+            clearInterval(progressInterval);
+        }
+    }, 2000);
+
     fetch('/get_advice', {
         method: 'POST',
         headers: {
@@ -135,14 +162,56 @@ function getAdvice(domain, prompt, rowIndex) {
     })
     .then(response => response.json())
     .then(data => {
+        clearInterval(progressInterval);
         spinner.style.display = 'none';
-        const formattedAdvice = formatMarkdown(data.advice);
-        adviceContent.innerHTML = `<h3>Advice for improving visibility:</h3>${formattedAdvice}`;
+        progressLog.style.display = 'none';
+        if (data.error) {
+            adviceContent.innerHTML = `<p class="error">${data.error}</p>`;
+        } else {
+            let contentHtml = '<h3>Content Update Suggestions:</h3>';
+
+            if (data.existing_page_suggestions && data.existing_page_suggestions.length > 0) {
+                contentHtml += '<h4>Existing Pages to Update:</h4><ul>';
+                data.existing_page_suggestions.forEach(suggestion => {
+                    contentHtml += `
+                        <li>
+                            <strong>${suggestion.url}</strong>
+                            <p>Suggestion: ${suggestion.suggestion}</p>
+                        </li>
+                    `;
+                });
+                contentHtml += '</ul>';
+            }
+
+            if (data.new_blog_post_suggestions && data.new_blog_post_suggestions.length > 0) {
+                contentHtml += '<h4>New Blog Posts to Create:</h4><ul>';
+                data.new_blog_post_suggestions.forEach(suggestion => {
+                    contentHtml += `
+                        <li>
+                            <strong>${suggestion.title}</strong>
+                            <p>Outline: ${suggestion.outline.join(', ')}</p>
+                        </li>
+                    `;
+                });
+                contentHtml += '</ul>';
+            }
+
+            adviceContent.innerHTML = contentHtml;
+        }
     })
     .catch(error => {
+        clearInterval(progressInterval);
         spinner.style.display = 'none';
+        progressLog.style.display = 'none';
         adviceContent.innerHTML = `<p class="error">Error: ${error.message}</p>`;
     });
+}
+
+function updateAdviceProgress(message) {
+    const progressLog = document.getElementById('advice-progress-log');
+    if (progressLog) {
+        progressLog.innerHTML = `<p>${message}</p>`;
+    }
 }
 
 function init() {
@@ -200,7 +269,7 @@ function handleFormSubmit(e) {
     .then(response => {
         if (!response.ok) {
             if (response.status === 503) {
-                throw new Error('The server is currently unavailable. Please try again later.');
+                throw new Error('The server is currently overloaded. Please try again in a few minutes.');
             }
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -227,11 +296,8 @@ function handleFormSubmit(e) {
         progressLog.innerHTML = '';
         console.error('Error:', error);
         const errorMessage = document.getElementById('error-message');
-        // Only display the error message if no data was received
-        if (!document.querySelector('#main-content h2')) {
-            errorMessage.textContent = `An error occurred: ${error.message}. Please try again later.`;
-            errorMessage.style.display = 'block';
-        }
+        errorMessage.textContent = `An error occurred: ${error.message}. Please try again later.`;
+        errorMessage.style.display = 'block';
     })
     .finally(() => {
         submitButton.disabled = false;
