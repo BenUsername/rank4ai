@@ -51,10 +51,10 @@ function displayResults(data) {
     // Clear previous content
     mainContent.innerHTML = '';
 
-    // Add domain information with Logo.dev logo
+    // Add domain information with logo
     mainContent.innerHTML += `
         <h2>
-            <img src="https://img.logo.dev/${data.domain}?token=pk_Iiu041TAThCqnelMWeRtDQ" alt="${data.domain} logo" style="vertical-align: middle; margin-right: 10px; max-height: 50px;" onerror="this.onerror=null; this.src='https://www.google.com/s2/favicons?domain=${data.domain}&sz=64';">
+            ${data.logo_url ? `<img src="${data.logo_url}" alt="${data.domain} logo" style="vertical-align: middle; margin-right: 10px; max-height: 50px;">` : ''}
             Results for ${data.domain}
         </h2>
     `;
@@ -70,13 +70,13 @@ function displayResults(data) {
     mainContent.innerHTML += `
         <h3>AI Search Visibility Results</h3>
         <p class="result-note"><i class="fas fa-info-circle"></i> These are usually middle-of-funnel results. They typically bring less traffic than top-of-funnel queries but are much more likely to convert.</p>
-        <table>
+        <table class="results-table">
             <thead>
                 <tr>
                     <th>Prompt</th>
                     <th>AI Response</th>
-                    <th>Competitors</th>
-                    <th>Are You Visible?</th>
+                    <th>Competitors visible</th>
+                    <th>Is ${data.domain} visible?</th>
                     <th>Action</th>
                 </tr>
             </thead>
@@ -84,14 +84,30 @@ function displayResults(data) {
                 ${data.table.map((row, index) => `
                     <tr>
                         <td>${row.prompt}</td>
-                        <td class="truncate">${formatMarkdown(row.answer)}</td>
+                        <td class="ai-response">
+                            <div class="truncate">${formatMarkdown(row.answer)}</div>
+                        </td>
                         <td>
-                            <ol>
-                                ${row.competitors.split(', ').map(competitor => `<li>${competitor}</li>`).join('')}
+                            <ol class="competitors-list">
+                                ${row.competitors.split(', ').map((competitor, index) => `
+                                    <li>
+                                        <span class="competitor-order">${index + 1}.</span>
+                                        <img src="${get_logo_dev_logo(competitor)}" alt="${competitor} logo" class="competitor-logo" onerror="this.onerror=null; this.src='https://www.google.com/s2/favicons?domain=${competitor}&sz=32';">
+                                        <span class="competitor-domain">${competitor}</span>
+                                    </li>
+                                `).join('')}
                             </ol>
                         </td>
-                        <td>${row.visible}</td>
-                        <td>${row.visible === 'No' ? `<button onclick="getAdvice('${data.domain}', '${row.prompt}', ${index})" class="advice-button">Get Advice</button>` : ''}</td>
+                        <td class="visibility-result">
+                            ${getVisibilityMessage(row.visible)}
+                        </td>
+                        <td>
+                            ${row.visible === 'No' ? `
+                                <button onclick="getContentUpdates('${data.domain}', '${row.prompt.replace(/'/g, "\\'")}')" class="content-updates-button">
+                                    <i class="fas fa-pencil-alt"></i>
+                                </button>
+                            ` : ''}
+                        </td>
                     </tr>
                 `).join('')}
             </tbody>
@@ -121,7 +137,7 @@ function formatMarkdown(text) {
     return text.replace(/\*\*(\S(.*?\S)?)\*\*/g, '<strong>$1</strong>');
 }
 
-function getAdvice(domain, prompt, rowIndex) {
+function getContentUpdates(domain, prompt) {
     const modal = document.getElementById('adviceModal');
     const modalContent = document.getElementById('adviceModalContent');
     const spinner = document.getElementById('adviceSpinner');
@@ -172,10 +188,14 @@ function getAdvice(domain, prompt, rowIndex) {
 
             if (data.existing_page_suggestions && data.existing_page_suggestions.length > 0) {
                 contentHtml += '<h4>Existing Pages to Update:</h4><ul>';
-                data.existing_page_suggestions.forEach(suggestion => {
+                data.existing_page_suggestions.forEach((suggestion, index) => {
+                    let url = suggestion.url;
+                    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                        url = `https://${domain}${url.startsWith('/') ? '' : '/'}${url}`;
+                    }
                     contentHtml += `
                         <li>
-                            <strong>${suggestion.url}</strong>
+                            <strong>${index < 3 ? `<a href="${url}" target="_blank" rel="noopener noreferrer">` : ''}${suggestion.url}${index < 3 ? '</a>' : ''}</strong>
                             <p>Suggestion: ${suggestion.suggestion}</p>
                         </li>
                     `;
@@ -218,6 +238,7 @@ function init() {
     console.log('Initializing');
     attachEventListeners();
     handleUrlParams();
+    setupAutocomplete();
 }
 
 function attachEventListeners() {
@@ -225,6 +246,8 @@ function attachEventListeners() {
     const form = document.getElementById('analyzeForm');
     if (form) {
         form.addEventListener('submit', handleFormSubmit);
+    } else {
+        console.error('Form element not found');
     }
 }
 
@@ -241,6 +264,9 @@ function handleFormSubmit(e) {
     spinner.style.display = 'block';
     progressLog.innerHTML = '';
     
+    // Clear autocomplete suggestions
+    clearAutocomplete();
+
     let progressSteps = [
         'Fetching website content...',
         'Analyzing content...',
@@ -268,7 +294,9 @@ function handleFormSubmit(e) {
     })
     .then(response => {
         if (!response.ok) {
-            if (response.status === 503) {
+            if (response.status === 403) {
+                throw new Error('You have reached the maximum number of searches (10). Please try again later.');
+            } else if (response.status === 503) {
                 throw new Error('The server is currently overloaded. Please try again in a few minutes.');
             }
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -296,12 +324,12 @@ function handleFormSubmit(e) {
         progressLog.innerHTML = '';
         console.error('Error:', error);
         const errorMessage = document.getElementById('error-message');
-        errorMessage.textContent = `An error occurred: ${error.message}. Please try again later.`;
+        errorMessage.textContent = `An error occurred: ${error.message}`;
         errorMessage.style.display = 'block';
     })
     .finally(() => {
         submitButton.disabled = false;
-        submitButton.textContent = originalButtonText;
+        submitButton.textContent = originalButtonText;  // Reset button text
     });
 }
 
@@ -362,3 +390,147 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
+
+// Add this function at the end of the file
+function setupAutocomplete() {
+    const input = document.getElementById('domainInput');
+    const resultsContainer = document.getElementById('autocompleteResults');
+    const form = document.getElementById('analyzeForm');
+    let debounceTimer;
+    let currentFocus = -1;
+
+    input.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            const query = this.value;
+            if (query.length > 1) {
+                fetch(`/autocomplete/${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log("Autocomplete data:", data);
+                        resultsContainer.innerHTML = '';
+                        if (data.length === 0) {
+                            resultsContainer.style.display = 'none';
+                        } else {
+                            resultsContainer.style.display = 'block';
+                            data.forEach((suggestion, index) => {
+                                const li = document.createElement('li');
+                                li.innerHTML = `
+                                    ${suggestion.logo_url ? `<img src="${suggestion.logo_url}" alt="${suggestion.domain} logo" 
+                                         style="width: 20px; height: 20px; vertical-align: middle; margin-right: 10px;">` : ''}
+                                    ${suggestion.domain}
+                                `;
+                                li.setAttribute('data-index', index);
+                                li.addEventListener('click', () => {
+                                    input.value = suggestion.domain;
+                                    resultsContainer.innerHTML = '';
+                                    resultsContainer.style.display = 'none';
+                                });
+                                resultsContainer.appendChild(li);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        resultsContainer.style.display = 'none';
+                    });
+            } else {
+                resultsContainer.innerHTML = '';
+                resultsContainer.style.display = 'none';
+            }
+        }, 300);
+    });
+
+    form.addEventListener('submit', clearAutocomplete);
+
+    input.addEventListener('keydown', function(e) {
+        const items = resultsContainer.getElementsByTagName('li');
+        if (e.keyCode === 40) { // Arrow down
+            e.preventDefault();
+            currentFocus++;
+            addActive(items);
+        } else if (e.keyCode === 38) { // Arrow up
+            e.preventDefault();
+            currentFocus--;
+            addActive(items);
+        } else if (e.keyCode === 13) { // Enter
+            e.preventDefault();
+            if (currentFocus > -1 && items.length > 0) {
+                items[currentFocus].click();
+            }
+            clearAutocomplete();
+            form.dispatchEvent(new Event('submit'));
+        }
+    });
+
+    function addActive(items) {
+        if (!items) return false;
+        removeActive(items);
+        if (currentFocus >= items.length) currentFocus = 0;
+        if (currentFocus < 0) currentFocus = (items.length - 1);
+        items[currentFocus].classList.add('autocomplete-active');
+        input.value = items[currentFocus].textContent.trim();
+    }
+
+    function removeActive(items) {
+        for (let i = 0; i < items.length; i++) {
+            items[i].classList.remove('autocomplete-active');
+        }
+    }
+
+    // Hide results when clicking outside
+    document.addEventListener('click', function(e) {
+        if (e.target !== input && e.target !== resultsContainer) {
+            resultsContainer.innerHTML = '';
+            currentFocus = -1;
+        }
+    });
+
+    // Modify the click event listener for autocomplete items
+    resultsContainer.addEventListener('click', function(e) {
+        if (e.target && e.target.nodeName === 'LI') {
+            input.value = e.target.textContent.trim();
+            clearAutocomplete();
+            form.dispatchEvent(new Event('submit'));
+        }
+    });
+}
+
+function get_logo_dev_logo(domain) {
+    const public_key = "pk_Iiu041TAThCqnelMWeRtDQ";
+    const encoded_domain = encodeURIComponent(domain);
+    return `https://img.logo.dev/${encoded_domain}?token=${public_key}&size=200&format=png`;
+}
+
+function getVisibilityMessage(visible) {
+    if (visible === 'No') {
+        return 'No';
+    } else if (visible === 'Yes') {
+        return 'Yes';
+    } else {
+        const match = visible.match(/\d+/);
+        if (match) {
+            const rank = parseInt(match[0]);
+            if (rank === 1) {
+                return '🎉 Congratulations! You\'re first!';
+            } else if (rank === 2) {
+                return '🥈 Great job! You\'re second!';
+            } else if (rank === 3) {
+                return '🥉 Nice! You\'re third!';
+            } else {
+                return `✅ You're ${rank}th`;
+            }
+        } else {
+            return visible; // Return the original value if no number is found
+        }
+    }
+}
+
+// Add this function at the global scope
+function clearAutocomplete() {
+    const resultsContainer = document.getElementById('autocompleteResults');
+    if (resultsContainer) {
+        resultsContainer.innerHTML = '';
+        resultsContainer.style.display = 'none';
+    }
+}

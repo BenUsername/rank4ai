@@ -298,13 +298,15 @@ def get_user_count():
 
 def get_logo_dev_logo(domain):
     """Constructs the Logo.dev API URL for a given domain."""
-    if not LOGO_DEV_TOKEN:
-        logger.error("Logo.dev token not found in environment variables.")
-        return None
-    # Ensure the domain is properly encoded
+    public_key = "pk_Iiu041TAThCqnelMWeRtDQ"
     encoded_domain = quote_plus(domain)
-    logo_url = f"https://img.logo.dev/{encoded_domain}?token={LOGO_DEV_TOKEN}&size=200&format=png"
+    logo_url = f"https://img.logo.dev/{encoded_domain}?token={public_key}&size=200&format=png"
     return logo_url
+
+# Add a new function to get the Brandfetch CDN URL
+def get_brandfetch_cdn_logo(domain):
+    """Constructs the Brandfetch CDN URL for a given domain."""
+    return f"https://cdn.brandfetch.io/{domain}"
 
 @app.before_request
 def before_request():
@@ -318,9 +320,12 @@ def before_request():
         # We're running locally, allow HTTP
         pass
 
+# Near the top of the file, update or add this constant
+MAX_SEARCHES_PER_SESSION = 3  # Keep it at 3 searches
+
 @app.route('/', methods=['GET'])
 def index():
-    searches_left = 3 - session.get('searches_performed', 0)
+    searches_left = session.get('searches_left', MAX_SEARCHES_PER_SESSION)
     user_count = get_user_count()
     domain = request.args.get('domain')
     show_results = request.args.get('showResults')
@@ -338,7 +343,7 @@ def analyze():
     try:
         start_time = time.time()
         domain = request.form['domain']
-        searches_left = session.get('searches_left', 3)
+        searches_left = session.get('searches_left', MAX_SEARCHES_PER_SESSION)
 
         if searches_left <= 0:
             return jsonify({'error': 'No searches left. Please try again later.', 'searches_left': 0}), 403
@@ -369,12 +374,16 @@ def analyze():
         end_time = time.time()
         logging.info(f"Total processing time for {domain}: {end_time - start_time} seconds")
 
+        # Get logo URL from Logo.dev
+        logo_url = get_logo_dev_logo(domain)
+
         return jsonify({
             'domain': domain,
             'info': info,
             'prompts': prompts,
             'table': table,
-            'searches_left': searches_left
+            'searches_left': searches_left,
+            'logo_url': logo_url  # Make sure this line is present
         })
 
     except Exception as e:
@@ -428,6 +437,11 @@ def internal_server_error(error):
     app.logger.error('Server Error: %s', (error))
     return render_template('500.html'), 500
 
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    app.logger.warning('Rate limit exceeded: %s', str(e))
+    return jsonify(error="Rate limit exceeded. Please try again later."), 429
+
 @app.errorhandler(Exception)
 def unhandled_exception(e):
     app.logger.error('Unhandled Exception: %s', (e))
@@ -480,6 +494,38 @@ def get_advice(domain, prompt, existing_content):
     except Exception as e:
         app.logger.error(f"Error generating advice: {str(e)}")
         return {"error": "An error occurred while generating advice. Please try again later."}
+
+# Add this new route
+@app.route('/autocomplete/<query>')
+@limiter.limit("200 per hour")  # Increase the limit or remove it for testing
+def autocomplete(query):
+    url = f"https://api.brandfetch.io/v2/search/{quote_plus(query)}"
+    headers = {
+        "Authorization": f"Bearer {os.getenv('BRANDFETCH_API_KEY')}"
+    }
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        
+        suggestions = []
+        for item in data:
+            if 'name' in item and 'domain' in item:
+                logo_url = None
+                if 'icon' in item and item['icon']:
+                    logo_url = item['icon']
+                
+                suggestions.append({
+                    'name': item['name'],
+                    'domain': item['domain'],
+                    'logo_url': logo_url
+                })
+        
+        app.logger.info(f"Autocomplete suggestions: {suggestions}")
+        return jsonify(suggestions[:5])  # Limit to 5 suggestions
+    except requests.RequestException as e:
+        app.logger.error(f"Error fetching autocomplete suggestions: {str(e)}")
+        return jsonify([])
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))

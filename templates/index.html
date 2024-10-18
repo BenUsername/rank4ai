@@ -44,7 +44,8 @@
         <p class="user-count"><i class="fas fa-users icon-small" aria-hidden="true"></i><span id="user-count">{{ user_count }}</span> users have improved their LLM visibility</p>
         <form id="analyzeForm" class="hero-form">
             <label for="domainInput" class="sr-only">Enter your website domain</label>
-            <input type="text" name="domain" id="domainInput" placeholder="Enter your website domain (e.g., example.com)" required aria-required="true">
+            <input type="text" name="domain" id="domainInput" placeholder="Enter your website domain (e.g., example.com)" required aria-required="true" autocomplete="off">
+            <ul id="autocompleteResults" class="autocomplete-results"></ul>
             {% if searches_left > 0 %}
                 <button type="submit" class="cta-button" id="analyzeButton"><i class="fas fa-rocket icon-small" aria-hidden="true"></i>Analyze Now</button>
             {% else %}
@@ -67,13 +68,19 @@
             </section>
 
             <section class="how-it-works">
-                <h2><i class="fas fa-cogs icon-large"></i>How It Works</h2>
-                <ol>
-                    <li><i class="fas fa-globe icon-small"></i><strong>Enter Your Website:</strong> Type in your website domain (e.g., example.com).</li>
-                    <li><i class="fas fa-chart-bar icon-small"></i><strong>Analyze Content:</strong> We look at your website and find things people might search for about you.</li>
-                    <li><i class="fas fa-robot icon-small"></i><strong>Simulate Search Results:</strong> Our AI shows what the LLM helper will say when people search for those things.</li>
-                    <li><i class="fas fa-check-circle icon-small"></i><strong>Review Visibility:</strong> See where you show up and compare to others.</li>
-                </ol>
+                <h2>How it Works</h2>
+                <div class="steps">
+                    <div class="step">
+                        <i class="fas fa-globe"></i>
+                        <h3>Enter Your Domain</h3>
+                        <p>Just type in your website's address and we'll take care of the rest.</p>
+                    </div>
+                    <div class="step">
+                        <i class="fas fa-chart-line"></i>
+                        <h3>Get Results</h3>
+                        <p>See how visible your site is in AI-powered search results and get tips to improve.</p>
+                    </div>
+                </div>
             </section>
 
             <section class="testimonials">
@@ -96,13 +103,14 @@
 
             <section class="sample-result">
                 <h3><i class="fas fa-chart-line icon-large"></i>Sample Result for ebay.com</h3>
-                <p>This table shows an example of what our tool provides. It demonstrates how your website might appear in AI-powered search results for different queries, and how it compares to competitors.</p>
+                <p>This table shows an example of what our tool provides. It demonstrates how your website might appear in AI-powered search results for different queries, how it compares to competitors, and provides brief recommendations for improving your content.</p>
                 <table class="sample-table">
                     <thead>
                         <tr>
                             <th>Prompt</th>
                             <th>Top Competitors</th>
                             <th>Visible in LLM?</th>
+                            <th>Recommendations</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -110,20 +118,23 @@
                             <td>Best online shopping platforms</td>
                             <td>amazon.com, ebay.com</td>
                             <td class="sample-visible">Yes (Rank: 2)</td>
+                            <td>Highlight unique features like "Best Price Guarantee" on homepage. Emphasize long-standing reputation in About page.</td>
                         </tr>
                         <tr>
                             <td>Reliable e-commerce websites</td>
                             <td>amazon.com, walmart.com</td>
                             <td class="sample-not-visible">No</td>
+                            <td>Create "Trust & Safety" page. Add prominent section about buyer/seller protection on homepage.</td>
                         </tr>
                         <tr>
                             <td>Where to buy used electronics online</td>
                             <td>ebay.com, bestbuy.com</td>
                             <td class="sample-visible">Yes (Rank: 1)</td>
+                            <td>Enhance "Electronics" category page with condition grading info. Create guides on buying refurbished electronics safely.</td>
                         </tr>
                     </tbody>
                 </table>
-                <p>Interpretation: In this example, ebay.com appears in AI responses for 2 out of 3 queries. It ranks 2nd for "Best online shopping platforms" and 1st for "Where to buy used electronics online". However, it doesn't appear in results for "Reliable e-commerce websites", which might be an area for improvement.</p>
+                <p>Interpretation: In this example, ebay.com appears in AI responses for 2 out of 3 queries. It ranks 2nd for "Best online shopping platforms" and 1st for "Where to buy used electronics online". However, it doesn't appear in results for "Reliable e-commerce websites", which is an area for improvement. The recommendations column provides brief suggestions to enhance visibility and relevance for each query.</p>
             </section>
 
             <section class="comparison">
@@ -272,6 +283,8 @@
                 document.getElementById('domainInput').value = domain;
                 document.getElementById('analyzeForm').dispatchEvent(new Event('submit'));
             }
+            // Add this line to focus on the input field when the page loads
+            document.getElementById('domainInput').focus();
         });
     </script>
 </body>
