@@ -2,19 +2,43 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://www.promptboostai.com/</loc>
-    <lastmod>2024-10-03</lastmod>
+    <lastmod>2024-10-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://www.promptboostai.com/result</loc>
-    <lastmod>2024-10-03</lastmod>
-    <changefreq>always</changefreq>
-    <priority>0.8</priority>
+    <loc>https://www.promptboostai.com/privacy-policy</loc>
+    <lastmod>2024-10-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://www.promptboostai.com/terms-of-service</loc>
+    <lastmod>2024-10-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://www.promptboostai.com/blog/track-brand-visibility-ai-search</loc>
+    <lastmod>2024-10-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.promptboostai.com/blog/answer-engine-optimization</loc>
+    <lastmod>2024-10-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.promptboostai.com/blog/ultimate-guide-ranking-high-llm-results</loc>
-    <lastmod>2024-10-15</lastmod>
+    <lastmod>2024-10-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.promptboostai.com/blog/llm-visibility-secret</loc>
+    <lastmod>2024-10-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
