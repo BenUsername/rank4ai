@@ -47,7 +47,9 @@
             <input type="text" name="domain" id="domainInput" placeholder="Enter your website domain (e.g., example.com)" required aria-required="true" autocomplete="off">
             <ul id="autocompleteResults" class="autocomplete-results"></ul>
             {% if searches_left > 0 %}
-                <button type="submit" class="cta-button" id="analyzeButton"><i class="fas fa-rocket icon-small" aria-hidden="true"></i>Analyze Now</button>
+                <button type="submit" class="cta-button" id="analyzeButton">
+                    <i class="fas fa-rocket icon-small" aria-hidden="true"></i>Analyze Now
+                </button>
             {% else %}
                 <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button" id="waitingListButton">Join Waiting List</a>
             {% endif %}
@@ -253,6 +255,7 @@
                     <li><a href="{{ url_for('blog_post') }}">10 Effective Ways to Track Your Brand's Visibility in AI-Powered Search Results</a></li>
                     <li><a href="{{ url_for('aeo_blog_post') }}">Answer Engine Optimization: The Next Evolution of SEO</a></li>
                     <li><a href="{{ url_for('llm_ranking_blog_post') }}">Ultimate Guide to Ranking High in LLM Results</a></li>
+                    <li><a href="{{ url_for('llm_visibility_blog_post') }}">What's the Secret to Being Found More Frequently in LLM Queries?</a></li>
                 </ul>
             </div>
         </div>

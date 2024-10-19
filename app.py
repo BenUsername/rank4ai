@@ -21,6 +21,7 @@ import threading
 import uuid
 from werkzeug.serving import WSGIRequestHandler
 import requests.exceptions
+import tiktoken
 
 # Load environment variables from .env file
 load_dotenv()
@@ -85,7 +86,6 @@ def fetch_website_content(domain):
         url = urljoin(base_url, page)
         try:
             response = requests.get(url, headers=headers, timeout=requests_timeout)
-            response.raise_for_status()  # This will raise an HTTPError for bad responses
             if response.status_code == 200:
                 soup = BeautifulSoup(response.text, 'html.parser')
                 
@@ -113,9 +113,11 @@ def fetch_website_content(domain):
                                 blog_content = blog_soup.find('main') or blog_soup.find('article') or blog_soup.find('div', class_='content')
                                 if blog_content:
                                     existing_content[blog_url] = blog_content.get_text(strip=True)
+            else:
+                app.logger.info(f"Page not found or not accessible: {url}")
         
         except requests.exceptions.RequestException as e:
-            app.logger.error(f"Error fetching {url}: {str(e)}")
+            app.logger.info(f"Error fetching {url}: {str(e)}")
     
     return html_content, existing_content
 
@@ -244,8 +246,8 @@ def generate_prompt_answer(prompt, domain, info, existing_content):
         
         app.logger.info(f"OpenAI response for prompt '{prompt}': {answer}")
         
-        # Extract competitors using regex
-        potential_competitors = re.findall(r'\(([a-z0-9-]+\.(?:com|net|org|fr))\)', answer)
+        # Update this regex pattern to capture a wider range of domain extensions
+        potential_competitors = re.findall(r'\(([a-z0-9-]+(?:\.[a-z0-9-]+)+)\)', answer)
         
         # Validate domains and create competitors list
         competitors = [comp for comp in potential_competitors if is_valid_domain(comp)]
@@ -496,50 +498,101 @@ def unhandled_exception(e):
 
 def get_advice(domain, prompt, existing_content):
     try:
+        # Estimate token count
+        encoding = tiktoken.encoding_for_model("gpt-4o-mini")
+        
+        # Function to count tokens
+        def count_tokens(text):
+            return len(encoding.encode(text))
+        
+        # Truncate existing content if it's too large
+        max_content_tokens = 100000  # Adjust as needed
+        total_content = json.dumps(existing_content)
+        content_tokens = count_tokens(total_content)
+        
+        if content_tokens > max_content_tokens:
+            # Truncate content more safely
+            truncated_content = total_content[:max_content_tokens]
+            last_brace = truncated_content.rfind('}')
+            if last_brace != -1:
+                truncated_content = truncated_content[:last_brace+1]
+            else:
+                truncated_content = "{}"  # Fallback to empty object if no valid JSON
+            
+            try:
+                existing_content = json.loads(truncated_content)
+            except json.JSONDecodeError:
+                app.logger.error(f"Failed to parse truncated content: {truncated_content}")
+                existing_content = {}  # Fallback to empty object
+        
+        # Prepare the messages
+        system_message = "You are an expert in SEO and content strategy."
+        user_message = f"""
+        Analyze the following prompt and existing content for {domain}. 
+        Provide specific suggestions for content updates:
+        1. Suggest updates for up to 3 existing pages, including the main landing page and up to 2 blog posts.
+        2. Suggest 3 new blog posts to create.
+
+        Prompt: {prompt}
+
+        Existing content:
+        {json.dumps(existing_content, indent=2)}
+
+        Format your response as a JSON object with two keys: 'existing_page_suggestions' and 'new_blog_post_suggestions'.
+        For existing pages, include 'url' and 'suggestion'.
+        For new blog posts, include 'title' and 'outline'. The 'outline' should always be an array of strings, even if there's only one item.
+        Limit your response to a maximum of 3 existing page suggestions and 3 new blog post suggestions.
+        """
+        
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are an expert in SEO and content strategy."},
-                {"role": "user", "content": f"""
-                Analyze the following prompt and existing content for {domain}. 
-                Provide specific suggestions for content updates:
-                1. Suggest updates for up to 3 existing pages, including the main landing page and up to 2 blog posts.
-                2. Suggest 3 new blog posts to create.
-
-                Prompt: {prompt}
-
-                Existing content:
-                {json.dumps(existing_content, indent=2)}
-
-                Format your response as a JSON object with two keys: 'existing_page_suggestions' and 'new_blog_post_suggestions'.
-                For existing pages, include 'url' and 'suggestion'.
-                For new blog posts, include 'title' and 'outline'.
-                Limit your response to a maximum of 3 existing page suggestions and 3 new blog post suggestions.
-                """}
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": user_message}
             ],
             max_tokens=1000,
             temperature=0.7,
         )
         
         content = response.choices[0].message.content.strip()
-        app.logger.info(f"OpenAI API response: {content}")
+        app.logger.info(f"Raw OpenAI API response: {content}")
         
         # Remove the triple backticks and "json" if present
         content = content.replace("```json", "").replace("```", "").strip()
         
-        content_suggestions = json.loads(content)
+        try:
+            content_suggestions = json.loads(content)
+        except json.JSONDecodeError as e:
+            app.logger.error(f"JSON Decode Error: {e}")
+            app.logger.error(f"Cleaned response content: {content}")
+            
+            # Attempt to fix common JSON issues
+            content = content.replace("'", '"')  # Replace single quotes with double quotes
+            content = re.sub(r'(\w+):', r'"\1":', content)  # Add quotes to keys
+            app.logger.info(f"Attempting to parse fixed JSON: {content}")
+            
+            try:
+                content_suggestions = json.loads(content)
+            except json.JSONDecodeError:
+                app.logger.error("Failed to parse JSON even after attempted fixes")
+                return {"error": "Failed to parse the AI response. Please try again."}
+        
+        # Ensure we have the expected structure
+        if not isinstance(content_suggestions, dict):
+            app.logger.error(f"Unexpected content structure: {content_suggestions}")
+            return {"error": "The AI response was not in the expected format. Please try again."}
+        
+        # Ensure we have the required keys, if not, provide empty lists
+        content_suggestions['existing_page_suggestions'] = content_suggestions.get('existing_page_suggestions', [])
+        content_suggestions['new_blog_post_suggestions'] = content_suggestions.get('new_blog_post_suggestions', [])
         
         # Ensure we have at most 3 suggestions for each category
-        content_suggestions['existing_page_suggestions'] = content_suggestions.get('existing_page_suggestions', [])[:3]
-        content_suggestions['new_blog_post_suggestions'] = content_suggestions.get('new_blog_post_suggestions', [])[:3]
+        content_suggestions['existing_page_suggestions'] = content_suggestions['existing_page_suggestions'][:3]
+        content_suggestions['new_blog_post_suggestions'] = content_suggestions['new_blog_post_suggestions'][:3]
 
         return content_suggestions
-    except json.JSONDecodeError as e:
-        app.logger.error(f"JSON Decode Error: {e}")
-        app.logger.error(f"Response content: {content}")
-        return {"error": "An error occurred while parsing the advice. Please try again later."}
     except Exception as e:
-        app.logger.error(f"Error generating advice: {str(e)}")
+        app.logger.error(f"Error generating advice: {str(e)}", exc_info=True)
         return {"error": "An error occurred while generating advice. Please try again later."}
 
 # Add this new route
@@ -577,6 +630,10 @@ def autocomplete(query):
 @app.route('/blog/ultimate-guide-ranking-high-llm-results')
 def llm_ranking_blog_post():
     return render_template('llm_ranking_blog_post.html')
+
+@app.route('/blog/llm-visibility-secret')
+def llm_visibility_blog_post():
+    return render_template('llm_visibility_blog_post.html')
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))

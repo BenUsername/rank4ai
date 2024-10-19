@@ -251,7 +251,7 @@ function updateAdviceContent(data) {
             contentHtml += `
                 <li>
                     <strong>${suggestion.title}</strong>
-                    <p>Outline: ${suggestion.outline.join(', ')}</p>
+                    <p>Outline: ${Array.isArray(suggestion.outline) ? suggestion.outline.join(', ') : suggestion.outline}</p>
                 </li>
             `;
         });
@@ -290,7 +290,6 @@ function handleFormSubmit(e) {
     e.preventDefault();
     const domain = document.getElementById('domainInput').value;
     const submitButton = document.getElementById('analyzeButton');
-    const originalButtonText = submitButton.textContent;
     submitButton.disabled = true;
     submitButton.textContent = 'Analyzing...';
     
@@ -351,7 +350,7 @@ function handleFormSubmit(e) {
     })
     .finally(() => {
         submitButton.disabled = false;
-        submitButton.textContent = originalButtonText;
+        submitButton.textContent = 'Analyze Now';
         spinner.style.display = 'none';
     });
 }
