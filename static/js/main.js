@@ -299,18 +299,7 @@ function handleFormSubmit(e) {
     spinner.style.display = 'block';
     progressLog.innerHTML = '';
     
-    // Clear previous results
-    const mainContent = document.getElementById('main-content');
-    mainContent.innerHTML = '';
-    mainContent.style.display = 'none';
-    
-    const landingContent = document.getElementById('landing-content');
-    landingContent.style.display = 'block';
-    
     clearAutocomplete();
-
-    let retries = 3;
-    const retryDelay = 5000; // 5 seconds
 
     let progressSteps = [
         'Fetching website content...',
@@ -330,59 +319,41 @@ function handleFormSubmit(e) {
         }
     }, 2000);
 
-    function attemptSubmit() {
-        fetch('/analyze', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: `domain=${encodeURIComponent(domain)}`
-        })
-        .then(response => {
-            if (!response.ok) {
-                if (response.status === 503 && retries > 0) {
-                    retries--;
-                    setTimeout(attemptSubmit, retryDelay);
-                    throw new Error('Server overloaded. Retrying...');
-                }
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            clearInterval(progressInterval);
-            spinner.style.display = 'none';
-            progressLog.innerHTML = '';
-            if (data.error) {
-                throw new Error(data.error);
-            } else {
-                console.log('Received data:', data);
-                displayResults(data);
-                // Clear any previous error messages
-                const errorMessage = document.getElementById('error-message');
-                errorMessage.textContent = '';
-                errorMessage.style.display = 'none';
-            }
-        })
-        .catch(error => {
-            clearInterval(progressInterval);
-            console.error('Error:', error);
+    fetch('/analyze', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `domain=${encodeURIComponent(domain)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        clearInterval(progressInterval);
+        spinner.style.display = 'none';
+        progressLog.innerHTML = '';
+        if (data.error) {
+            throw new Error(data.error);
+        } else {
+            console.log('Received data:', data);
+            displayResults(data);
+            // Clear any previous error messages
             const errorMessage = document.getElementById('error-message');
-            if (retries > 0) {
-                errorMessage.textContent = `Server is busy. Retrying in 5 seconds... (${retries} attempts left)`;
-            } else {
-                errorMessage.textContent = `An error occurred: ${error.message}. Please try again later.`;
-            }
-            errorMessage.style.display = 'block';
-        })
-        .finally(() => {
-            submitButton.disabled = false;
-            submitButton.textContent = originalButtonText;
-            spinner.style.display = 'none';
-        });
-    }
-
-    attemptSubmit();
+            errorMessage.textContent = '';
+            errorMessage.style.display = 'none';
+        }
+    })
+    .catch(error => {
+        clearInterval(progressInterval);
+        console.error('Error:', error);
+        const errorMessage = document.getElementById('error-message');
+        errorMessage.textContent = `We couldn't process your request at this time. Please try again later.`;
+        errorMessage.style.display = 'block';
+    })
+    .finally(() => {
+        submitButton.disabled = false;
+        submitButton.textContent = originalButtonText;
+        spinner.style.display = 'none';
+    });
 }
 
 function updateProgress(message) {

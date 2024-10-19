@@ -20,7 +20,7 @@ import json
 import threading
 import uuid
 from werkzeug.serving import WSGIRequestHandler
-from flask_caching import Cache
+import requests.exceptions
 
 # Load environment variables from .env file
 load_dotenv()
@@ -61,6 +61,9 @@ def is_valid_domain(domain):
     """Validate the domain using the validators library."""
     return validators.domain(domain)
 
+# Increase the timeout for requests
+requests_timeout = 30  # 30 seconds
+
 def fetch_website_content(domain):
     base_url = f"https://{domain}"
     pages_to_fetch = [
@@ -81,7 +84,8 @@ def fetch_website_content(domain):
     for page in pages_to_fetch:
         url = urljoin(base_url, page)
         try:
-            response = requests.get(url, headers=headers, timeout=10)
+            response = requests.get(url, headers=headers, timeout=requests_timeout)
+            response.raise_for_status()  # This will raise an HTTPError for bad responses
             if response.status_code == 200:
                 soup = BeautifulSoup(response.text, 'html.parser')
                 
@@ -344,11 +348,8 @@ limiter = Limiter(
     default_limits=["200 per day", "50 per hour"]
 )
 
-cache = Cache(app, config={'CACHE_TYPE': 'simple'})
-
 @app.route('/analyze', methods=['POST'])
 @limiter.limit("5 per minute")
-@cache.memoize(timeout=300)  # Cache results for 5 minutes
 def analyze():
     try:
         start_time = time.time()
@@ -396,9 +397,15 @@ def analyze():
             'logo_url': logo_url
         })
 
+    except requests.exceptions.Timeout:
+        logger.error(f"Timeout error processing {domain}")
+        return jsonify({'error': f"The request timed out while processing {domain}. Please try again later."}), 504
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Request error processing {domain}: {str(e)}")
+        return jsonify({'error': f"An error occurred while fetching data from {domain}. Please try again later."}), 502
     except Exception as e:
-        logger.error(f"Error processing {domain}: {str(e)}", exc_info=True)  # Add exc_info=True for full traceback
-        return jsonify({'error': f"An error occurred while processing your request. Please try again later."}), 500
+        logger.error(f"Error processing {domain}: {str(e)}", exc_info=True)
+        return jsonify({'error': f"An unexpected error occurred while processing your request: {str(e)}. Please try again later."}), 500
 
 @app.route('/robots.txt')
 def robots():
