@@ -635,6 +635,18 @@ def llm_ranking_blog_post():
 def llm_visibility_blog_post():
     return render_template('llm_visibility_blog_post.html')
 
+@app.route('/blog/understanding-large-language-models-seo')
+def understanding_llm_seo_blog_post():
+    return render_template('understanding_llm_seo_blog_post.html')
+
+@app.route('/blog/case-studies-improved-llm-visibility')
+def case_studies_llm_visibility_blog_post():
+    return render_template('case_studies_llm_visibility_blog_post.html')
+
+@app.route('/blog/common-mistakes-ai-search-optimization')
+def common_mistakes_ai_search_blog_post():
+    return render_template('common_mistakes_ai_search_blog_post.html')
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))
     # In development, set debug to True and allow all hosts
