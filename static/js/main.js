@@ -93,7 +93,7 @@ function displayResults(data) {
                                     <li>
                                         <span class="competitor-order">${index + 1}.</span>
                                         <img src="${get_logo_dev_logo(competitor)}" alt="${competitor} logo" class="competitor-logo" onerror="this.onerror=null; this.src='https://www.google.com/s2/favicons?domain=${competitor}&sz=32';">
-                                        <span class="competitor-domain">${competitor}</span>
+                                        <span class="competitor-domain" title="${competitor}">${competitor}</span>
                                     </li>
                                 `).join('')}
                             </ol>
@@ -231,9 +231,13 @@ function updateAdviceContent(data) {
     if (data.existing_page_suggestions && data.existing_page_suggestions.length > 0) {
         contentHtml += '<h4>Existing Pages to Update:</h4><ul>';
         data.existing_page_suggestions.forEach((suggestion, index) => {
+            let url = suggestion.url;
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = `https://${url}`;
+            }
             contentHtml += `
                 <li>
-                    <strong>${suggestion.url}</strong>
+                    <strong><a href="${url}" target="_blank" rel="noopener noreferrer">${suggestion.url}</a></strong>
                     <p>Suggestion: ${suggestion.suggestion}</p>
                 </li>
             `;
@@ -294,6 +298,14 @@ function handleFormSubmit(e) {
     const progressLog = document.getElementById('progress-log');
     spinner.style.display = 'block';
     progressLog.innerHTML = '';
+    
+    // Clear previous results
+    const mainContent = document.getElementById('main-content');
+    mainContent.innerHTML = '';
+    mainContent.style.display = 'none';
+    
+    const landingContent = document.getElementById('landing-content');
+    landingContent.style.display = 'block';
     
     clearAutocomplete();
 
@@ -364,11 +376,9 @@ function handleFormSubmit(e) {
             errorMessage.style.display = 'block';
         })
         .finally(() => {
-            if (retries === 0) {
-                submitButton.disabled = false;
-                submitButton.textContent = originalButtonText;
-                spinner.style.display = 'none';
-            }
+            submitButton.disabled = false;
+            submitButton.textContent = originalButtonText;
+            spinner.style.display = 'none';
         });
     }
 
