@@ -1095,3 +1095,28 @@ img {
     margin-right: 10px;
     color: #3498db; /* You can change this color to match your theme */
 }
+
+.error-container {
+    text-align: center;
+    padding: 50px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.error-container h1 {
+    color: #e74c3c;
+}
+
+.error-container .btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #3498db;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    margin-top: 20px;
+}
+
+.error-container .btn:hover {
+    background-color: #2980b9;
+}

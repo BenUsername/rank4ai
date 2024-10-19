@@ -20,6 +20,7 @@ import json
 import threading
 import uuid
 from werkzeug.serving import WSGIRequestHandler
+from flask_caching import Cache
 
 # Load environment variables from .env file
 load_dotenv()
@@ -343,8 +344,11 @@ limiter = Limiter(
     default_limits=["200 per day", "50 per hour"]
 )
 
+cache = Cache(app, config={'CACHE_TYPE': 'simple'})
+
 @app.route('/analyze', methods=['POST'])
 @limiter.limit("5 per minute")
+@cache.memoize(timeout=300)  # Cache results for 5 minutes
 def analyze():
     try:
         start_time = time.time()
@@ -389,12 +393,12 @@ def analyze():
             'prompts': prompts,
             'table': table,
             'searches_left': searches_left,
-            'logo_url': logo_url  # Make sure this line is present
+            'logo_url': logo_url
         })
 
     except Exception as e:
-        logger.error(f"Error processing {domain}: {str(e)}")
-        return jsonify({'error': f"An error occurred while processing your request. Please try again later."}), 503
+        logger.error(f"Error processing {domain}: {str(e)}", exc_info=True)  # Add exc_info=True for full traceback
+        return jsonify({'error': f"An error occurred while processing your request. Please try again later."}), 500
 
 @app.route('/robots.txt')
 def robots():
@@ -423,10 +427,20 @@ def aeo_blog_post():
 # Dictionary to store job results
 job_results = {}
 
+MAX_PROCESSING_TIME = 60  # Maximum processing time in seconds
+
 def background_task(job_id, domain, prompt, existing_content):
+    start_time = time.time()
     try:
-        content_suggestions = get_advice(domain, prompt, existing_content)
-        job_results[job_id] = content_suggestions
+        while time.time() - start_time < MAX_PROCESSING_TIME:
+            content_suggestions = get_advice(domain, prompt, existing_content)
+            if content_suggestions:
+                job_results[job_id] = content_suggestions
+                return
+            time.sleep(5)  # Wait for 5 seconds before trying again
+        
+        # If we've reached here, it means we've timed out
+        job_results[job_id] = {"error": "Processing timed out. Please try again."}
     except Exception as e:
         job_results[job_id] = {"error": str(e)}
 

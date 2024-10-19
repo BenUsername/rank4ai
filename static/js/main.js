@@ -69,7 +69,7 @@ function displayResults(data) {
     // Add table of results
     mainContent.innerHTML += `
         <h3>AI Search Visibility Results</h3>
-        <p class="result-note"><i class="fas fa-info-circle"></i> These are usually middle-of-funnel results. They typically bring less traffic than top-of-funnel queries but are much more likely to convert.</p>
+        <p class="result-note"><i class="fas fa-info-circle"></i> One big difference between searching with LLM and Google is that LLM queries are usually longer—about 10 words, while Google queries are often just 2-3 words. This means LLM searches have clearer goals and tend to lead to better conversions, even if they bring in less traffic. Click our Action recommendation below for tips on how to make your content more visible on LLM.</p>
         <table class="results-table">
             <thead>
                 <tr>
@@ -182,10 +182,14 @@ function getContentUpdates(domain, prompt) {
             pollForResults(data.job_id);
         } else {
             // Handle error
+            clearInterval(progressInterval);  // Clear the interval
+            spinner.style.display = 'none';  // Hide the spinner
             adviceContent.innerHTML = `<p class="error">${data.error || 'An error occurred'}</p>`;
         }
     })
     .catch(error => {
+        clearInterval(progressInterval);  // Clear the interval
+        spinner.style.display = 'none';  // Hide the spinner
         adviceContent.innerHTML = `<p class="error">Error: ${error.message}</p>`;
     });
 }
@@ -195,26 +199,69 @@ function pollForResults(jobId) {
     .then(response => response.json())
     .then(data => {
         if (data.status === "processing") {
-            // If still processing, poll again after a delay
-            setTimeout(() => pollForResults(jobId), 2000);
+            // If still processing, poll again after a longer delay
+            setTimeout(() => pollForResults(jobId), 5000); // Increased to 5 seconds
         } else {
             // Results are ready, update the UI
+            const spinner = document.getElementById('adviceSpinner');
+            spinner.style.display = 'none';  // Hide the spinner
+            const progressLog = document.getElementById('advice-progress-log');
+            if (progressLog) {
+                progressLog.style.display = 'none';  // Hide the progress log
+            }
             updateAdviceContent(data);
         }
     })
     .catch(error => {
+        const spinner = document.getElementById('adviceSpinner');
+        spinner.style.display = 'none';  // Hide the spinner
+        const progressLog = document.getElementById('advice-progress-log');
+        if (progressLog) {
+            progressLog.style.display = 'none';  // Hide the progress log
+        }
+        const adviceContent = document.getElementById('adviceContent');
         adviceContent.innerHTML = `<p class="error">Error: ${error.message}</p>`;
     });
 }
 
 function updateAdviceContent(data) {
-    // Your existing code to update the UI with the advice content
+    const adviceContent = document.getElementById('adviceContent');
+    let contentHtml = '<h3>Content Update Suggestions:</h3>';
+
+    if (data.existing_page_suggestions && data.existing_page_suggestions.length > 0) {
+        contentHtml += '<h4>Existing Pages to Update:</h4><ul>';
+        data.existing_page_suggestions.forEach((suggestion, index) => {
+            contentHtml += `
+                <li>
+                    <strong>${suggestion.url}</strong>
+                    <p>Suggestion: ${suggestion.suggestion}</p>
+                </li>
+            `;
+        });
+        contentHtml += '</ul>';
+    }
+
+    if (data.new_blog_post_suggestions && data.new_blog_post_suggestions.length > 0) {
+        contentHtml += '<h4>New Blog Posts to Create:</h4><ul>';
+        data.new_blog_post_suggestions.forEach(suggestion => {
+            contentHtml += `
+                <li>
+                    <strong>${suggestion.title}</strong>
+                    <p>Outline: ${suggestion.outline.join(', ')}</p>
+                </li>
+            `;
+        });
+        contentHtml += '</ul>';
+    }
+
+    adviceContent.innerHTML = contentHtml;
 }
 
 function updateAdviceProgress(message) {
     const progressLog = document.getElementById('advice-progress-log');
     if (progressLog) {
-        progressLog.innerHTML = `<p>${message}</p>`;
+        const now = new Date().toLocaleTimeString();
+        progressLog.innerHTML += `<p>${now}: ${message}</p>`;
     }
 }
 
@@ -248,8 +295,10 @@ function handleFormSubmit(e) {
     spinner.style.display = 'block';
     progressLog.innerHTML = '';
     
-    // Clear autocomplete suggestions
     clearAutocomplete();
+
+    let retries = 3;
+    const retryDelay = 5000; // 5 seconds
 
     let progressSteps = [
         'Fetching website content...',
@@ -260,7 +309,7 @@ function handleFormSubmit(e) {
     ];
 
     let currentStep = 0;
-    const progressInterval = setInterval(() => {
+    let progressInterval = setInterval(() => {
         if (currentStep < progressSteps.length) {
             updateProgress(progressSteps[currentStep]);
             currentStep++;
@@ -269,52 +318,61 @@ function handleFormSubmit(e) {
         }
     }, 2000);
 
-    fetch('/analyze', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: `domain=${encodeURIComponent(domain)}`
-    })
-    .then(response => {
-        if (!response.ok) {
-            if (response.status === 403) {
-                throw new Error('You have reached the maximum number of searches (10). Please try again later.');
-            } else if (response.status === 503) {
-                throw new Error('The server is currently overloaded. Please try again in a few minutes.');
+    function attemptSubmit() {
+        fetch('/analyze', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `domain=${encodeURIComponent(domain)}`
+        })
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 503 && retries > 0) {
+                    retries--;
+                    setTimeout(attemptSubmit, retryDelay);
+                    throw new Error('Server overloaded. Retrying...');
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        clearInterval(progressInterval);
-        spinner.style.display = 'none';
-        progressLog.innerHTML = '';
-        if (data.error) {
-            throw new Error(data.error);
-        } else {
-            console.log('Received data:', data);
-            displayResults(data);
-            // Clear any previous error messages
+            return response.json();
+        })
+        .then(data => {
+            clearInterval(progressInterval);
+            spinner.style.display = 'none';
+            progressLog.innerHTML = '';
+            if (data.error) {
+                throw new Error(data.error);
+            } else {
+                console.log('Received data:', data);
+                displayResults(data);
+                // Clear any previous error messages
+                const errorMessage = document.getElementById('error-message');
+                errorMessage.textContent = '';
+                errorMessage.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            clearInterval(progressInterval);
+            console.error('Error:', error);
             const errorMessage = document.getElementById('error-message');
-            errorMessage.textContent = '';
-            errorMessage.style.display = 'none';
-        }
-    })
-    .catch(error => {
-        clearInterval(progressInterval);
-        spinner.style.display = 'none';
-        progressLog.innerHTML = '';
-        console.error('Error:', error);
-        const errorMessage = document.getElementById('error-message');
-        errorMessage.textContent = `An error occurred: ${error.message}`;
-        errorMessage.style.display = 'block';
-    })
-    .finally(() => {
-        submitButton.disabled = false;
-        submitButton.textContent = originalButtonText;  // Reset button text
-    });
+            if (retries > 0) {
+                errorMessage.textContent = `Server is busy. Retrying in 5 seconds... (${retries} attempts left)`;
+            } else {
+                errorMessage.textContent = `An error occurred: ${error.message}. Please try again later.`;
+            }
+            errorMessage.style.display = 'block';
+        })
+        .finally(() => {
+            if (retries === 0) {
+                submitButton.disabled = false;
+                submitButton.textContent = originalButtonText;
+                spinner.style.display = 'none';
+            }
+        });
+    }
+
+    attemptSubmit();
 }
 
 function updateProgress(message) {
