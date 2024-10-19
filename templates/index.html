@@ -70,17 +70,60 @@
             </section>
 
             <section class="how-it-works">
-                <h2>How it Works</h2>
-                <div class="steps">
+                <h2><i class="fas fa-cogs"></i> How it Works</h2>
+                <div class="steps-container">
                     <div class="step">
-                        <i class="fas fa-globe"></i>
+                        <div class="step-icon">
+                            <i class="fas fa-globe"></i>
+                        </div>
                         <h3>Enter Your Domain</h3>
-                        <p>Just type in your website's address and we'll take care of the rest.</p>
+                        <p>Simply input your website's domain name into our search bar.</p>
+                    </div>
+                    <div class="step-arrow">
+                        <i class="fas fa-arrow-right"></i>
                     </div>
                     <div class="step">
-                        <i class="fas fa-chart-line"></i>
-                        <h3>Get Results</h3>
-                        <p>See how visible your site is in AI-powered search results and get tips to improve.</p>
+                        <div class="step-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h3>Get Insights</h3>
+                        <p>Receive detailed reports on your visibility in AI-powered search results.</p>
+                    </div>
+                    <div class="step-arrow">
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
+                    <div class="step">
+                        <div class="step-icon">
+                            <i class="fas fa-lightbulb"></i>
+                        </div>
+                        <h3>Improve</h3>
+                        <p>Use our actionable tips to enhance your LLM visibility and outrank competitors.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Add this section after the "How it Works" section -->
+            <section class="case-studies">
+                <h2><i class="fas fa-trophy"></i> Success Stories</h2>
+                <p>See how brands have improved their AI visibility using our LLM Search Performance Tracker:</p>
+                <div class="case-study-grid">
+                    <div class="case-study">
+                        <i class="fas fa-laptop icon-large"></i>
+                        <h3>TechGadget</h3>
+                        <p class="result"><span class="highlight">40% increase</span> in AI-generated response visibility for product-related queries.</p>
+                        <p class="strategy">Strategy: Comprehensive product guides and Q&A formats</p>
+                    </div>
+                    <div class="case-study">
+                        <i class="fas fa-heartbeat icon-large"></i>
+                        <h3>HealthHub</h3>
+                        <p class="result"><span class="highlight">60% increase</span> in content citations for health-related AI responses.</p>
+                        <p class="strategy">Strategy: In-depth, medically reviewed content with structured data</p>
+                    </div>
+                    <div class="case-study">
+                        <i class="fas fa-leaf icon-large"></i>
+                        <h3>EcoLiving</h3>
+                        <p class="result"><span class="highlight">50% improvement</span> in content feature rate for sustainable living topics.</p>
+                        <p class="strategy">Strategy: Reorganized content with clear structure and summaries</p>
                     </div>
                 </div>
             </section>
@@ -272,6 +315,9 @@
                     <li><a href="{{ url_for('understanding_llm_seo_blog_post') }}">Understanding Large Language Models: How They Affect SEO</a></li>
                     <li><a href="{{ url_for('case_studies_llm_visibility_blog_post') }}">Case Studies: Brands That Successfully Improved Their LLM Visibility</a></li>
                     <li><a href="{{ url_for('common_mistakes_ai_search_blog_post') }}">Common Mistakes Brands Make in AI Search Optimization</a></li>
+                    <li><a href="{{ url_for('future_of_search_blog_post') }}">The Future of Search: How AI is Reshaping Brand Visibility</a></li>
+                    <li><a href="{{ url_for('ai_friendly_content_blog_post') }}">How to Create AI-Friendly Content for Better Visibility</a></li>
+                    <li><a href="{{ url_for('ai_search_performance_metrics_blog_post') }}">Analyzing Your AI Search Performance: Key Metrics to Track</a></li>
                 </ul>
             </div>
         </div>

@@ -269,12 +269,20 @@ function updateAdviceProgress(message) {
     }
 }
 
+// Ensure init() is only called once
+let initialized = false;
 function init() {
+    if (initialized) return;
+    initialized = true;
+    
     console.log('Initializing');
     attachEventListeners();
     handleUrlParams();
     setupAutocomplete();
 }
+
+// Call init() only once when the DOM is loaded
+document.addEventListener('DOMContentLoaded', init, { once: true });
 
 function attachEventListeners() {
     console.log('Attaching event listeners');
@@ -288,8 +296,12 @@ function attachEventListeners() {
 
 function handleFormSubmit(e) {
     e.preventDefault();
-    const domain = document.getElementById('domainInput').value;
     const submitButton = document.getElementById('analyzeButton');
+    if (submitButton.disabled) {
+        return; // Prevent multiple submissions
+    }
+    
+    const domain = document.getElementById('domainInput').value;
     submitButton.disabled = true;
     submitButton.textContent = 'Analyzing...';
     
@@ -394,10 +406,7 @@ function handleUrlParams() {
     }
 }
 
-// Make sure init() is called when the DOM is loaded
-document.addEventListener('DOMContentLoaded', init);
-
-// Add this at the end of your file
+// Add this function at the end of your file
 document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('adviceModal');
     const closeBtn = document.getElementsByClassName('close')[0];

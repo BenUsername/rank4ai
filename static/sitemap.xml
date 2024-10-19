@@ -60,4 +60,22 @@
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
+  <url>
+    <loc>https://www.promptboostai.com/blog/future-of-search</loc>
+    <lastmod>2024-10-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.promptboostai.com/blog/ai-friendly-content</loc>
+    <lastmod>2024-10-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.promptboostai.com/blog/ai-search-performance-metrics</loc>
+    <lastmod>2024-10-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
 </urlset>

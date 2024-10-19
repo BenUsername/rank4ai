@@ -647,6 +647,18 @@ def case_studies_llm_visibility_blog_post():
 def common_mistakes_ai_search_blog_post():
     return render_template('common_mistakes_ai_search_blog_post.html')
 
+@app.route('/blog/future-of-search')
+def future_of_search_blog_post():
+    return render_template('future_of_search_blog_post.html')
+
+@app.route('/blog/ai-friendly-content')
+def ai_friendly_content_blog_post():
+    return render_template('ai_friendly_content_blog_post.html')
+
+@app.route('/blog/ai-search-performance-metrics')
+def ai_search_performance_metrics_blog_post():
+    return render_template('ai_search_performance_metrics_blog_post.html')
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))
     # In development, set debug to True and allow all hosts
