@@ -53,9 +53,8 @@ function displayResults(data) {
 
     const score = Math.round(data.score);
     const scoreColor = getScoreColor(score);
-    const scorePercentage = score - 62; // Assuming 62 is the minimum score
-    const maxScore = 100 - 62; // Maximum possible score above the minimum
-    const dashArray = (scorePercentage / maxScore) * 283; // 283 is the circumference of a circle with 90px radius
+    const circumference = 2 * Math.PI * 90; // Circumference of the circle
+    const dashArray = (score / 100) * circumference; // Adjust fill based on score
 
     mainContent.innerHTML += `
         <div class="results-header">
@@ -64,11 +63,11 @@ function displayResults(data) {
                 Results for ${data.domain}
             </h2>
             <div class="score-container">
-                <div class="score-circle" style="background-color: ${scoreColor}33;">
+                <div class="score-circle" style="background-color: ${scoreColor}11;">
                     <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="100" cy="100" r="90" fill="none" stroke="${scoreColor}66" stroke-width="20"/>
-                        <circle cx="100" cy="100" r="90" fill="none" stroke="${scoreColor}" stroke-width="20"
-                                stroke-dasharray="283" stroke-dashoffset="${283 - dashArray}"
+                        <circle cx="100" cy="100" r="90" fill="none" stroke="${scoreColor}33" stroke-width="12"/>
+                        <circle cx="100" cy="100" r="90" fill="none" stroke="${scoreColor}" stroke-width="12"
+                                stroke-dasharray="${circumference}" stroke-dashoffset="${circumference - dashArray}"
                                 transform="rotate(-90 100 100)"/>
                     </svg>
                     <span class="score" style="color: ${scoreColor};">${score}</span>
@@ -361,7 +360,12 @@ function handleFormSubmit(e) {
         },
         body: `domain=${encodeURIComponent(domain)}`
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => { throw err; });
+        }
+        return response.json();
+    })
     .then(data => {
         clearInterval(progressInterval);
         spinner.style.display = 'none';
@@ -378,10 +382,9 @@ function handleFormSubmit(e) {
         }
     })
     .catch(error => {
-        clearInterval(progressInterval);
         console.error('Error:', error);
         const errorMessage = document.getElementById('error-message');
-        errorMessage.textContent = `We couldn't process your request at this time. Please try again later.`;
+        errorMessage.textContent = error.error || "An unexpected error occurred. Please try again later.";
         errorMessage.style.display = 'block';
     })
     .finally(() => {
@@ -607,3 +610,4 @@ document.addEventListener('DOMContentLoaded', function() {
         showMoreButton.textContent = showMoreButton.textContent === 'Show More' ? 'Show Less' : 'Show More';
     });
 });
+

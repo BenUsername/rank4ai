@@ -35,11 +35,11 @@ app.secret_key = os.getenv('FLASK_SECRET_KEY', 'default_secret_key')  # Set a se
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize the OpenAI client
+# Revert OpenAI client initialization to synchronous
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 # Add this constant at the top of your file, after the imports
-MAX_API_CALLS_PER_SESSION = 15  # Adjust this number as needed
+MAX_API_CALLS_PER_SESSION = 100  # Adjust this number as needed
 
 # Add this near the top of your file, after the imports
 BASE_USER_COUNT = 1000  # Starting count
@@ -87,72 +87,24 @@ def fetch_website_content(domain):
     for page in pages_to_fetch:
         url = urljoin(base_url, page)
         try:
-            response = requests.get(url, headers=headers, timeout=requests_timeout)
+            response = requests.get(url, headers=headers, timeout=requests_timeout, verify=False)
             if response.status_code == 200:
-                soup = BeautifulSoup(response.text, 'html.parser')
-                
-                # Extract main content (you might need to adjust this based on the website structure)
+                content = response.text
+                soup = BeautifulSoup(content, 'html.parser')
                 main_content = soup.find('main') or soup.find('article') or soup.find('div', class_='content')
-                
                 if main_content:
                     existing_content[url] = main_content.get_text(strip=True)
                 else:
                     existing_content[url] = soup.get_text(strip=True)
-                
-                # Store the HTML content of the homepage
                 if page == "":
-                    html_content = response.text
-                
-                # If it's the blog page, try to find and fetch individual blog posts
-                if page == "/blog":
-                    blog_links = soup.find_all('a', href=True)
-                    for link in blog_links:
-                        if '/blog/' in link['href']:
-                            blog_url = urljoin(base_url, link['href'])
-                            blog_response = requests.get(blog_url, headers=headers, timeout=10)
-                            if blog_response.status_code == 200:
-                                blog_soup = BeautifulSoup(blog_response.text, 'html.parser')
-                                blog_content = blog_soup.find('main') or blog_soup.find('article') or blog_soup.find('div', class_='content')
-                                if blog_content:
-                                    existing_content[blog_url] = blog_content.get_text(strip=True)
-            else:
-                app.logger.info(f"Page not found or not accessible: {url}")
-        
-        except requests.exceptions.RequestException as e:
+                    html_content = content
+        except Exception as e:
             app.logger.info(f"Error fetching {url}: {str(e)}")
     
     return html_content, existing_content
 
-def extract_main_info(html_content):
-    """Extract Title, Description, and Main Content from the HTML."""
-    # Use readability to extract the main content
-    doc = Document(html_content)
-    title = doc.title() if doc.title() else 'No title available'
-    summary_html = doc.summary()
-    soup = BeautifulSoup(summary_html, 'lxml')
-    
-    # Extract text from the main content
-    main_content = ' '.join([p.get_text(strip=True) for p in soup.find_all('p')])
-    
-    # Extract meta description
-    soup_full = BeautifulSoup(html_content, 'lxml')
-    meta_description = ''
-    meta = soup_full.find('meta', attrs={'name': 'description'})
-    if meta and meta.get('content'):
-        meta_description = meta.get('content').strip()
-    
-    del soup, soup_full  # Explicitly delete to free memory
-    gc.collect()  # Force garbage collection
-    
-    return {
-        'title': title,
-        'description': meta_description,
-        'content': main_content[:5000]  # Limit content length
-    }
-
 def generate_marketing_prompts(title, description, content, domain):
-    """Generate five marketing prompts using OpenAI's API."""
-    MIN_WORD_COUNT = 30  # Minimum total word count
+    MIN_WORD_COUNT = 30
     title_word_count = len(title.split())
     description_word_count = len(description.split())
     content_word_count = len(content.split())
@@ -190,14 +142,11 @@ def generate_marketing_prompts(title, description, content, domain):
         
         logger.debug(f"OpenAI API Response:\n{response}")
         
-        # Extract the text response
         prompts_text = response.choices[0].message.content.strip()
         logger.info(f"OpenAI response for marketing prompts: {prompts_text}")
         
-        # Split the prompts into a list
         prompts = [line.strip() for line in prompts_text.split('\n') if line.strip()]
         
-        # Ensure only five prompts are returned
         prompts = prompts[:5]
         logger.info(f"Generated prompts: {prompts}")
         
@@ -208,6 +157,33 @@ def generate_marketing_prompts(title, description, content, domain):
     except Exception as e:
         logger.error(f"Error during OpenAI API call: {e}")
         return []
+
+def extract_main_info(html_content):
+    """Extract Title, Description, and Main Content from the HTML."""
+    # Use readability to extract the main content
+    doc = Document(html_content)
+    title = doc.title() if doc.title() else 'No title available'
+    summary_html = doc.summary()
+    soup = BeautifulSoup(summary_html, 'lxml')
+    
+    # Extract text from the main content
+    main_content = ' '.join([p.get_text(strip=True) for p in soup.find_all('p')])
+    
+    # Extract meta description
+    soup_full = BeautifulSoup(html_content, 'lxml')
+    meta_description = ''
+    meta = soup_full.find('meta', attrs={'name': 'description'})
+    if meta and meta.get('content'):
+        meta_description = meta.get('content').strip()
+    
+    del soup, soup_full  # Explicitly delete to free memory
+    gc.collect()  # Force garbage collection
+    
+    return {
+        'title': title,
+        'description': meta_description,
+        'content': main_content[:5000]  # Limit content length
+    }
 
 def analyze_content_gaps(domain, ai_response, existing_content):
     suggestions = []
@@ -227,7 +203,7 @@ def generate_prompt_answer(prompt, domain, info, existing_content):
         app.logger.warning(f"API call limit reached for session")
         return {
             'prompt': prompt,
-            'answer': "API call limit reached. Please try again later.",
+            'answer': "API call limit reached. Join the waiting list for unlimited access.",
             'competitors': 'N/A',
             'visible': 'N/A',
             'content_suggestions': []
@@ -270,13 +246,13 @@ def generate_prompt_answer(prompt, domain, info, existing_content):
         visibility_str = 'No'
         if rank > 0:
             if rank == 1:
-                visibility_str = "🎉 Congratulations! You're first!"
+                visibility_str = "You're 1st!"
             elif rank == 2:
-                visibility_str = "🥈 Great job! You're second!"
+                visibility_str = "You're 2nd!"
             elif rank == 3:
-                visibility_str = "🥉 Nice! You're third!"
+                visibility_str = "You're 3rd!"
             else:
-                visibility_str = f"✅ You're {rank}th"
+                visibility_str = f"You're {rank}th"
         
         # Log the rank
         if rank > 0:
@@ -358,15 +334,23 @@ limiter = Limiter(
     default_limits=["200 per day", "50 per hour"]
 )
 
-def calculate_score(table):
+async def calculate_score(table):
     total_points = 0
     max_points = len(table) * 5  # 5 points max per prompt
     for row in table:
-        if row['visible'] == 'No':
+        visible = row['visible'].lower()
+        if visible == 'no':
             total_points += 1  # Minimum 1 point even if not visible
+        elif visible.startswith('you'):
+            # Handle cases like "You're 1st!", "You're 2nd!", etc.
+            try:
+                rank_text = visible.split()[1]  # Get the second word (e.g., "1st", "2nd")
+                rank = int(''.join(filter(str.isdigit, rank_text)))  # Extract digits
+                total_points += max(6 - rank, 1)  # 5 points for 1st, 4 for 2nd, etc., minimum 1
+            except (IndexError, ValueError):
+                total_points += 1  # Default to 1 point if parsing fails
         else:
-            rank = int(row['visible'].split()[2][:-2])  # Extract rank from "You're Xth"
-            total_points += max(6 - rank, 1)  # 5 points for 1st, 4 for 2nd, etc., minimum 1
+            total_points += 5  # Assume top rank if format is unexpected
     
     # Scale score from 62 to 100
     score = 62 + (total_points / max_points) * 38
@@ -374,7 +358,7 @@ def calculate_score(table):
 
 @app.route('/analyze', methods=['POST'])
 @limiter.limit("5 per minute")
-def analyze():
+async def analyze():
     try:
         start_time = time.time()
         domain = request.form['domain']
@@ -388,8 +372,8 @@ def analyze():
 
         logging.info(f"Fetching content for {domain}")
         html_content, existing_content = fetch_website_content(domain)
-        if html_content is None:
-            return jsonify({'error': f"We couldn't fetch the content for {domain}. The website may be unavailable or blocking our requests. Please try another domain.", 'searches_left': searches_left}), 404
+        if not existing_content:
+            return jsonify({'error': f"We couldn't fetch any content for {domain}. The website may be unavailable or blocking our requests. Please try another domain.", 'searches_left': searches_left}), 404
 
         logging.info(f"Extracting main info for {domain}")
         info = extract_main_info(html_content)
@@ -402,7 +386,7 @@ def analyze():
 
         logging.info(f"Generating prompt answers for {domain}")
         table = generate_prompt_answers(prompts, domain, info, existing_content)
-        score = calculate_score(table)
+        score = await calculate_score(table)
 
         session['searches_left'] = searches_left - 1
         searches_left = session['searches_left']
@@ -410,7 +394,6 @@ def analyze():
         end_time = time.time()
         logging.info(f"Total processing time for {domain}: {end_time - start_time} seconds")
 
-        # Get logo URL from Logo.dev
         logo_url = get_logo_dev_logo(domain)
 
         return jsonify({
