@@ -48,7 +48,7 @@
             <input type="text" name="domain" id="domainInput" placeholder="Enter your website domain (e.g., example.com)" required aria-required="true" autocomplete="off">
             <ul id="autocompleteResults" class="autocomplete-results"></ul>
             {% if searches_left > 0 %}
-                <button type="submit" class="cta-button" id="analyzeButton">
+                <button type="submit" class="cta-button" id="analyzeButton" aria-label="Analyze website">
                     <i class="fas fa-rocket icon-small" aria-hidden="true"></i>Analyze Now
                 </button>
             {% else %}
@@ -308,18 +308,19 @@
             </div>
             <div class="footer-section">
                 <h3>Our Blog</h3>
-                <ul>
+                <ul class="blog-list">
                     <li><a href="{{ url_for('blog_post') }}">10 Effective Ways to Track Your Brand's Visibility in AI-Powered Search Results</a></li>
                     <li><a href="{{ url_for('aeo_blog_post') }}">Answer Engine Optimization: The Next Evolution of SEO</a></li>
                     <li><a href="{{ url_for('llm_ranking_blog_post') }}">Ultimate Guide to Ranking High in LLM Results</a></li>
-                    <li><a href="{{ url_for('llm_visibility_blog_post') }}">What's the Secret to Being Found More Frequently in LLM Queries?</a></li>
-                    <li><a href="{{ url_for('understanding_llm_seo_blog_post') }}">Understanding Large Language Models: How They Affect SEO</a></li>
-                    <li><a href="{{ url_for('case_studies_llm_visibility_blog_post') }}">Case Studies: Brands That Successfully Improved Their LLM Visibility</a></li>
-                    <li><a href="{{ url_for('common_mistakes_ai_search_blog_post') }}">Common Mistakes Brands Make in AI Search Optimization</a></li>
-                    <li><a href="{{ url_for('future_of_search_blog_post') }}">The Future of Search: How AI is Reshaping Brand Visibility</a></li>
-                    <li><a href="{{ url_for('ai_friendly_content_blog_post') }}">How to Create AI-Friendly Content for Better Visibility</a></li>
-                    <li><a href="{{ url_for('ai_search_performance_metrics_blog_post') }}">Analyzing Your AI Search Performance: Key Metrics to Track</a></li>
+                    <li class="hidden-blog-item"><a href="{{ url_for('llm_visibility_blog_post') }}">What's the Secret to Being Found More Frequently in LLM Queries?</a></li>
+                    <li class="hidden-blog-item"><a href="{{ url_for('understanding_llm_seo_blog_post') }}">Understanding Large Language Models: How They Affect SEO</a></li>
+                    <li class="hidden-blog-item"><a href="{{ url_for('case_studies_llm_visibility_blog_post') }}">Case Studies: Brands That Successfully Improved Their LLM Visibility</a></li>
+                    <li class="hidden-blog-item"><a href="{{ url_for('common_mistakes_ai_search_blog_post') }}">Common Mistakes Brands Make in AI Search Optimization</a></li>
+                    <li class="hidden-blog-item"><a href="{{ url_for('future_of_search_blog_post') }}">The Future of Search: How AI is Reshaping Brand Visibility</a></li>
+                    <li class="hidden-blog-item"><a href="{{ url_for('ai_friendly_content_blog_post') }}">How to Create AI-Friendly Content for Better Visibility</a></li>
+                    <li class="hidden-blog-item"><a href="{{ url_for('ai_search_performance_metrics_blog_post') }}">Analyzing Your AI Search Performance: Key Metrics to Track</a></li>
                 </ul>
+                <button id="showMoreBlogs" class="show-more-button">Show More</button>
             </div>
         </div>
     </footer>

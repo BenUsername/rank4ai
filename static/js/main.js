@@ -51,12 +51,36 @@ function displayResults(data) {
     // Clear previous content
     mainContent.innerHTML = '';
 
-    // Add domain information with logo
+    const score = Math.round(data.score);
+    const scoreColor = getScoreColor(score);
+    const scorePercentage = score - 62; // Assuming 62 is the minimum score
+    const maxScore = 100 - 62; // Maximum possible score above the minimum
+    const dashArray = (scorePercentage / maxScore) * 283; // 283 is the circumference of a circle with 90px radius
+
     mainContent.innerHTML += `
-        <h2>
-            ${data.logo_url ? `<img src="${data.logo_url}" alt="${data.domain} logo" style="vertical-align: middle; margin-right: 10px; max-height: 50px;">` : ''}
-            Results for ${data.domain}
-        </h2>
+        <div class="results-header">
+            <h2>
+                ${data.logo_url ? `<img src="${data.logo_url}" alt="${data.domain} logo" style="vertical-align: middle; margin-right: 10px; max-height: 50px;">` : ''}
+                Results for ${data.domain}
+            </h2>
+            <div class="score-container">
+                <div class="score-circle" style="background-color: ${scoreColor}33;">
+                    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="100" cy="100" r="90" fill="none" stroke="${scoreColor}66" stroke-width="20"/>
+                        <circle cx="100" cy="100" r="90" fill="none" stroke="${scoreColor}" stroke-width="20"
+                                stroke-dasharray="283" stroke-dashoffset="${283 - dashArray}"
+                                transform="rotate(-90 100 100)"/>
+                    </svg>
+                    <span class="score" style="color: ${scoreColor};">${score}</span>
+                </div>
+                <p>LLM Visibility Score</p>
+                <div class="score-legend">
+                    <span class="legend-item poor">0-49</span>
+                    <span class="legend-item average">50-89</span>
+                    <span class="legend-item good">90-100</span>
+                </div>
+            </div>
+        </div>
     `;
 
     // Add website information
@@ -565,3 +589,21 @@ function clearAutocomplete() {
         resultsContainer.style.display = 'none';
     }
 }
+
+function getScoreColor(score) {
+    if (score < 50) return '#FF4136'; // Red
+    if (score < 90) return '#FF851B'; // Orange
+    return '#2ECC40'; // Green
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const showMoreButton = document.getElementById('showMoreBlogs');
+    const hiddenItems = document.querySelectorAll('.hidden-blog-item');
+
+    showMoreButton.addEventListener('click', function() {
+        hiddenItems.forEach(item => {
+            item.style.display = item.style.display === 'none' ? 'block' : 'none';
+        });
+        showMoreButton.textContent = showMoreButton.textContent === 'Show More' ? 'Show Less' : 'Show More';
+    });
+});

@@ -350,6 +350,20 @@ limiter = Limiter(
     default_limits=["200 per day", "50 per hour"]
 )
 
+def calculate_score(table):
+    total_points = 0
+    max_points = len(table) * 5  # 5 points max per prompt
+    for row in table:
+        if row['visible'] == 'No':
+            total_points += 1  # Minimum 1 point even if not visible
+        else:
+            rank = int(row['visible'].split()[2][:-2])  # Extract rank from "You're Xth"
+            total_points += max(6 - rank, 1)  # 5 points for 1st, 4 for 2nd, etc., minimum 1
+    
+    # Scale score from 62 to 100
+    score = 62 + (total_points / max_points) * 38
+    return round(score)
+
 @app.route('/analyze', methods=['POST'])
 @limiter.limit("5 per minute")
 def analyze():
@@ -380,6 +394,7 @@ def analyze():
 
         logging.info(f"Generating prompt answers for {domain}")
         table = generate_prompt_answers(prompts, domain, info, existing_content)
+        score = calculate_score(table)
 
         session['searches_left'] = searches_left - 1
         searches_left = session['searches_left']
@@ -396,7 +411,8 @@ def analyze():
             'prompts': prompts,
             'table': table,
             'searches_left': searches_left,
-            'logo_url': logo_url
+            'logo_url': logo_url,
+            'score': score
         })
 
     except requests.exceptions.Timeout:
