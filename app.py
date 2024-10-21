@@ -22,6 +22,8 @@ import uuid
 from werkzeug.serving import WSGIRequestHandler
 import requests.exceptions
 import tiktoken
+import gc
+import psutil
 
 # Load environment variables from .env file
 load_dotenv()
@@ -130,7 +132,7 @@ def extract_main_info(html_content):
     soup = BeautifulSoup(summary_html, 'lxml')
     
     # Extract text from the main content
-    main_content = ' '.join([p.get_text().strip() for p in soup.find_all('p')])
+    main_content = ' '.join([p.get_text(strip=True) for p in soup.find_all('p')])
     
     # Extract meta description
     soup_full = BeautifulSoup(html_content, 'lxml')
@@ -139,10 +141,13 @@ def extract_main_info(html_content):
     if meta and meta.get('content'):
         meta_description = meta.get('content').strip()
     
+    del soup, soup_full  # Explicitly delete to free memory
+    gc.collect()  # Force garbage collection
+    
     return {
         'title': title,
         'description': meta_description,
-        'content': main_content
+        'content': main_content[:5000]  # Limit content length
     }
 
 def generate_marketing_prompts(title, description, content, domain):
@@ -318,17 +323,20 @@ def get_brandfetch_cdn_logo(domain):
     """Constructs the Brandfetch CDN URL for a given domain."""
     return f"https://cdn.brandfetch.io/{domain}"
 
+def log_memory_usage():
+    process = psutil.Process(os.getpid())
+    mem_info = process.memory_info()
+    app.logger.info(f"Memory usage: {mem_info.rss / 1024 / 1024:.2f} MB")
+
 @app.before_request
 def before_request():
-    # Check if we're running on Heroku
-    if 'DYNO' in os.environ:
-        # We're on Heroku, force HTTPS
-        if request.url.startswith('http://'):
-            url = request.url.replace('http://', 'https://', 1)
-            return redirect(url, code=301)
-    else:
-        # We're running locally, allow HTTP
-        pass
+    log_memory_usage()
+
+@app.after_request
+def after_request(response):
+    log_memory_usage()
+    gc.collect()  # Force garbage collection
+    return response
 
 # Near the top of the file, update or add this constant
 MAX_SEARCHES_PER_SESSION = 3  # Keep it at 3 searches
