@@ -24,6 +24,7 @@ import requests.exceptions
 import tiktoken
 import gc
 import psutil
+import asyncio
 
 # Load environment variables from .env file
 load_dotenv()
@@ -282,16 +283,24 @@ def generate_prompt_answer(prompt, domain, info, existing_content):
 def generate_prompt_answers(prompts, domain, info, existing_content):
     return [generate_prompt_answer(prompt, domain, info, existing_content) for prompt in prompts]
 
-def get_user_count():
+async def get_user_count():
     start_date = date(2024, 1, 1)  # Choose a start date
     days_passed = (date.today() - start_date).days
+    
+    # Simulate some async operation (e.g., database query)
+    await asyncio.sleep(0.1)
+    
     return BASE_USER_COUNT + (days_passed * DAILY_INCREASE)
 
-def get_logo_dev_logo(domain):
+async def get_logo_dev_logo(domain):
     """Constructs the Logo.dev API URL for a given domain."""
     public_key = "pk_Iiu041TAThCqnelMWeRtDQ"
     encoded_domain = quote_plus(domain)
     logo_url = f"https://img.logo.dev/{encoded_domain}?token={public_key}&size=200&format=png"
+    
+    # Simulate some async operation (e.g., API call)
+    await asyncio.sleep(0.1)
+    
     return logo_url
 
 # Add a new function to get the Brandfetch CDN URL
@@ -299,18 +308,22 @@ def get_brandfetch_cdn_logo(domain):
     """Constructs the Brandfetch CDN URL for a given domain."""
     return f"https://cdn.brandfetch.io/{domain}"
 
-def log_memory_usage():
+async def log_memory_usage():
     process = psutil.Process(os.getpid())
     mem_info = process.memory_info()
+    
+    # Simulate some async operation (e.g., logging to a database)
+    await asyncio.sleep(0.1)
+    
     app.logger.info(f"Memory usage: {mem_info.rss / 1024 / 1024:.2f} MB")
 
 @app.before_request
-def before_request():
-    log_memory_usage()
+async def before_request():
+    await log_memory_usage()
 
 @app.after_request
-def after_request(response):
-    log_memory_usage()
+async def after_request(response):
+    await log_memory_usage()
     gc.collect()  # Force garbage collection
     return response
 
@@ -321,9 +334,9 @@ MAX_SEARCHES_PER_SESSION = 3  # Keep it at 3 searches
 WSGIRequestHandler.timeout = 120  # 120 seconds
 
 @app.route('/', methods=['GET'])
-def index():
+async def index():
     searches_left = session.get('searches_left', MAX_SEARCHES_PER_SESSION)
-    user_count = get_user_count()
+    user_count = await get_user_count()
     domain = request.args.get('domain')
     show_results = request.args.get('showResults')
     return render_template('index.html', searches_left=searches_left, user_count=user_count, domain=domain, show_results=show_results)
@@ -394,7 +407,7 @@ async def analyze():
         end_time = time.time()
         logging.info(f"Total processing time for {domain}: {end_time - start_time} seconds")
 
-        logo_url = get_logo_dev_logo(domain)
+        logo_url = await get_logo_dev_logo(domain)
 
         return jsonify({
             'domain': domain,
