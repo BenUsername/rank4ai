@@ -319,6 +319,7 @@ function init() {
     attachEventListeners();
     handleUrlParams();
     setupAutocomplete();
+    initializeDropdown();
 }
 
 // Call init() only once when the DOM is loaded
@@ -634,3 +635,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// Add this function to your existing JavaScript
+function initializeDropdown() {
+    const dropdownBtn = document.querySelector('.dropbtn');
+    const dropdownContent = document.querySelector('.dropdown-content');
+
+    if (dropdownBtn && dropdownContent) {
+        dropdownBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            dropdownContent.style.display = dropdownContent.style.display === 'block' ? 'none' : 'block';
+        });
+
+        // Close the dropdown if the user clicks outside of it
+        window.addEventListener('click', function(e) {
+            if (!e.target.matches('.dropbtn')) {
+                dropdownContent.style.display = 'none';
+            }
+        });
+    }
+}

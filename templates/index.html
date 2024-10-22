@@ -39,25 +39,43 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <header class="hero">
-        <h1><i class="fas fa-search icon-large" aria-hidden="true"></i>LLM Search Performance Tracker</h1>
-        <p>Discover your brand's visibility in AI-powered search results</p>
-        <p class="user-count"><i class="fas fa-users icon-small" aria-hidden="true"></i><span id="user-count">{{ user_count }}</span> users have improved their LLM visibility</p>
-        <form id="analyzeForm" class="hero-form">
-            <label for="domainInput" class="sr-only">Enter your website domain</label>
-            <input type="text" name="domain" id="domainInput" placeholder="Enter your website domain (e.g., example.com)" required aria-required="true" autocomplete="off">
-            <ul id="autocompleteResults" class="autocomplete-results"></ul>
-            {% if searches_left > 0 %}
-                <button type="submit" class="cta-button" id="analyzeButton" aria-label="Analyze website">
-                    <i class="fas fa-rocket icon-small" aria-hidden="true"></i>Analyze Now
-                </button>
-            {% else %}
-                <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button" id="waitingListButton">Join Waiting List</a>
-            {% endif %}
-        </form>
-        <p class="cta-text"><span id="searches-left">{{ searches_left }}</span> free searches left</p>
-        <div class="spinner" id="spinner" aria-hidden="true"></div>
-        <div id="progress-log" aria-live="polite"></div>
+    <header>
+        <nav class="main-nav">
+            <ul>
+                <li><a href="#home">Home</a></li>
+                <li><a href="#how-it-works">How It Works</a></li>
+                <li><a href="#case-studies">Success Stories</a></li>
+                <li><a href="#faq">FAQ</a></li>
+                <li class="dropdown">
+                    <a href="#sector" class="dropbtn">Sector</a>
+                    <div class="dropdown-content">
+                        <a href="{{ url_for('short_term_rental') }}">Short-term Rental</a>
+                        <!-- Add more sectors here as needed -->
+                    </div>
+                </li>
+                <li><a href="#pricing">Pricing</a></li>
+            </ul>
+        </nav>
+        <div class="hero">
+            <h1><i class="fas fa-search icon-large" aria-hidden="true"></i>LLM Search Performance Tracker</h1>
+            <p>Discover your brand's visibility in AI-powered search results</p>
+            <p class="user-count"><i class="fas fa-users icon-small" aria-hidden="true"></i><span id="user-count">{{ user_count }}</span> users have improved their LLM visibility</p>
+            <form id="analyzeForm" class="hero-form">
+                <label for="domainInput" class="sr-only">Enter your website domain</label>
+                <input type="text" name="domain" id="domainInput" placeholder="Enter your website domain (e.g., example.com)" required aria-required="true" autocomplete="off">
+                <ul id="autocompleteResults" class="autocomplete-results"></ul>
+                {% if searches_left > 0 %}
+                    <button type="submit" class="cta-button" id="analyzeButton" aria-label="Analyze website">
+                        <i class="fas fa-rocket icon-small" aria-hidden="true"></i>Analyze Now
+                    </button>
+                {% else %}
+                    <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button" id="waitingListButton">Join Waiting List</a>
+                {% endif %}
+            </form>
+            <p class="cta-text"><span id="searches-left">{{ searches_left }}</span> free searches left</p>
+            <div class="spinner" id="spinner" aria-hidden="true"></div>
+            <div id="progress-log" aria-live="polite"></div>
+        </div>
     </header>
     
     <div id="error-message" class="error-message" style="display: none;"></div>
@@ -70,7 +88,7 @@
                 <a href="#" class="cta-button-secondary" onclick="document.getElementById('domainInput').focus(); return false;">Try it Now</a>
             </section>
 
-            <section class="how-it-works">
+            <section id="how-it-works" class="how-it-works">
                 <h2><i class="fas fa-cogs"></i> How it Works</h2>
                 <div class="steps-container">
                     <div class="step">
@@ -104,7 +122,7 @@
             </section>
 
             <!-- Add this section after the "How it Works" section -->
-            <section class="case-studies">
+            <section id="case-studies" class="case-studies">
                 <h2><i class="fas fa-trophy"></i> Success Stories</h2>
                 <p>See how brands have improved their AI visibility using our LLM Search Performance Tracker:</p>
                 <div class="case-study-grid">
@@ -256,7 +274,7 @@
                 </div>
             </section>
 
-            <section class="faq">
+            <section id="faq" class="faq">
                 <h2><i class="fas fa-question-circle icon-large"></i>Frequently Asked Questions</h2>
                 <div class="faq-container">
                     <div class="faq-item">
@@ -284,6 +302,30 @@
                         <p>We recommend checking at least monthly, or whenever you make significant changes to your website content. AI models are regularly updated, so frequent checks can help you stay on top of your visibility.</p>
                     </div>
                 </div>
+            </section>
+
+            <!-- Add this new section for the Short-term Rental sector -->
+            <section id="short-term-rental" class="sector-section" style="display: none;">
+                <h2>LLM Visibility for Short-term Rentals</h2>
+                <p>Optimize your short-term rental listings for AI-powered search engines and boost your visibility.</p>
+                <div class="sector-features">
+                    <div class="feature">
+                        <i class="fas fa-home"></i>
+                        <h3>Property Listing Optimization</h3>
+                        <p>Enhance your property descriptions to rank higher in AI-generated responses.</p>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-chart-line"></i>
+                        <h3>Competitive Analysis</h3>
+                        <p>Compare your listings' visibility against top competitors in your area.</p>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-star"></i>
+                        <h3>Review Sentiment Analysis</h3>
+                        <p>Understand how AI interprets your guest reviews and improve your online reputation.</p>
+                    </div>
+                </div>
+                <a href="#" class="cta-button">Analyze Your Short-term Rental Listing</a>
             </section>
         </section>
         
@@ -353,6 +395,65 @@
             }
             // Add this line to focus on the input field when the page loads
             document.getElementById('domainInput').focus();
+        });
+    </script>
+
+    <script>
+        // Add this to your existing JavaScript or in a <script> tag
+        document.addEventListener('DOMContentLoaded', function() {
+            const sectorDropdown = document.querySelector('.dropdown');
+            const shortTermRentalSection = document.getElementById('short-term-rental');
+            const landingContent = document.getElementById('landing-content');
+
+            if (sectorDropdown && shortTermRentalSection && landingContent) {
+                sectorDropdown.addEventListener('click', function(e) {
+                    if (e.target.matches('a[href="#short-term-rental"]')) {
+                        e.preventDefault();
+                        landingContent.style.display = 'none';
+                        shortTermRentalSection.style.display = 'block';
+                    }
+                });
+            }
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Smooth scroll function
+            function smoothScroll(target, duration) {
+                var targetElement = document.querySelector(target);
+                var targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset;
+                var startPosition = window.pageYOffset;
+                var distance = targetPosition - startPosition;
+                var startTime = null;
+
+                function animation(currentTime) {
+                    if (startTime === null) startTime = currentTime;
+                    var timeElapsed = currentTime - startTime;
+                    var run = ease(timeElapsed, startPosition, distance, duration);
+                    window.scrollTo(0, run);
+                    if (timeElapsed < duration) requestAnimationFrame(animation);
+                }
+
+                function ease(t, b, c, d) {
+                    t /= d / 2;
+                    if (t < 1) return c / 2 * t * t + b;
+                    t--;
+                    return -c / 2 * (t * (t - 2) - 1) + b;
+                }
+
+                requestAnimationFrame(animation);
+            }
+
+            // Add click event listeners to menu items
+            var menuItems = document.querySelectorAll('.main-nav a[href^="#"]');
+            menuItems.forEach(function(item) {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    var target = this.getAttribute('href');
+                    smoothScroll(target, 1000);
+                });
+            });
         });
     </script>
 </body>

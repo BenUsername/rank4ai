@@ -618,6 +618,44 @@ def limit_remote_addr():
         # Store reset_time as timestamp
         session['rate_limit']['reset_time'] = (now + timedelta(minutes=1)).timestamp()
 
+@app.route('/short-term-rental')
+def short_term_rental():
+    return render_template('short_term_rental.html')
+
+@app.route('/analyze_city', methods=['POST'])
+def analyze_city():
+    city = request.form['city']
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant that recommends the best Airbnb listings. Provide exactly 3 recommendations, each with a name and brief description. Format your response as a numbered list, with each item in the format 'Name: Description'. Do not include any introductory or concluding text."},
+                {"role": "user", "content": f"/search Recommend the best Airbnb in {city}."}
+            ],
+            max_tokens=300,
+            n=1,
+            temperature=0.7,
+        )
+        
+        recommendations = response.choices[0].message.content.strip().split('\n')
+        formatted_recommendations = []
+        for rec in recommendations:
+            # Remove the number and period at the start
+            rec = re.sub(r'^\d+\.\s*', '', rec)
+            # Split by the first colon
+            parts = rec.split(':', 1)
+            if len(parts) == 2:
+                name = parts[0].strip()
+                description = parts[1].strip()
+                formatted_recommendations.append({"name": name, "description": description})
+        
+        return jsonify({
+            "recommendations": formatted_recommendations
+        })
+    except Exception as e:
+        app.logger.error(f"Error processing request: {str(e)}")
+        return jsonify({"error": "An error occurred while processing your request. Please try again later."}), 500
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))
     app.run(host='0.0.0.0', port=port, debug=True)

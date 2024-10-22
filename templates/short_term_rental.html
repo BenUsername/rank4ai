@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Short-term Rental LLM Visibility | LLM Search Performance Tracker</title>
+    <meta name="description" content="Optimize your short-term rental listings for AI-powered search engines and boost your visibility with our specialized LLM Search Performance Tracker.">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <nav class="main-nav">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('index') }}#features">Features</a></li>
+                <li><a href="{{ url_for('index') }}#how-it-works">How It Works</a></li>
+                <li><a href="{{ url_for('index') }}#case-studies">Case Studies</a></li>
+                <li class="dropdown">
+                    <a href="#" class="dropbtn">Sector</a>
+                    <div class="dropdown-content">
+                        <a href="{{ url_for('short_term_rental') }}">Short-term Rental</a>
+                        <!-- Add more sectors here as needed -->
+                    </div>
+                </li>
+                <li><a href="{{ url_for('index') }}#pricing">Pricing</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <h1>LLM Visibility for Short-term Rentals</h1>
+            <p>Optimize your short-term rental listings for AI-powered search engines and boost your visibility.</p>
+            <form id="cityForm" class="hero-form">
+                <label for="cityInput" class="sr-only">Enter a city</label>
+                <input type="text" name="city" id="cityInput" placeholder="Enter a city (e.g., Paris, New York)" required aria-required="true">
+                <button type="submit" class="cta-button" id="analyzeButton" aria-label="Analyze city">
+                    <i class="fas fa-search icon-small" aria-hidden="true"></i>Analyze Now
+                </button>
+            </form>
+            <div class="spinner" id="spinner" aria-hidden="true"></div>
+        </section>
+
+        <section id="results" style="display: none;">
+            <h2>Best Airbnb Recommendations</h2>
+            <table id="resultsTable">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Airbnb Name</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBody">
+                    <!-- Results will be inserted here -->
+                </tbody>
+            </table>
+            <div class="cta-container">
+                <p>Want to boost your visibility ranking in LLM searches? Use our partner OptiRental</p>
+                <a href="https://optirental.fr/" target="_blank">
+                    <img id="optirentalLogo" src="{{ url_for('static', filename='images/optirental_logo.png') }}" alt="OptiRental Logo" style="height: 50px;">
+                </a>
+            </div>
+        </section>
+
+        <section class="features">
+            <h2>Key Features for Short-term Rentals</h2>
+            <div class="feature-grid">
+                <div class="feature">
+                    <i class="fas fa-home"></i>
+                    <h3>Property Listing Optimization</h3>
+                    <p>Enhance your property descriptions to rank higher in AI-generated responses.</p>
+                </div>
+                <div class="feature">
+                    <i class="fas fa-chart-line"></i>
+                    <h3>Competitive Analysis</h3>
+                    <p>Compare your listings' visibility against top competitors in your area.</p>
+                </div>
+                <div class="feature">
+                    <i class="fas fa-star"></i>
+                    <h3>Review Sentiment Analysis</h3>
+                    <p>Understand how AI interprets your guest reviews and improve your online reputation.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>LLM Search Performance Tracker</h3>
+                <p>&copy; 2024 All rights reserved.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="{{ url_for('privacy_policy') }}">Privacy Policy</a></li>
+                    <li><a href="{{ url_for('terms_of_service') }}">Terms of Service</a></li>
+                    <li><a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank">Contact Us</a></li>
+                </ul>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const cityForm = document.getElementById('cityForm');
+            const spinner = document.getElementById('spinner');
+            const results = document.getElementById('results');
+            const resultsBody = document.getElementById('resultsBody');
+
+            cityForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const city = document.getElementById('cityInput').value;
+                spinner.style.display = 'block';
+                results.style.display = 'none';
+
+                fetch('/analyze_city', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `city=${encodeURIComponent(city)}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    if (data.recommendations && data.recommendations.length > 0) {
+                        resultsBody.innerHTML = '';
+                        data.recommendations.forEach((item, index) => {
+                            if (item.name && item.description) {
+                                const row = `
+                                    <tr>
+                                        <td>${index + 1}</td>
+                                        <td>${item.name}</td>
+                                        <td>${item.description}</td>
+                                    </tr>
+                                `;
+                                resultsBody.innerHTML += row;
+                            }
+                        });
+
+                        spinner.style.display = 'none';
+                        results.style.display = 'block';
+                    } else {
+                        throw new Error("No valid recommendations received.");
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while processing your request. Please try again later.');
+                    spinner.style.display = 'none';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
