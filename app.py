@@ -45,41 +45,57 @@ requests_timeout = 30
 def is_valid_domain(domain):
     return validators.domain(domain)
 
-def fetch_website_content(domain):
+def fetch_page(url, headers, timeout):
+    try:
+        response = requests.get(url, headers=headers, timeout=timeout, verify=False)
+        if response.status_code == 200:
+            return response.text
+    except Exception as e:
+        app.logger.info(f"Error fetching {url}: {str(e)}")
+    return None
+
+def fetch_main_page_content(domain):
     base_url = f"https://{domain}"
-    pages_to_fetch = ["", "/blog", "/about", "/products", "/services"]
-    
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     }
-    
-    existing_content = {}
-    html_content = None
-
     MAX_HTML_SIZE = 1 * 1024 * 1024  # 1MB
 
-    def fetch_page(session, url):
-        try:
-            response = session.get(url, headers=headers, timeout=requests_timeout, verify=False)
-            if response.status_code == 200:
-                content = response.text[:MAX_HTML_SIZE]
-                soup = BeautifulSoup(content, 'html.parser')
-                main_content = soup.find('main') or soup.find('article') or soup.find('div', class_='content')
-                text_content = (main_content.get_text(strip=True) if main_content else soup.get_text(strip=True))[:5000]
-                existing_content[url] = text_content
-                return content if url.endswith(domain) else None
-        except Exception as e:
-            app.logger.info(f"Error fetching {url}: {str(e)}")
-        return None
+    content = fetch_page(base_url, headers, requests_timeout)
+    if content:
+        content = content[:MAX_HTML_SIZE]
+        soup = BeautifulSoup(content, 'html.parser')
+        main_content = soup.find('main') or soup.find('article') or soup.find('div', class_='content')
+        text_content = (main_content.get_text(strip=True) if main_content else soup.get_text(strip=True))[:5000]
+        del soup
+        gc.collect()
+        return content[:MAX_HTML_SIZE], text_content
+    else:
+        app.logger.info(f"Failed to fetch main page for {domain}")
+    return None, None
 
-    with requests.Session() as session:
-        for page in pages_to_fetch:
-            url = urljoin(base_url, page)
-            content = fetch_page(session, url)
-            if content and not html_content:
-                html_content = content[:MAX_HTML_SIZE]
+def fetch_additional_content(domain):
+    base_url = f"https://{domain}"
+    pages_to_fetch = ["/blog", "/about", "/products", "/services"]
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+    existing_content = {}
+    MAX_HTML_SIZE = 512 * 1024  # 512KB
 
-    return html_content, existing_content
+    for page in pages_to_fetch:
+        url = urljoin(base_url, page)
+        content = fetch_page(url, headers, requests_timeout)
+        if content:
+            content = content[:MAX_HTML_SIZE]
+            soup = BeautifulSoup(content, 'html.parser')
+            main_content = soup.find('main') or soup.find('article') or soup.find('div', class_='content')
+            text_content = (main_content.get_text(strip=True) if main_content else soup.get_text(strip=True))[:2000]
+            existing_content[url] = text_content
+            del soup
+            gc.collect()
+
+    return existing_content
 
 def generate_marketing_prompts(title, description, content, domain):
     MIN_WORD_COUNT = 30
@@ -346,22 +362,22 @@ def analyze():
         if not is_valid_domain(domain):
             return jsonify({'error': 'Invalid domain name.', 'searches_left': searches_left}), 400
 
-        logging.info(f"Fetching content for {domain}")
-        html_content, existing_content = fetch_website_content(domain)
-        if not existing_content:
-            return jsonify({'error': f"We couldn't fetch any content for {domain}. The website may be unavailable or blocking our requests. Please try another domain.", 'searches_left': searches_left}), 404
+        logging.info(f"Fetching main page content for {domain}")
+        html_content, main_text_content = fetch_main_page_content(domain)
+        if not html_content or not main_text_content:
+            return jsonify({'error': f"Couldn't fetch content for {domain}. Please try another domain.", 'searches_left': searches_left}), 404
 
         logging.info(f"Extracting main info for {domain}")
         info = extract_main_info(html_content)
-        
+
         logging.info(f"Generating marketing prompts for {domain}")
         prompts = generate_marketing_prompts(info['title'], info['description'], info['content'], domain)
-        
+
         if not prompts:
-            return jsonify({'error': "We couldn't generate valid prompts for this website. Please try another domain.", 'searches_left': searches_left}), 500
+            return jsonify({'error': "Couldn't generate valid prompts for this website. Please try another domain.", 'searches_left': searches_left}), 500
 
         logging.info(f"Generating prompt answers for {domain}")
-        table = generate_prompt_answers(prompts, domain, info, existing_content)
+        table = generate_prompt_answers(prompts, domain, info, existing_content={})
         score = calculate_score(table)
 
         session['searches_left'] = searches_left - 1
@@ -382,15 +398,9 @@ def analyze():
             'score': score
         })
 
-    except requests.exceptions.Timeout:
-        logger.error(f"Timeout error processing {domain}")
-        return jsonify({'error': f"The request timed out while processing {domain}. Please try again later."}), 504
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Request error processing {domain}: {str(e)}")
-        return jsonify({'error': f"An error occurred while fetching data from {domain}. Please try again later."}), 502
     except Exception as e:
         logger.error(f"Error processing {domain}: {str(e)}", exc_info=True)
-        return jsonify({'error': f"An unexpected error occurred while processing your request: {str(e)}. Please try again later."}), 500
+        return jsonify({'error': f"An unexpected error occurred: {str(e)}. Please try again later."}), 500
 
 @app.route('/robots.txt')
 def robots():
@@ -421,18 +431,14 @@ job_results = {}
 
 MAX_PROCESSING_TIME = 60  # Maximum processing time in seconds
 
-def background_task(job_id, domain, prompt, existing_content):
+def background_task(job_id, domain, prompt):
     start_time = time.time()
     try:
-        while time.time() - start_time < MAX_PROCESSING_TIME:
-            content_suggestions = get_advice(domain, prompt, existing_content)
-            if content_suggestions:
-                job_results[job_id] = content_suggestions
-                return
-            time.sleep(5)  # Wait for 5 seconds before trying again
-        
-        # If we've reached here, it means we've timed out
-        job_results[job_id] = {"error": "Processing timed out. Please try again."}
+        content_suggestions = get_advice(domain, prompt)
+        if content_suggestions:
+            job_results[job_id] = content_suggestions
+            return
+        # Handle timeout or retries as necessary
     except Exception as e:
         job_results[job_id] = {"error": str(e)}
 
@@ -446,10 +452,8 @@ def get_advice_route():
         return jsonify({'error': 'Domain and prompt are required.'}), 400
 
     job_id = str(uuid.uuid4())
-    existing_content = fetch_website_content(domain)
-    
-    # Start the background task
-    thread = threading.Thread(target=background_task, args=(job_id, domain, prompt, existing_content))
+
+    thread = threading.Thread(target=background_task, args=(job_id, domain, prompt))
     thread.start()
 
     return jsonify({"job_id": job_id}), 202
@@ -479,30 +483,21 @@ def unhandled_exception(e):
     app.logger.error('Unhandled Exception: %s', (e))
     return render_template('500.html'), 500
 
-def get_advice(domain, prompt, existing_content):
+def get_advice(domain, prompt):
     try:
-        # Approximate token count by word count
-        def count_tokens(text):
-            return len(text.split())
+        logging.info(f"Fetching additional content for {domain}")
+        existing_content = fetch_additional_content(domain)
+        if not existing_content:
+            logging.warning(f"No additional content fetched for {domain}")
+            return {"error": "No additional content available for analysis."}
 
-        # Truncate existing content if it's too large
-        max_content_tokens = 1000  # Adjust as needed
         total_content = json.dumps(existing_content)
-        content_tokens = count_tokens(total_content)
+        max_content_tokens = 1000
+        total_content = ' '.join(total_content.split()[:max_content_tokens])
 
-        if content_tokens > max_content_tokens:
-            # Truncate content safely
-            truncated_content = ' '.join(total_content.split()[:max_content_tokens])
-            try:
-                existing_content = json.loads(truncated_content)
-            except json.JSONDecodeError as e:
-                app.logger.error(f"Error parsing truncated content: {e}")
-                existing_content = {}  # Use an empty dict if parsing fails
-
-        # Prepare the messages
         system_message = "You are an expert in SEO and content strategy."
         user_message = f"""
-        Analyze the following prompt and existing content for {domain}. 
+        Analyze the following prompt and existing content for {domain}.
         Provide specific suggestions for content updates:
         1. Suggest updates for up to 3 existing pages, including the main landing page and up to 2 blog posts.
         2. Suggest 3 new blog posts to create.
@@ -510,14 +505,14 @@ def get_advice(domain, prompt, existing_content):
         Prompt: {prompt}
 
         Existing content:
-        {json.dumps(existing_content, indent=2)}
+        {total_content}
 
         Format your response as a JSON object with two keys: 'existing_page_suggestions' and 'new_blog_post_suggestions'.
         For existing pages, include 'url' and 'suggestion'.
-        For new blog posts, include 'title' and 'outline'. The 'outline' should always be an array of strings, even if there's only one item.
+        For new blog posts, include 'title' and 'outline'. The 'outline' should always be an array of strings.
         Limit your response to a maximum of 3 existing page suggestions and 3 new blog post suggestions.
         """
-        
+
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
@@ -527,43 +522,18 @@ def get_advice(domain, prompt, existing_content):
             max_tokens=1000,
             temperature=0.7,
         )
-        
+
         content = response.choices[0].message.content.strip()
         app.logger.info(f"Raw OpenAI API response: {content}")
-        
-        # Remove triple backticks and "json" if present
+
         content = content.replace("```json", "").replace("```", "").strip()
-        
-        # Remove extra quotation marks from URLs and other values
-        content = content.replace('"https":', '"https:')
-        content = re.sub(r'""(\w+)""', r'"\1"', content)
-        
-        try:
-            content_suggestions = json.loads(content)
-        except json.JSONDecodeError as e:
-            app.logger.error(f"JSON Decode Error: {e}")
-            app.logger.error(f"Cleaned response content: {content}")
-            
-            # If JSON parsing still fails, return an error
-            return {"error": "Failed to parse the AI response. Please try again."}
-        
-        # Ensure we have the expected structure
-        if not isinstance(content_suggestions, dict):
-            app.logger.error(f"Unexpected content structure: {content_suggestions}")
-            return {"error": "The AI response was not in the expected format. Please try again."}
-        
-        # Ensure we have the required keys, if not, provide empty lists
-        content_suggestions['existing_page_suggestions'] = content_suggestions.get('existing_page_suggestions', [])
-        content_suggestions['new_blog_post_suggestions'] = content_suggestions.get('new_blog_post_suggestions', [])
-        
-        # Ensure we have at most 3 suggestions for each category
-        content_suggestions['existing_page_suggestions'] = content_suggestions['existing_page_suggestions'][:3]
-        content_suggestions['new_blog_post_suggestions'] = content_suggestions['new_blog_post_suggestions'][:3]
+        content_suggestions = json.loads(content)
+
+        content_suggestions['existing_page_suggestions'] = content_suggestions.get('existing_page_suggestions', [])[:3]
+        content_suggestions['new_blog_post_suggestions'] = content_suggestions.get('new_blog_post_suggestions', [])[:3]
 
         return content_suggestions
-    except json.JSONDecodeError as e:
-        app.logger.error(f"JSON Decode Error: {e}")
-        return {"error": "Failed to parse content. Please try again."}
+
     except Exception as e:
         app.logger.error(f"Error generating advice: {str(e)}", exc_info=True)
         return {"error": "An error occurred while generating advice. Please try again later."}
