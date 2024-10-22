@@ -7,12 +7,10 @@ import validators
 from openai import OpenAI
 import re
 import logging
-from datetime import date
+from datetime import date, datetime, timedelta
 import time
 from urllib.parse import quote_plus  
 import difflib
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 from urllib.parse import urljoin
 import json
 import threading
@@ -21,8 +19,6 @@ import requests.exceptions
 import gc
 import psutil
 import difflib
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 
 # Load environment variables from .env file
 load_dotenv()
@@ -315,12 +311,6 @@ def index():
     show_results = request.args.get('showResults')
     return render_template('index.html', searches_left=searches_left, user_count=user_count, domain=domain, show_results=show_results)
 
-limiter = Limiter(
-    get_remote_address,
-    app=app,
-    default_limits=["200 per day", "50 per hour"]
-)
-
 def calculate_score(table):
     total_points = 0
     max_points = len(table) * 5  # 5 points max per prompt
@@ -344,7 +334,6 @@ def calculate_score(table):
     return round(score)
 
 @app.route('/analyze', methods=['POST'])
-@limiter.limit("5 per minute")
 def analyze():
     try:
         start_time = time.time()
@@ -482,7 +471,7 @@ def internal_server_error(error):
 
 @app.errorhandler(429)
 def ratelimit_handler(e):
-    app.logger.warning('Rate limit exceeded: %s', str(e))
+    app.logger.warning('Rate limit exceeded')
     return jsonify(error="Rate limit exceeded. Please try again later."), 429
 
 @app.errorhandler(Exception)
@@ -542,8 +531,12 @@ def get_advice(domain, prompt, existing_content):
         content = response.choices[0].message.content.strip()
         app.logger.info(f"Raw OpenAI API response: {content}")
         
-        # Remove the triple backticks and "json" if present
+        # Remove triple backticks and "json" if present
         content = content.replace("```json", "").replace("```", "").strip()
+        
+        # Remove extra quotation marks from URLs and other values
+        content = content.replace('"https":', '"https:')
+        content = re.sub(r'""(\w+)""', r'"\1"', content)
         
         try:
             content_suggestions = json.loads(content)
@@ -551,16 +544,8 @@ def get_advice(domain, prompt, existing_content):
             app.logger.error(f"JSON Decode Error: {e}")
             app.logger.error(f"Cleaned response content: {content}")
             
-            # Attempt to fix common JSON issues
-            content = content.replace("'", '"')  # Replace single quotes with double quotes
-            content = re.sub(r'(\w+):', r'"\1":', content)  # Add quotes to keys
-            app.logger.info(f"Attempting to parse fixed JSON: {content}")
-            
-            try:
-                content_suggestions = json.loads(content)
-            except json.JSONDecodeError:
-                app.logger.error("Failed to parse JSON even after attempted fixes")
-                return {"error": "Failed to parse the AI response. Please try again."}
+            # If JSON parsing still fails, return an error
+            return {"error": "Failed to parse the AI response. Please try again."}
         
         # Ensure we have the expected structure
         if not isinstance(content_suggestions, dict):
@@ -585,7 +570,6 @@ def get_advice(domain, prompt, existing_content):
 
 # Add this new route
 @app.route('/autocomplete/<query>')
-@limiter.limit("200 per hour")  # Increase the limit or remove it for testing
 def autocomplete(query):
     url = f"https://api.brandfetch.io/v2/search/{quote_plus(query)}"
     headers = {
@@ -646,6 +630,23 @@ def ai_friendly_content_blog_post():
 @app.route('/blog/ai-search-performance-metrics')
 def ai_search_performance_metrics_blog_post():
     return render_template('ai_search_performance_metrics_blog_post.html')
+
+@app.before_request
+def limit_remote_addr():
+    if request.endpoint == 'analyze':  # Only apply rate limiting to the analyze endpoint
+        now = datetime.now()  # Use offset-naive datetime
+        if 'rate_limit' not in session:
+            session['rate_limit'] = {'count': 0, 'reset_time': now + timedelta(minutes=1)}
+        else:
+            reset_time = datetime.fromtimestamp(session['rate_limit']['reset_time'].timestamp())  # Convert to offset-naive
+            if now > reset_time:
+                session['rate_limit'] = {'count': 0, 'reset_time': now + timedelta(minutes=1)}
+            session['rate_limit']['count'] += 1
+            if session['rate_limit']['count'] > 5:  # Limit to 5 requests per minute
+                return jsonify({'error': 'Rate limit exceeded. Please try again later.'}), 429
+        
+        # Store reset_time as timestamp to avoid serialization issues
+        session['rate_limit']['reset_time'] = session['rate_limit']['reset_time'].timestamp()
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))
