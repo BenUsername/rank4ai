@@ -636,17 +636,17 @@ def limit_remote_addr():
     if request.endpoint == 'analyze':  # Only apply rate limiting to the analyze endpoint
         now = datetime.now()  # Use offset-naive datetime
         if 'rate_limit' not in session:
-            session['rate_limit'] = {'count': 0, 'reset_time': now + timedelta(minutes=1)}
+            session['rate_limit'] = {'count': 0, 'reset_time': now.timestamp()}
         else:
-            reset_time = datetime.fromtimestamp(session['rate_limit']['reset_time'].timestamp())  # Convert to offset-naive
+            reset_time = datetime.fromtimestamp(session['rate_limit']['reset_time'])
             if now > reset_time:
-                session['rate_limit'] = {'count': 0, 'reset_time': now + timedelta(minutes=1)}
+                session['rate_limit'] = {'count': 0, 'reset_time': now.timestamp()}
             session['rate_limit']['count'] += 1
             if session['rate_limit']['count'] > 5:  # Limit to 5 requests per minute
                 return jsonify({'error': 'Rate limit exceeded. Please try again later.'}), 429
         
-        # Store reset_time as timestamp to avoid serialization issues
-        session['rate_limit']['reset_time'] = session['rate_limit']['reset_time'].timestamp()
+        # Store reset_time as timestamp
+        session['rate_limit']['reset_time'] = (now + timedelta(minutes=1)).timestamp()
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))
