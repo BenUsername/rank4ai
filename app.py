@@ -1,11 +1,9 @@
 import os
-from flask import Flask, request, render_template, session, jsonify, redirect, send_from_directory
-from markupsafe import Markup
+from flask import Flask, request, render_template, session, jsonify, send_from_directory
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 import validators
-from readability import Document
 from openai import OpenAI
 import re
 import logging
@@ -19,66 +17,41 @@ from urllib.parse import urljoin
 import json
 import threading
 import uuid
-from werkzeug.serving import WSGIRequestHandler
 import requests.exceptions
-import tiktoken
 import gc
 import psutil
-import asyncio
-import aiohttp
-
+import difflib
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 # Load environment variables from .env file
 load_dotenv()
 
 app = Flask(__name__, static_folder='static')
-app.secret_key = os.getenv('FLASK_SECRET_KEY', 'default_secret_key')  # Set a secret key for sessions
+app.secret_key = os.getenv('FLASK_SECRET_KEY', 'default_secret_key')
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Revert OpenAI client initialization to synchronous
+# Initialize OpenAI client
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
-# Add this constant at the top of your file, after the imports
-MAX_API_CALLS_PER_SESSION = 100  # Adjust this number as needed
-
-# Add this near the top of your file, after the imports
-BASE_USER_COUNT = 1000  # Starting count
-DAILY_INCREASE = 5  # Number of users to add each day
-
-# Add this near the top of your file, after loading other environment variables
+# Constants
+MAX_API_CALLS_PER_SESSION = 100
+BASE_USER_COUNT = 1000
+DAILY_INCREASE = 5
 CONTACT_EMAIL = os.getenv('mailto', 'support@promptboostai.com')
-
-# Logo.dev API token
 LOGO_DEV_TOKEN = os.getenv('LOGO_DEV_TOKEN')
-
-# Add this near the top of your file, after other imports
-from flask import send_from_directory
-
-# Add this route to your app
-@app.route('/favicon.ico')
-def favicon():
-    return send_from_directory(os.path.join(app.root_path, 'static'),
-                               'favicon.ico', mimetype='image/vnd.microsoft.icon')
+MAX_SEARCHES_PER_SESSION = 3
+requests_timeout = 30
 
 def is_valid_domain(domain):
-    """Validate the domain using the validators library."""
     return validators.domain(domain)
 
-# Increase the timeout for requests
-requests_timeout = 30  # 30 seconds
-
-async def fetch_website_content(domain):
+def fetch_website_content(domain):
     base_url = f"https://{domain}"
-    pages_to_fetch = [
-        "",  # Homepage
-        "/blog",
-        "/about",
-        "/products",
-        "/services",
-    ]
+    pages_to_fetch = ["", "/blog", "/about", "/products", "/services"]
     
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -87,31 +60,28 @@ async def fetch_website_content(domain):
     existing_content = {}
     html_content = None
 
-    async def fetch_page(session, url):
+    MAX_HTML_SIZE = 1 * 1024 * 1024  # 1MB
+
+    def fetch_page(session, url):
         try:
-            async with session.get(url, headers=headers, timeout=requests_timeout, ssl=False) as response:
-                if response.status == 200:
-                    content = await response.text()
-                    soup = BeautifulSoup(content, 'html.parser')
-                    main_content = soup.find('main') or soup.find('article') or soup.find('div', class_='content')
-                    if main_content:
-                        existing_content[url] = main_content.get_text(strip=True)
-                    else:
-                        existing_content[url] = soup.get_text(strip=True)
-                    return content if url.endswith(domain) else None
+            response = session.get(url, headers=headers, timeout=requests_timeout, verify=False)
+            if response.status_code == 200:
+                content = response.text[:MAX_HTML_SIZE]
+                soup = BeautifulSoup(content, 'html.parser')
+                main_content = soup.find('main') or soup.find('article') or soup.find('div', class_='content')
+                text_content = (main_content.get_text(strip=True) if main_content else soup.get_text(strip=True))[:5000]
+                existing_content[url] = text_content
+                return content if url.endswith(domain) else None
         except Exception as e:
             app.logger.info(f"Error fetching {url}: {str(e)}")
         return None
 
-    async with aiohttp.ClientSession() as session:
-        tasks = []
+    with requests.Session() as session:
         for page in pages_to_fetch:
             url = urljoin(base_url, page)
-            tasks.append(fetch_page(session, url))
-        contents = await asyncio.gather(*tasks)
-        for content in contents:
+            content = fetch_page(session, url)
             if content and not html_content:
-                html_content = content
+                html_content = content[:MAX_HTML_SIZE]
 
     return html_content, existing_content
 
@@ -172,29 +142,44 @@ def generate_marketing_prompts(title, description, content, domain):
 
 def extract_main_info(html_content):
     """Extract Title, Description, and Main Content from the HTML."""
-    # Use readability to extract the main content
-    doc = Document(html_content)
-    title = doc.title() if doc.title() else 'No title available'
-    summary_html = doc.summary()
-    soup = BeautifulSoup(summary_html, 'lxml')
+    soup = BeautifulSoup(html_content, 'lxml')
     
-    # Extract text from the main content
-    main_content = ' '.join([p.get_text(strip=True) for p in soup.find_all('p')])
+    # Extract title
+    title_tag = soup.find('title')
+    title = title_tag.get_text(strip=True) if title_tag else 'No title available'
     
     # Extract meta description
-    soup_full = BeautifulSoup(html_content, 'lxml')
     meta_description = ''
-    meta = soup_full.find('meta', attrs={'name': 'description'})
+    meta = soup.find('meta', attrs={'name': 'description'})
     if meta and meta.get('content'):
         meta_description = meta.get('content').strip()
     
-    del soup, soup_full  # Explicitly delete to free memory
-    gc.collect()  # Force garbage collection
+    # Extract main content
+    main_content = ''
+    # Try to find the main content in common tags
+    main_candidates = soup.find_all(['main', 'article', 'section', 'div'], class_=re.compile(r'(content|main|article)', re.I))
+    if main_candidates:
+        # Combine text from all candidate tags
+        main_content = ' '.join([tag.get_text(strip=True) for tag in main_candidates])
+    else:
+        # Fallback to body content
+        body = soup.find('body')
+        if body:
+            main_content = body.get_text(strip=True)
+    
+    # Limit content length
+    main_content = main_content[:5000]
+    
+    # Explicitly delete the soup object
+    del soup
+    
+    # Call garbage collection
+    gc.collect()
     
     return {
         'title': title,
         'description': meta_description,
-        'content': main_content[:5000]  # Limit content length
+        'content': main_content
     }
 
 def analyze_content_gaps(domain, ai_response, existing_content):
@@ -294,60 +279,38 @@ def generate_prompt_answer(prompt, domain, info, existing_content):
 def generate_prompt_answers(prompts, domain, info, existing_content):
     return [generate_prompt_answer(prompt, domain, info, existing_content) for prompt in prompts]
 
-async def get_user_count():
-    start_date = date(2024, 1, 1)  # Choose a start date
+def get_user_count():
+    start_date = date(2024, 1, 1)
     days_passed = (date.today() - start_date).days
-    
-    # Simulate some async operation (e.g., database query)
-    await asyncio.sleep(0.1)
-    
+    time.sleep(0.1)  # Simulate some operation
     return BASE_USER_COUNT + (days_passed * DAILY_INCREASE)
 
-async def get_logo_dev_logo(domain):
-    """Constructs the Logo.dev API URL for a given domain."""
+def get_logo_dev_logo(domain):
     public_key = "pk_Iiu041TAThCqnelMWeRtDQ"
     encoded_domain = quote_plus(domain)
     logo_url = f"https://img.logo.dev/{encoded_domain}?token={public_key}&size=200&format=png"
-    
-    # Simulate some async operation (e.g., API call)
-    await asyncio.sleep(0.1)
-    
+    time.sleep(0.1)  # Simulate some operation
     return logo_url
 
-# Add a new function to get the Brandfetch CDN URL
-def get_brandfetch_cdn_logo(domain):
-    """Constructs the Brandfetch CDN URL for a given domain."""
-    return f"https://cdn.brandfetch.io/{domain}"
-
-async def log_memory_usage():
+def log_memory_usage():
     process = psutil.Process(os.getpid())
     mem_info = process.memory_info()
-    
-    # Simulate some async operation (e.g., logging to a database)
-    await asyncio.sleep(0.1)
-    
     app.logger.info(f"Memory usage: {mem_info.rss / 1024 / 1024:.2f} MB")
 
 @app.before_request
-async def before_request():
-    await log_memory_usage()
+def before_request():
+    log_memory_usage()
 
 @app.after_request
-async def after_request(response):
-    await log_memory_usage()
-    gc.collect()  # Force garbage collection
+def after_request(response):
+    log_memory_usage()
+    gc.collect()
     return response
 
-# Near the top of the file, update or add this constant
-MAX_SEARCHES_PER_SESSION = 3  # Keep it at 3 searches
-
-# Set a longer timeout for the /get_advice route
-WSGIRequestHandler.timeout = 120  # 120 seconds
-
 @app.route('/', methods=['GET'])
-async def index():
+def index():
     searches_left = session.get('searches_left', MAX_SEARCHES_PER_SESSION)
-    user_count = await get_user_count()
+    user_count = get_user_count()
     domain = request.args.get('domain')
     show_results = request.args.get('showResults')
     return render_template('index.html', searches_left=searches_left, user_count=user_count, domain=domain, show_results=show_results)
@@ -358,7 +321,7 @@ limiter = Limiter(
     default_limits=["200 per day", "50 per hour"]
 )
 
-async def calculate_score(table):
+def calculate_score(table):
     total_points = 0
     max_points = len(table) * 5  # 5 points max per prompt
     for row in table:
@@ -382,7 +345,7 @@ async def calculate_score(table):
 
 @app.route('/analyze', methods=['POST'])
 @limiter.limit("5 per minute")
-async def analyze():
+def analyze():
     try:
         start_time = time.time()
         domain = request.form['domain']
@@ -395,7 +358,7 @@ async def analyze():
             return jsonify({'error': 'Invalid domain name.', 'searches_left': searches_left}), 400
 
         logging.info(f"Fetching content for {domain}")
-        html_content, existing_content = await fetch_website_content(domain)  # Add 'await' here
+        html_content, existing_content = fetch_website_content(domain)
         if not existing_content:
             return jsonify({'error': f"We couldn't fetch any content for {domain}. The website may be unavailable or blocking our requests. Please try another domain.", 'searches_left': searches_left}), 404
 
@@ -410,7 +373,7 @@ async def analyze():
 
         logging.info(f"Generating prompt answers for {domain}")
         table = generate_prompt_answers(prompts, domain, info, existing_content)
-        score = await calculate_score(table)
+        score = calculate_score(table)
 
         session['searches_left'] = searches_left - 1
         searches_left = session['searches_left']
@@ -418,7 +381,7 @@ async def analyze():
         end_time = time.time()
         logging.info(f"Total processing time for {domain}: {end_time - start_time} seconds")
 
-        logo_url = await get_logo_dev_logo(domain)
+        logo_url = get_logo_dev_logo(domain)
 
         return jsonify({
             'domain': domain,
@@ -469,26 +432,23 @@ job_results = {}
 
 MAX_PROCESSING_TIME = 60  # Maximum processing time in seconds
 
-async def async_background_task(job_id, domain, prompt, existing_content):
+def background_task(job_id, domain, prompt, existing_content):
     start_time = time.time()
     try:
         while time.time() - start_time < MAX_PROCESSING_TIME:
-            content_suggestions = await get_advice(domain, prompt, existing_content)
+            content_suggestions = get_advice(domain, prompt, existing_content)
             if content_suggestions:
                 job_results[job_id] = content_suggestions
                 return
-            await asyncio.sleep(5)  # Wait for 5 seconds before trying again
+            time.sleep(5)  # Wait for 5 seconds before trying again
         
         # If we've reached here, it means we've timed out
         job_results[job_id] = {"error": "Processing timed out. Please try again."}
     except Exception as e:
         job_results[job_id] = {"error": str(e)}
 
-def background_task(job_id, domain, prompt, existing_content):
-    asyncio.run(async_background_task(job_id, domain, prompt, existing_content))
-
 @app.route('/get_advice', methods=['POST'])
-async def get_advice_route():
+def get_advice_route():
     data = request.json
     domain = data.get('domain')
     prompt = data.get('prompt')
@@ -497,7 +457,7 @@ async def get_advice_route():
         return jsonify({'error': 'Domain and prompt are required.'}), 400
 
     job_id = str(uuid.uuid4())
-    existing_content = await fetch_website_content(domain)
+    existing_content = fetch_website_content(domain)
     
     # Start the background task
     thread = threading.Thread(target=background_task, args=(job_id, domain, prompt, existing_content))
@@ -530,35 +490,26 @@ def unhandled_exception(e):
     app.logger.error('Unhandled Exception: %s', (e))
     return render_template('500.html'), 500
 
-async def get_advice(domain, prompt, existing_content):
+def get_advice(domain, prompt, existing_content):
     try:
-        # Estimate token count
-        encoding = tiktoken.encoding_for_model("gpt-4o-mini")
-        
-        # Function to count tokens
+        # Approximate token count by word count
         def count_tokens(text):
-            return len(encoding.encode(text))
-        
+            return len(text.split())
+
         # Truncate existing content if it's too large
-        max_content_tokens = 100000  # Adjust as needed
+        max_content_tokens = 1000  # Adjust as needed
         total_content = json.dumps(existing_content)
         content_tokens = count_tokens(total_content)
-        
+
         if content_tokens > max_content_tokens:
-            # Truncate content more safely
-            truncated_content = total_content[:max_content_tokens]
-            last_brace = truncated_content.rfind('}')
-            if last_brace != -1:
-                truncated_content = truncated_content[:last_brace+1]
-            else:
-                truncated_content = "{}"  # Fallback to empty object if no valid JSON
-            
+            # Truncate content safely
+            truncated_content = ' '.join(total_content.split()[:max_content_tokens])
             try:
                 existing_content = json.loads(truncated_content)
-            except json.JSONDecodeError:
-                app.logger.error(f"Failed to parse truncated content: {truncated_content}")
-                existing_content = {}  # Fallback to empty object
-        
+            except json.JSONDecodeError as e:
+                app.logger.error(f"Error parsing truncated content: {e}")
+                existing_content = {}  # Use an empty dict if parsing fails
+
         # Prepare the messages
         system_message = "You are an expert in SEO and content strategy."
         user_message = f"""
@@ -625,6 +576,9 @@ async def get_advice(domain, prompt, existing_content):
         content_suggestions['new_blog_post_suggestions'] = content_suggestions['new_blog_post_suggestions'][:3]
 
         return content_suggestions
+    except json.JSONDecodeError as e:
+        app.logger.error(f"JSON Decode Error: {e}")
+        return {"error": "Failed to parse content. Please try again."}
     except Exception as e:
         app.logger.error(f"Error generating advice: {str(e)}", exc_info=True)
         return {"error": "An error occurred while generating advice. Please try again later."}
@@ -695,6 +649,4 @@ def ai_search_performance_metrics_blog_post():
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))
-    # In development, set debug to True and allow all hosts
     app.run(host='0.0.0.0', port=port, debug=True)
-

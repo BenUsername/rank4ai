@@ -240,29 +240,28 @@ function pollForResults(jobId) {
     .then(response => response.json())
     .then(data => {
         if (data.status === "processing") {
-            // If still processing, poll again after a longer delay
-            setTimeout(() => pollForResults(jobId), 5000); // Increased to 5 seconds
+            setTimeout(() => pollForResults(jobId), 5000);
+        } else if (data.error) {
+            const adviceContent = document.getElementById('adviceContent');
+            adviceContent.innerHTML = `<p class="error">Error: ${data.error}</p>`;
+            hideSpinnerAndProgressLog();
         } else {
-            // Results are ready, update the UI
-            const spinner = document.getElementById('adviceSpinner');
-            spinner.style.display = 'none';  // Hide the spinner
-            const progressLog = document.getElementById('advice-progress-log');
-            if (progressLog) {
-                progressLog.style.display = 'none';  // Hide the progress log
-            }
             updateAdviceContent(data);
+            hideSpinnerAndProgressLog();
         }
     })
     .catch(error => {
-        const spinner = document.getElementById('adviceSpinner');
-        spinner.style.display = 'none';  // Hide the spinner
-        const progressLog = document.getElementById('advice-progress-log');
-        if (progressLog) {
-            progressLog.style.display = 'none';  // Hide the progress log
-        }
         const adviceContent = document.getElementById('adviceContent');
         adviceContent.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+        hideSpinnerAndProgressLog();
     });
+}
+
+function hideSpinnerAndProgressLog() {
+    const spinner = document.getElementById('adviceSpinner');
+    const progressLog = document.getElementById('advice-progress-log');
+    if (spinner) spinner.style.display = 'none';
+    if (progressLog) progressLog.style.display = 'none';
 }
 
 function updateAdviceContent(data) {
@@ -634,3 +633,4 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
