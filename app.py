@@ -25,6 +25,8 @@ import tiktoken
 import gc
 import psutil
 import asyncio
+import aiohttp
+
 
 # Load environment variables from .env file
 load_dotenv()
@@ -68,7 +70,7 @@ def is_valid_domain(domain):
 # Increase the timeout for requests
 requests_timeout = 30  # 30 seconds
 
-def fetch_website_content(domain):
+async def fetch_website_content(domain):
     base_url = f"https://{domain}"
     pages_to_fetch = [
         "",  # Homepage
@@ -84,24 +86,33 @@ def fetch_website_content(domain):
     
     existing_content = {}
     html_content = None
-    
-    for page in pages_to_fetch:
-        url = urljoin(base_url, page)
+
+    async def fetch_page(session, url):
         try:
-            response = requests.get(url, headers=headers, timeout=requests_timeout, verify=False)
-            if response.status_code == 200:
-                content = response.text
-                soup = BeautifulSoup(content, 'html.parser')
-                main_content = soup.find('main') or soup.find('article') or soup.find('div', class_='content')
-                if main_content:
-                    existing_content[url] = main_content.get_text(strip=True)
-                else:
-                    existing_content[url] = soup.get_text(strip=True)
-                if page == "":
-                    html_content = content
+            async with session.get(url, headers=headers, timeout=requests_timeout, ssl=False) as response:
+                if response.status == 200:
+                    content = await response.text()
+                    soup = BeautifulSoup(content, 'html.parser')
+                    main_content = soup.find('main') or soup.find('article') or soup.find('div', class_='content')
+                    if main_content:
+                        existing_content[url] = main_content.get_text(strip=True)
+                    else:
+                        existing_content[url] = soup.get_text(strip=True)
+                    return content if url.endswith(domain) else None
         except Exception as e:
             app.logger.info(f"Error fetching {url}: {str(e)}")
-    
+        return None
+
+    async with aiohttp.ClientSession() as session:
+        tasks = []
+        for page in pages_to_fetch:
+            url = urljoin(base_url, page)
+            tasks.append(fetch_page(session, url))
+        contents = await asyncio.gather(*tasks)
+        for content in contents:
+            if content and not html_content:
+                html_content = content
+
     return html_content, existing_content
 
 def generate_marketing_prompts(title, description, content, domain):
@@ -384,7 +395,7 @@ async def analyze():
             return jsonify({'error': 'Invalid domain name.', 'searches_left': searches_left}), 400
 
         logging.info(f"Fetching content for {domain}")
-        html_content, existing_content = fetch_website_content(domain)
+        html_content, existing_content = await fetch_website_content(domain)  # Add 'await' here
         if not existing_content:
             return jsonify({'error': f"We couldn't fetch any content for {domain}. The website may be unavailable or blocking our requests. Please try another domain.", 'searches_left': searches_left}), 404
 
@@ -458,23 +469,26 @@ job_results = {}
 
 MAX_PROCESSING_TIME = 60  # Maximum processing time in seconds
 
-def background_task(job_id, domain, prompt, existing_content):
+async def async_background_task(job_id, domain, prompt, existing_content):
     start_time = time.time()
     try:
         while time.time() - start_time < MAX_PROCESSING_TIME:
-            content_suggestions = get_advice(domain, prompt, existing_content)
+            content_suggestions = await get_advice(domain, prompt, existing_content)
             if content_suggestions:
                 job_results[job_id] = content_suggestions
                 return
-            time.sleep(5)  # Wait for 5 seconds before trying again
+            await asyncio.sleep(5)  # Wait for 5 seconds before trying again
         
         # If we've reached here, it means we've timed out
         job_results[job_id] = {"error": "Processing timed out. Please try again."}
     except Exception as e:
         job_results[job_id] = {"error": str(e)}
 
+def background_task(job_id, domain, prompt, existing_content):
+    asyncio.run(async_background_task(job_id, domain, prompt, existing_content))
+
 @app.route('/get_advice', methods=['POST'])
-def get_advice_route():
+async def get_advice_route():
     data = request.json
     domain = data.get('domain')
     prompt = data.get('prompt')
@@ -483,7 +497,7 @@ def get_advice_route():
         return jsonify({'error': 'Domain and prompt are required.'}), 400
 
     job_id = str(uuid.uuid4())
-    existing_content = fetch_website_content(domain)
+    existing_content = await fetch_website_content(domain)
     
     # Start the background task
     thread = threading.Thread(target=background_task, args=(job_id, domain, prompt, existing_content))
@@ -516,7 +530,7 @@ def unhandled_exception(e):
     app.logger.error('Unhandled Exception: %s', (e))
     return render_template('500.html'), 500
 
-def get_advice(domain, prompt, existing_content):
+async def get_advice(domain, prompt, existing_content):
     try:
         # Estimate token count
         encoding = tiktoken.encoding_for_model("gpt-4o-mini")
@@ -683,3 +697,4 @@ if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))
     # In development, set debug to True and allow all hosts
     app.run(host='0.0.0.0', port=port, debug=True)
+

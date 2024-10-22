@@ -108,7 +108,10 @@ function displayResults(data) {
                     <tr>
                         <td>${row.prompt}</td>
                         <td class="ai-response">
-                            <div class="truncate">${formatMarkdown(row.answer)}</div>
+                            <div class="response-content">
+                                <p>${formatMarkdown(row.answer)}</p>
+                            </div>
+                            <button class="read-more-btn">Read More</button>
                         </td>
                         <td>
                             <ol class="competitors-list">
@@ -153,6 +156,21 @@ function displayResults(data) {
     if (searchesLeftElement) {
         searchesLeftElement.textContent = data.searches_left;
     }
+
+    // Add event listeners for "Read More" buttons
+    const readMoreButtons = document.querySelectorAll('.read-more-btn');
+    readMoreButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const responseContent = this.previousElementSibling;
+            if (responseContent.style.maxHeight) {
+                responseContent.style.maxHeight = null;
+                this.textContent = 'Read More';
+            } else {
+                responseContent.style.maxHeight = responseContent.scrollHeight + "px";
+                this.textContent = 'Read Less';
+            }
+        });
+    });
 }
 
 function formatMarkdown(text) {
@@ -603,11 +621,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const showMoreButton = document.getElementById('showMoreBlogs');
     const hiddenItems = document.querySelectorAll('.hidden-blog-item');
 
-    showMoreButton.addEventListener('click', function() {
-        hiddenItems.forEach(item => {
-            item.style.display = item.style.display === 'none' ? 'block' : 'none';
+    if (showMoreButton) {
+        showMoreButton.addEventListener('click', function() {
+            hiddenItems.forEach(item => {
+                if (item.style.display === 'none' || item.style.display === '') {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            showMoreButton.textContent = showMoreButton.textContent === 'Show More' ? 'Show Less' : 'Show More';
         });
-        showMoreButton.textContent = showMoreButton.textContent === 'Show More' ? 'Show Less' : 'Show More';
-    });
+    }
 });
-
