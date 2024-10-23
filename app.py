@@ -21,6 +21,13 @@ import psutil
 import difflib
 from requests.exceptions import RequestException
 import urllib3
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 # Load environment variables from .env file
 load_dotenv()
@@ -67,9 +74,11 @@ def fetch_main_page_content(domain):
     MAX_HTML_SIZE = 1 * 1024 * 1024  # 1MB
 
     try:
-        # Try HTTPS first
+        # Try HTTPS first with regular requests
         response = requests.get(base_url, headers=headers, timeout=requests_timeout, verify=False)
         response.raise_for_status()
+        content = response.text[:MAX_HTML_SIZE]
+        return process_content(content)
     except RequestException as e:
         app.logger.warning(f"HTTPS request failed for {domain}: {str(e)}")
         try:
@@ -77,16 +86,40 @@ def fetch_main_page_content(domain):
             base_url = f"http://{domain}"
             response = requests.get(base_url, headers=headers, timeout=requests_timeout)
             response.raise_for_status()
+            content = response.text[:MAX_HTML_SIZE]
+            return process_content(content)
         except RequestException as e:
-            app.logger.error(f"HTTP request also failed for {domain}: {str(e)}")
+            app.logger.warning(f"HTTP request also failed for {domain}: {str(e)}")
+            
+            # Fallback to headless browser
+            app.logger.info(f"Attempting to fetch {domain} using headless browser")
+            return fetch_with_headless_browser(base_url)
+
+def fetch_with_headless_browser(url):
+    options = Options()
+    options.add_argument("--headless")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    
+    service = Service(ChromeDriverManager().install())
+    
+    with webdriver.Chrome(service=service, options=options) as driver:
+        try:
+            driver.get(url)
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+            content = driver.page_source
+            return process_content(content)
+        except Exception as e:
+            app.logger.error(f"Error fetching {url} with headless browser: {str(e)}")
             return None, None
 
-    content = response.text[:MAX_HTML_SIZE]
-    soup = BeautifulSoup(content, 'html.parser')
+def process_content(content):
+    MAX_HTML_SIZE = 1 * 1024 * 1024  # 1MB
+    soup = BeautifulSoup(content[:MAX_HTML_SIZE], 'html.parser')
     main_content = soup.find('main') or soup.find('article') or soup.find('div', class_='content')
     text_content = (main_content.get_text(strip=True) if main_content else soup.get_text(strip=True))[:5000]
     
-    return content, text_content
+    return content[:MAX_HTML_SIZE], text_content
 
 def fetch_additional_content(domain):
     base_url = f"https://{domain}"
