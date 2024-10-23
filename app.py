@@ -124,7 +124,7 @@ def process_content(content):
 
 def fetch_additional_content(domain):
     base_url = f"https://{domain}"
-    pages_to_fetch = ["/blog"] # Add more pages managing performance, "/about", "/products", "/services"
+    pages_to_fetch = ["/blog", "/about", "/products", "/services"]
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     }
@@ -133,15 +133,21 @@ def fetch_additional_content(domain):
 
     for page in pages_to_fetch:
         url = urljoin(base_url, page)
-        content = fetch_page(url, headers, requests_timeout)
-        if content:
-            content = content[:MAX_HTML_SIZE]
+        try:
+            app.logger.info(f"Fetching content from {url}")
+            response = requests.get(url, headers=headers, timeout=requests_timeout, verify=False)
+            response.raise_for_status()
+            content = response.text[:MAX_HTML_SIZE]
             soup = BeautifulSoup(content, 'html.parser')
             main_content = soup.find('main') or soup.find('article') or soup.find('div', class_='content')
             text_content = (main_content.get_text(strip=True) if main_content else soup.get_text(strip=True))[:2000]
             existing_content[url] = text_content
-            del soup
-            gc.collect()
+            app.logger.info(f"Successfully fetched content from {url}")
+        except Exception as e:
+            app.logger.warning(f"Error fetching {url}: {str(e)}")
+
+    if not existing_content:
+        app.logger.warning(f"No additional content found for {domain}")
 
     return existing_content
 
@@ -562,7 +568,12 @@ def get_advice(domain, prompt):
         existing_content = fetch_additional_content(domain)
         if not existing_content:
             logging.warning(f"No additional content fetched for {domain}")
-            return {"error": "No additional content available for analysis."}
+            # Instead of returning an error, let's proceed with the main content
+            existing_content = {"main": fetch_main_page_content(domain)[1]}  # Use the text content from the main page
+
+        if not existing_content:
+            logging.error(f"Failed to fetch any content for {domain}")
+            return {"error": "Failed to fetch content for analysis. Please try again later."}
 
         total_content = json.dumps(existing_content)
         max_content_tokens = 1000
@@ -609,7 +620,7 @@ def get_advice(domain, prompt):
 
     except Exception as e:
         app.logger.error(f"Error generating advice: {str(e)}", exc_info=True)
-        return {"error": "An error occurred while generating advice. Please try again later."}
+        return {"error": f"An error occurred while generating advice: {str(e)}. Please try again later."}
 
 # Add this new route
 @app.route('/autocomplete/<query>')
