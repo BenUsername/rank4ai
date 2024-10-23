@@ -53,25 +53,27 @@
                         <!-- Add more sectors here as needed -->
                     </div>
                 </li>
-                <li><a href="#pricing">Pricing</a></li>
             </ul>
         </nav>
         <div class="hero">
             <h1><i class="fas fa-search icon-large" aria-hidden="true"></i>LLM Search Performance Tracker</h1>
             <p>Discover your brand's visibility in AI-powered search results</p>
             <p class="user-count"><i class="fas fa-users icon-small" aria-hidden="true"></i><span id="user-count">{{ user_count }}</span> users have improved their LLM visibility</p>
-            <form id="analyzeForm" class="hero-form">
-                <label for="domainInput" class="sr-only">Enter your website domain</label>
-                <input type="text" name="domain" id="domainInput" placeholder="Enter your website domain (e.g., example.com)" required aria-required="true" autocomplete="off">
-                <ul id="autocompleteResults" class="autocomplete-results"></ul>
-                {% if searches_left > 0 %}
-                    <button type="submit" class="cta-button" id="analyzeButton" aria-label="Analyze website">
-                        <i class="fas fa-rocket icon-small" aria-hidden="true"></i>Analyze Now
-                    </button>
-                {% else %}
-                    <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button" id="waitingListButton">Join Waiting List</a>
-                {% endif %}
-            </form>
+            <div class="search-container">
+                <img src="{{ url_for('static', filename='images/semrush-for-llm.png') }}" alt="Semrush for LLM" class="semrush-llm-image">
+                <form id="analyzeForm" class="hero-form">
+                    <label for="domainInput" class="sr-only">Enter your website domain</label>
+                    <input type="text" name="domain" id="domainInput" placeholder="Enter your website domain (e.g., example.com)" required aria-required="true" autocomplete="off">
+                    <ul id="autocompleteResults" class="autocomplete-results"></ul>
+                    {% if searches_left > 0 %}
+                        <button type="submit" class="cta-button" id="analyzeButton" aria-label="Analyze website">
+                            <i class="fas fa-rocket icon-small" aria-hidden="true"></i>Analyze Now
+                        </button>
+                    {% else %}
+                        <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button" id="waitingListButton">Join Waiting List</a>
+                    {% endif %}
+                </form>
+            </div>
             <p class="cta-text"><span id="searches-left">{{ searches_left }}</span> free searches left</p>
             <div class="spinner" id="spinner" aria-hidden="true"></div>
             <div id="progress-log" aria-live="polite"></div>

@@ -1586,3 +1586,27 @@ img {
 .dropbtn:hover, .dropbtn:focus {
     background-color: #2980B9;
 }
+
+.search-container {
+    position: relative;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.semrush-llm-image {
+    position: absolute;
+    top: -40px;
+    left: -100px;
+    width: 120px;
+    height: auto;
+    transform: rotate(-10deg);
+    z-index: 1;
+}
+
+@media (max-width: 768px) {
+    .semrush-llm-image {
+        width: 80px;
+        top: -30px;
+        left: -60px;
+    }
+}
