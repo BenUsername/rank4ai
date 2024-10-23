@@ -113,8 +113,8 @@ def generate_marketing_prompts(title, description, content, domain):
         return []
     
     prompt = (
-        f"Based on the following information for {domain}, imagine five marketing prompts "
-        "for which the chief marketing of the company would love to rank high in ChatGPT answers. The prompts should be as general as possible simulating a user searching for the service or product offered by {domain} but not necessarily mentioning the domain name. Do not include any introductory text such as Here are five marketing prompts that the chief marketing officer of domain would likely want to rank high for in ChatGPT answers:, just give the prompts straight\n\n"
+        f"Based on the following information for {domain}, imagine five prompts "
+        " simulating what a user might search on LLM in which answers this company would like to feature. Make the prompt go from general to more and more specific, simulating an interaction between the user and the LLM, user searching for the service or product offered by {domain} interacting with the LLM to refine his queries and increasing the chance for the {domain} to be metionned but the user not mentioning the domain name. As part of this specify in the second prompt the country or region the user is most likely to be based in based on the suffix of the {domain} (eg France for .fr, brasil for .com.br) or based on the headquarter or main office location of the company if you know it. Do not include any introductory text such as Here are five marketing prompts that the chief marketing officer of domain would likely want to rank high for in ChatGPT answers:, just give the prompts straight\n\n"
         f"Title: {title}\n"
         f"Description: {description}\n"
         f"Content: {content}"
