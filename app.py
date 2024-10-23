@@ -19,6 +19,8 @@ import requests.exceptions
 import gc
 import psutil
 import difflib
+from requests.exceptions import RequestException
+import urllib3
 
 # Load environment variables from .env file
 load_dotenv()
@@ -42,6 +44,9 @@ LOGO_DEV_TOKEN = os.getenv('LOGO_DEV_TOKEN')
 MAX_SEARCHES_PER_SESSION = 3
 requests_timeout = 30
 
+# Disable SSL warnings (use with caution)
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 def is_valid_domain(domain):
     return validators.domain(domain)
 
@@ -61,18 +66,27 @@ def fetch_main_page_content(domain):
     }
     MAX_HTML_SIZE = 1 * 1024 * 1024  # 1MB
 
-    content = fetch_page(base_url, headers, requests_timeout)
-    if content:
-        content = content[:MAX_HTML_SIZE]
-        soup = BeautifulSoup(content, 'html.parser')
-        main_content = soup.find('main') or soup.find('article') or soup.find('div', class_='content')
-        text_content = (main_content.get_text(strip=True) if main_content else soup.get_text(strip=True))[:5000]
-        del soup
-        gc.collect()
-        return content[:MAX_HTML_SIZE], text_content
-    else:
-        app.logger.info(f"Failed to fetch main page for {domain}")
-    return None, None
+    try:
+        # Try HTTPS first
+        response = requests.get(base_url, headers=headers, timeout=requests_timeout, verify=False)
+        response.raise_for_status()
+    except RequestException as e:
+        app.logger.warning(f"HTTPS request failed for {domain}: {str(e)}")
+        try:
+            # If HTTPS fails, try HTTP
+            base_url = f"http://{domain}"
+            response = requests.get(base_url, headers=headers, timeout=requests_timeout)
+            response.raise_for_status()
+        except RequestException as e:
+            app.logger.error(f"HTTP request also failed for {domain}: {str(e)}")
+            return None, None
+
+    content = response.text[:MAX_HTML_SIZE]
+    soup = BeautifulSoup(content, 'html.parser')
+    main_content = soup.find('main') or soup.find('article') or soup.find('div', class_='content')
+    text_content = (main_content.get_text(strip=True) if main_content else soup.get_text(strip=True))[:5000]
+    
+    return content, text_content
 
 def fetch_additional_content(domain):
     base_url = f"https://{domain}"
@@ -98,7 +112,7 @@ def fetch_additional_content(domain):
     return existing_content
 
 def generate_marketing_prompts(title, description, content, domain):
-    MIN_WORD_COUNT = 30
+    MIN_WORD_COUNT = 20
     title_word_count = len(title.split())
     description_word_count = len(description.split())
     content_word_count = len(content.split())
@@ -327,7 +341,7 @@ def index():
     show_results = request.args.get('showResults')
     return render_template('index.html', searches_left=searches_left, user_count=user_count, domain=domain, show_results=show_results)
 
-def calculate_score(table):
+def calculate_score(table, content):
     total_points = 0
     max_points = len(table) * 5  # 5 points max per prompt
     for row in table:
@@ -335,7 +349,6 @@ def calculate_score(table):
         if visible == 'no':
             total_points += 1  # Minimum 1 point even if not visible
         elif visible.startswith('you'):
-            # Handle cases like "You're 1st!", "You're 2nd!", etc.
             try:
                 rank_text = visible.split()[1]  # Get the second word (e.g., "1st", "2nd")
                 rank = int(''.join(filter(str.isdigit, rank_text)))  # Extract digits
@@ -346,8 +359,32 @@ def calculate_score(table):
             total_points += 5  # Assume top rank if format is unexpected
     
     # Scale score from 62 to 100
-    score = 62 + (total_points / max_points) * 38
-    return round(score)
+    initial_score = 62 + (total_points / max_points) * 38
+    initial_score = round(initial_score)
+
+    if initial_score <= 70:
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are an AI assistant that evaluates website ranking in LLM search results."},
+                    {"role": "user", "content": f"From 1 to 100, 1 being the worst and 100 being perfect, how well does this site rank on LLM search given its content: {content}. Please provide only a number."}
+                ],
+                max_tokens=10,
+                temperature=0.7,
+            )
+            
+            ai_score = int(response.choices[0].message.content.strip())
+            
+            # Use a weighted average of the initial score and AI score
+            final_score = round(0 * initial_score + 1 * ai_score)
+        except Exception as e:
+            app.logger.error(f"Error getting AI score: {str(e)}")
+            final_score = initial_score
+    else:
+        final_score = initial_score
+
+    return final_score
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
@@ -356,35 +393,37 @@ def analyze():
         domain = request.form['domain']
         searches_left = session.get('searches_left', MAX_SEARCHES_PER_SESSION)
 
+        app.logger.info(f"Analyzing domain: {domain}")
+
         if searches_left <= 0:
             return jsonify({'error': 'No searches left. Please try again later.', 'searches_left': 0}), 403
 
         if not is_valid_domain(domain):
             return jsonify({'error': 'Invalid domain name.', 'searches_left': searches_left}), 400
 
-        logging.info(f"Fetching main page content for {domain}")
+        app.logger.info(f"Fetching main page content for {domain}")
         html_content, main_text_content = fetch_main_page_content(domain)
-        if not html_content or not main_text_content:
-            return jsonify({'error': f"Couldn't fetch content for {domain}. Please try another domain.", 'searches_left': searches_left}), 404
+        if html_content is None or main_text_content is None:
+            return jsonify({'error': f"We couldn't fetch the content for {domain}. The website may be unavailable or blocking our requests. Please try another domain.", 'searches_left': searches_left}), 404
 
-        logging.info(f"Extracting main info for {domain}")
+        app.logger.info(f"Extracting main info for {domain}")
         info = extract_main_info(html_content)
 
-        logging.info(f"Generating marketing prompts for {domain}")
+        app.logger.info(f"Generating marketing prompts for {domain}")
         prompts = generate_marketing_prompts(info['title'], info['description'], info['content'], domain)
 
         if not prompts:
             return jsonify({'error': "Couldn't generate valid prompts for this website. Please try another domain.", 'searches_left': searches_left}), 500
 
-        logging.info(f"Generating prompt answers for {domain}")
+        app.logger.info(f"Generating prompt answers for {domain}")
         table = generate_prompt_answers(prompts, domain, info, existing_content={})
-        score = calculate_score(table)
+        score = calculate_score(table, info['content'])  # Pass info['content'] as the second argument
 
         session['searches_left'] = searches_left - 1
         searches_left = session['searches_left']
 
         end_time = time.time()
-        logging.info(f"Total processing time for {domain}: {end_time - start_time} seconds")
+        app.logger.info(f"Total processing time for {domain}: {end_time - start_time} seconds")
 
         logo_url = get_logo_dev_logo(domain)
 
@@ -399,7 +438,7 @@ def analyze():
         })
 
     except Exception as e:
-        logger.error(f"Error processing {domain}: {str(e)}", exc_info=True)
+        app.logger.error(f"Error processing {domain}: {str(e)}", exc_info=True)
         return jsonify({'error': f"An unexpected error occurred: {str(e)}. Please try again later."}), 500
 
 @app.route('/robots.txt')

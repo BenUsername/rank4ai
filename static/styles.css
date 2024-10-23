@@ -1595,9 +1595,9 @@ img {
 
 .semrush-llm-image {
     position: absolute;
-    top: -40px;
-    left: -100px;
-    width: 120px;
+    top: -45px;  /* Moved up slightly */
+    left: -90px; /* Moved closer to the search bar */
+    width: 140px; /* Increased size */
     height: auto;
     transform: rotate(-10deg);
     z-index: 1;
@@ -1605,8 +1605,39 @@ img {
 
 @media (max-width: 768px) {
     .semrush-llm-image {
-        width: 80px;
-        top: -30px;
-        left: -60px;
+        width: 100px; /* Increased size for mobile */
+        top: -35px;
+        left: -70px;
+    }
+}
+
+.scroll-prompt {
+    text-align: center;
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #f0f0f0;
+    border-radius: 5px;
+}
+
+.scroll-prompt p {
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.scroll-prompt i {
+    font-size: 24px;
+    color: #3498db;
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-10px);
+    }
+    60% {
+        transform: translateY(-5px);
     }
 }
