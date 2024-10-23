@@ -28,6 +28,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.firefox.options import Options
 
 # Load environment variables from .env file
 load_dotenv()
@@ -101,6 +102,7 @@ def fetch_with_headless_browser(url):
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     
+    # Use ChromeDriverManager to get the correct ChromeDriver
     service = Service(ChromeDriverManager().install())
     
     with webdriver.Chrome(service=service, options=options) as driver:
@@ -401,7 +403,7 @@ def calculate_score(table, content):
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": "You are an AI assistant that evaluates website ranking in LLM search results."},
-                    {"role": "user", "content": f"From 1 to 100, 1 being the worst and 100 being perfect, how well does this site rank on LLM search given its content: {content}. Please provide only a number."}
+                    {"role": "user", "content": f"From 1 to 100, 1 being the worst and 100 being perfect, how well does this site rank on LLM search given its content: {content}. Aim that the score really go from 1 to 100 for typical sites with a normal distribution, not a concentration around a specific score. Please provide only a number."}
                 ],
                 max_tokens=10,
                 temperature=0.7,
