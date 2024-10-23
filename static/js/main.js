@@ -96,7 +96,7 @@ function displayResults(data) {
     // Add table of results
     mainContent.innerHTML += `
         <h3>AI Search Visibility Results</h3>
-        <p class="result-note"><i class="fas fa-info-circle"></i> One big difference between searching with LLM and Google is that LLM queries are usually longer—about 10 words, while Google queries are often just 2-3 words. Besides users often interact with the LLM a few times refining their queries. This means LLM searches have clearer goals and tend to lead to better conversions, even if they bring in less traffic. We have simulated these behaviours in our analysis. In the table below, the further down the more likely to convert and the smaller the volume. Click our Action recommendation below for tips at each level.</p>
+        <p class="result-note"><i class="fas fa-info-circle"></i> A key difference between searching with LLM and Google is that LLM queries are usually longer—about 10 words, while Google queries are often just 2-3 words. Besides users often interact with the LLM a few times refining their queries. This means LLM searches have clearer goals and tend to lead to better conversions, even if they bring in less traffic. We have simulated these behaviours in our analysis. In the table below, the further down the more likely to convert and the smaller the volume. Click our Action recommendation below for tips at each level.</p>
         <table class="results-table">
             <thead>
                 <tr>
