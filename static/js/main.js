@@ -133,7 +133,7 @@ function displayResults(data) {
                         </td>
                         <td>
                             ${row.visible === 'No' ? `
-                                <button onclick="getContentUpdates('${data.domain}', '${row.prompt.replace(/'/g, "\\'")}')" class="content-updates-button">
+                                <button class="content-updates-button" data-domain="${data.domain}" data-prompt="${row.prompt}">
                                     <i class="fas fa-pencil-alt"></i>
                                 </button>
                             ` : ''}
@@ -173,6 +173,16 @@ function displayResults(data) {
                 responseContent.style.maxHeight = responseContent.scrollHeight + "px";
                 this.textContent = 'Read Less';
             }
+        });
+    });
+
+    // Add event listeners for content update buttons
+    const contentUpdateButtons = document.querySelectorAll('.content-updates-button');
+    contentUpdateButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const domain = this.getAttribute('data-domain');
+            const prompt = this.getAttribute('data-prompt');
+            getContentUpdates(domain, prompt);
         });
     });
 }
@@ -226,15 +236,14 @@ function getContentUpdates(domain, prompt) {
         if (data.job_id) {
             pollForResults(data.job_id);
         } else {
-            // Handle error
-            clearInterval(progressInterval);  // Clear the interval
-            spinner.style.display = 'none';  // Hide the spinner
+            clearInterval(progressInterval);
+            spinner.style.display = 'none';
             adviceContent.innerHTML = `<p class="error">${data.error || 'An error occurred'}</p>`;
         }
     })
     .catch(error => {
-        clearInterval(progressInterval);  // Clear the interval
-        spinner.style.display = 'none';  // Hide the spinner
+        clearInterval(progressInterval);
+        spinner.style.display = 'none';
         adviceContent.innerHTML = `<p class="error">Error: ${error.message}</p>`;
     });
 }
