@@ -62,7 +62,8 @@ def fetch_page(url, headers, timeout):
     return None
 
 async def fetch_with_crawl4ai(url):
-    async with AsyncWebCrawler(verbose=True) as crawler:
+    executable_path = get_playwright_executable_path()
+    async with AsyncWebCrawler(verbose=True, playwright_kwargs={'executable_path': executable_path}) as crawler:
         result = await crawler.arun(url=url)
         
         if result.success:
@@ -735,6 +736,9 @@ def analyze_city():
     except Exception as e:
         app.logger.error(f"Error processing request: {str(e)}")
         return jsonify({"error": "An error occurred while processing your request. Please try again later."}), 500
+
+def get_playwright_executable_path():
+    return os.getenv("CHROMIUM_EXECUTABLE_PATH")
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))
