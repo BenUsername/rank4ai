@@ -23,6 +23,7 @@ from requests.exceptions import RequestException
 import urllib3
 import asyncio
 from crawl4ai import AsyncWebCrawler
+import subprocess
 
 # Load environment variables from .env file  
 load_dotenv()
@@ -42,8 +43,6 @@ MAX_API_CALLS_PER_SESSION = 100
 BASE_USER_COUNT = 1000
 DAILY_INCREASE = 5
 CONTACT_EMAIL = os.getenv('mailto', 'support@promptboostai.com')
-
-
 MAX_SEARCHES_PER_SESSION = 3
 requests_timeout = 30
 
@@ -64,7 +63,12 @@ def fetch_page(url, headers, timeout):
 
 async def fetch_with_crawl4ai(url):
     browser_path = get_playwright_executable_path()
-    async with AsyncWebCrawler(verbose=True, playwright_kwargs={'executable_path': browser_path}) as crawler:
+    async with AsyncWebCrawler(verbose=True, playwright_kwargs={
+        'chromium_sandbox': False,
+        'playwright_kwargs': {
+            'executable_path': browser_path
+        }
+    }) as crawler:
         result = await crawler.arun(url=url)
         
         if result.success:
@@ -745,7 +749,18 @@ def get_playwright_executable_path():
 app.logger.info(f"Playwright executable path: {get_playwright_executable_path()}")
 app.logger.info(f"BUILDPACK_BROWSERS_INSTALL_PATH: {os.getenv('BUILDPACK_BROWSERS_INSTALL_PATH', 'browsers')}")
 
+def install_playwright_browsers():
+    browsers_path = os.getenv("BUILDPACK_BROWSERS_INSTALL_PATH", "browsers")
+    full_path = os.path.join("/app", browsers_path)
+    try:
+        subprocess.run(["playwright", "install", "chromium", "--path", full_path], check=True)
+        app.logger.info(f"Playwright browsers installed successfully in {full_path}")
+    except subprocess.CalledProcessError as e:
+        app.logger.error(f"Failed to install Playwright browsers: {e}")
+    except Exception as e:
+        app.logger.error(f"Unexpected error during Playwright browser installation: {e}")
+
 if __name__ == '__main__':
+    install_playwright_browsers()
     port = int(os.environ.get("PORT", 5001))
     app.run(host='0.0.0.0', port=port, debug=True)
-
