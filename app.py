@@ -63,23 +63,28 @@ def fetch_page(url, headers, timeout):
 
 async def fetch_with_crawl4ai(url):
     browser_path = get_playwright_executable_path()
+    app.logger.info(f"Attempting to use Chromium at: {browser_path}")
     async with AsyncWebCrawler(verbose=True, playwright_kwargs={
         'chromium_sandbox': False,
         'playwright_kwargs': {
             'executable_path': browser_path
         }
     }) as crawler:
-        result = await crawler.arun(url=url)
-        
-        if result.success:
-            if hasattr(result, 'markdown'):
-                content = result.markdown[:5000]  # Limit to 5000 characters
-                return result.html, content
+        try:
+            result = await crawler.arun(url=url)
+            
+            if result.success:
+                if hasattr(result, 'markdown'):
+                    content = result.markdown[:5000]  # Limit to 5000 characters
+                    return result.html, content
+                else:
+                    app.logger.warning(f"No markdown content found for {url}")
+                    return None, None
             else:
-                app.logger.warning(f"No markdown content found for {url}")
+                app.logger.warning(f"Failed to fetch content from {url} using crawl4ai")
                 return None, None
-        else:
-            app.logger.warning(f"Failed to fetch content from {url} using crawl4ai")
+        except Exception as e:
+            app.logger.error(f"Error in fetch_with_crawl4ai: {str(e)}")
             return None, None
 
 def fetch_main_page_content(domain):
@@ -743,18 +748,22 @@ def analyze_city():
         return jsonify({"error": "An error occurred while processing your request. Please try again later."}), 500
 
 def get_playwright_executable_path():
-    browsers_path = os.getenv("BUILDPACK_BROWSERS_INSTALL_PATH", "browsers")
-    return os.path.join("/app", browsers_path, "chromium")
+    chromium_path = os.getenv("CHROMIUM_EXECUTABLE_PATH")
+    if chromium_path:
+        app.logger.info(f"Using CHROMIUM_EXECUTABLE_PATH: {chromium_path}")
+        return chromium_path
+    
+    default_path = "/app/.heroku/python/lib/python3.12/site-packages/playwright/driver/package/.local-browsers/chromium-1134/chrome-linux/chrome"
+    app.logger.info(f"Using default Chromium path: {default_path}")
+    return default_path
 
 app.logger.info(f"Playwright executable path: {get_playwright_executable_path()}")
 app.logger.info(f"BUILDPACK_BROWSERS_INSTALL_PATH: {os.getenv('BUILDPACK_BROWSERS_INSTALL_PATH', 'browsers')}")
 
 def install_playwright_browsers():
-    browsers_path = os.getenv("BUILDPACK_BROWSERS_INSTALL_PATH", "browsers")
-    full_path = os.path.join("/app", browsers_path)
     try:
-        subprocess.run(["playwright", "install", "chromium", "--path", full_path], check=True)
-        app.logger.info(f"Playwright browsers installed successfully in {full_path}")
+        subprocess.run(["playwright", "install", "chromium"], check=True)
+        app.logger.info("Playwright browsers installed successfully")
     except subprocess.CalledProcessError as e:
         app.logger.error(f"Failed to install Playwright browsers: {e}")
     except Exception as e:
