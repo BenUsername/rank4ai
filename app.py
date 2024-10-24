@@ -738,7 +738,7 @@ def analyze_city():
         return jsonify({"error": "An error occurred while processing your request. Please try again later."}), 500
 
 def get_playwright_executable_path():
-    return os.getenv("CHROMIUM_EXECUTABLE_PATH")
+    return os.getenv("CHROMIUM_EXECUTABLE_PATH") or os.getenv("PLAYWRIGHT_CHROMIUM_PATH")
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))
