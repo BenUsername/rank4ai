@@ -49,6 +49,8 @@ requests_timeout = 30
 # Disable SSL warnings (use with caution)
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+os.environ.setdefault('PLAYWRIGHT_BUILDPACK_BROWSERS', 'chromium')
+
 def is_valid_domain(domain):
     return validators.domain(domain)
 
