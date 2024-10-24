@@ -42,14 +42,13 @@ MAX_API_CALLS_PER_SESSION = 100
 BASE_USER_COUNT = 1000
 DAILY_INCREASE = 5
 CONTACT_EMAIL = os.getenv('mailto', 'support@promptboostai.com')
-LOGO_DEV_TOKEN = os.getenv('LOGO_DEV_TOKEN')
+
+
 MAX_SEARCHES_PER_SESSION = 3
 requests_timeout = 30
 
 # Disable SSL warnings (use with caution)
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-os.environ.setdefault('PLAYWRIGHT_BUILDPACK_BROWSERS', 'chromium')
 
 def is_valid_domain(domain):
     return validators.domain(domain)
@@ -64,8 +63,8 @@ def fetch_page(url, headers, timeout):
     return None
 
 async def fetch_with_crawl4ai(url):
-    executable_path = get_playwright_executable_path()
-    async with AsyncWebCrawler(verbose=True, playwright_kwargs={'executable_path': executable_path}) as crawler:
+    browser_path = get_playwright_executable_path()
+    async with AsyncWebCrawler(verbose=True, playwright_kwargs={'executable_path': browser_path}) as crawler:
         result = await crawler.arun(url=url)
         
         if result.success:
@@ -740,8 +739,9 @@ def analyze_city():
         return jsonify({"error": "An error occurred while processing your request. Please try again later."}), 500
 
 def get_playwright_executable_path():
-    return os.getenv("CHROMIUM_EXECUTABLE_PATH") or os.getenv("PLAYWRIGHT_CHROMIUM_PATH")
+    return os.getenv("PLAYWRIGHT_BROWSERS_PATH", "0")
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))
     app.run(host='0.0.0.0', port=port, debug=True)
+
