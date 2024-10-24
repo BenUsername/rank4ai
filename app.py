@@ -24,7 +24,7 @@ import urllib3
 import asyncio
 from crawl4ai import AsyncWebCrawler
 
-# Load environment variables from .env file 
+# Load environment variables from .env file  
 load_dotenv()
 
 app = Flask(__name__, static_folder='static')
