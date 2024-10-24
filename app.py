@@ -24,6 +24,7 @@ import urllib3
 import asyncio
 from crawl4ai import AsyncWebCrawler
 from playwright.sync_api import sync_playwright
+import subprocess
 
 # Load environment variables from .env file  
 load_dotenv()
@@ -722,23 +723,14 @@ def analyze_city():
         return jsonify({"error": "An error occurred while processing your request. Please try again later."}), 500
 
 async def fetch_with_crawl4ai(url):
-    chromium_path = os.getenv("CHROMIUM_EXECUTABLE_PATH")
-    app.logger.info(f"CHROMIUM_EXECUTABLE_PATH: {chromium_path}")
-    
-    if not chromium_path:
-        app.logger.error("CHROMIUM_EXECUTABLE_PATH is not set")
-        return None, None
-    
-    if not os.path.exists(chromium_path):
-        app.logger.error(f"Chromium executable not found at {chromium_path}")
-        return None, None
-    
-    app.logger.info(f"Attempting to use Chromium at: {chromium_path}")
+    browser_path = get_playwright_executable_path()
+    app.logger.info(f"Attempting to use Chromium at: {browser_path}")
+    app.logger.info(f"File exists: {os.path.exists(browser_path)}")
     
     async with AsyncWebCrawler(verbose=True, playwright_kwargs={
         'chromium_sandbox': False,
         'playwright_kwargs': {
-            'executable_path': chromium_path
+            'executable_path': browser_path
         }
     }) as crawler:
         try:
@@ -768,8 +760,18 @@ def log_environment():
         for file in files:
             app.logger.info(os.path.join(root, file))
 
+def install_playwright_browsers():
+    try:
+        subprocess.run(["playwright", "install", "chromium"], check=True)
+        app.logger.info("Playwright browsers installed successfully")
+    except subprocess.CalledProcessError as e:
+        app.logger.error(f"Failed to install Playwright browsers: {e}")
+    except Exception as e:
+        app.logger.error(f"Unexpected error during Playwright browser installation: {e}")
+
 # Call this function at the start of your app
 if __name__ == '__main__':
+    install_playwright_browsers()
     log_environment()
     port = int(os.environ.get("PORT", 5001))
     app.run(host='0.0.0.0', port=port, debug=True)
