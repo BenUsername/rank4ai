@@ -21,6 +21,8 @@ import psutil
 import difflib
 from requests.exceptions import RequestException
 import urllib3
+import asyncio
+from crawl4ai import AsyncWebCrawler
 
 # Load environment variables from .env file
 load_dotenv()
@@ -59,6 +61,21 @@ def fetch_page(url, headers, timeout):
         app.logger.info(f"Error fetching {url}: {str(e)}")
     return None
 
+async def fetch_with_crawl4ai(url):
+    async with AsyncWebCrawler(verbose=True) as crawler:
+        result = await crawler.arun(url=url)
+        
+        if result.success:
+            if hasattr(result, 'markdown'):
+                content = result.markdown[:5000]  # Limit to 5000 characters
+                return result.html, content
+            else:
+                app.logger.warning(f"No markdown content found for {url}")
+                return None, None
+        else:
+            app.logger.warning(f"Failed to fetch content from {url} using crawl4ai")
+            return None, None
+
 def fetch_main_page_content(domain):
     base_url = f"https://{domain}"
     headers = {
@@ -83,7 +100,15 @@ def fetch_main_page_content(domain):
             return process_content(content)
         except RequestException as e:
             app.logger.warning(f"HTTP request also failed for {domain}: {str(e)}")
-            return None, None
+            
+            # Fallback to crawl4ai
+            app.logger.info(f"Attempting to fetch {domain} using crawl4ai")
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                return loop.run_until_complete(fetch_with_crawl4ai(base_url))
+            finally:
+                loop.close()
 
 def process_content(content):
     MAX_HTML_SIZE = 1 * 1024 * 1024  # 1MB
