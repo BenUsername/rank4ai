@@ -723,15 +723,17 @@ def analyze_city():
 
 async def fetch_with_crawl4ai(url):
     chromium_path = os.getenv("CHROMIUM_EXECUTABLE_PATH")
-    if not chromium_path:
-        chromium_path = "/app/browsers/chromium/chrome"  # Default path based on buildpack
+    app.logger.info(f"CHROMIUM_EXECUTABLE_PATH: {chromium_path}")
     
-    app.logger.info(f"Attempting to use Chromium at: {chromium_path}")
-    app.logger.info(f"File exists: {os.path.exists(chromium_path)}")
+    if not chromium_path:
+        app.logger.error("CHROMIUM_EXECUTABLE_PATH is not set")
+        return None, None
     
     if not os.path.exists(chromium_path):
         app.logger.error(f"Chromium executable not found at {chromium_path}")
         return None, None
+    
+    app.logger.info(f"Attempting to use Chromium at: {chromium_path}")
     
     async with AsyncWebCrawler(verbose=True, playwright_kwargs={
         'chromium_sandbox': False,
