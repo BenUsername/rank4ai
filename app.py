@@ -23,7 +23,7 @@ from requests.exceptions import RequestException
 import urllib3
 import asyncio
 from crawl4ai import AsyncWebCrawler
-import subprocess
+from playwright.sync_api import sync_playwright
 
 # Load environment variables from .env file  
 load_dotenv()
@@ -60,33 +60,6 @@ def fetch_page(url, headers, timeout):
     except Exception as e:
         app.logger.info(f"Error fetching {url}: {str(e)}")
     return None
-
-async def fetch_with_crawl4ai(url):
-    browser_path = get_playwright_executable_path()
-    app.logger.info(f"Attempting to use Chromium at: {browser_path}")
-    app.logger.info(f"File exists: {os.path.exists(browser_path)}")
-    async with AsyncWebCrawler(verbose=True, playwright_kwargs={
-        'chromium_sandbox': False,
-        'playwright_kwargs': {
-            'executable_path': browser_path
-        }
-    }) as crawler:
-        try:
-            result = await crawler.arun(url=url)
-            
-            if result.success:
-                if hasattr(result, 'markdown'):
-                    content = result.markdown[:5000]  # Limit to 5000 characters
-                    return result.html, content
-                else:
-                    app.logger.warning(f"No markdown content found for {url}")
-                    return None, None
-            else:
-                app.logger.warning(f"Failed to fetch content from {url} using crawl4ai")
-                return None, None
-        except Exception as e:
-            app.logger.error(f"Error in fetch_with_crawl4ai: {str(e)}")
-            return None, None
 
 def fetch_main_page_content(domain):
     base_url = f"https://{domain}"
@@ -748,35 +721,53 @@ def analyze_city():
         app.logger.error(f"Error processing request: {str(e)}")
         return jsonify({"error": "An error occurred while processing your request. Please try again later."}), 500
 
-def get_playwright_executable_path():
+async def fetch_with_crawl4ai(url):
     chromium_path = os.getenv("CHROMIUM_EXECUTABLE_PATH")
-    if chromium_path:
-        app.logger.info(f"Using CHROMIUM_EXECUTABLE_PATH: {chromium_path}")
-        return chromium_path
+    if not chromium_path:
+        chromium_path = "/app/browsers/chromium/chrome"  # Default path based on buildpack
     
-    default_path = "/app/browsers/chromium-1134/chrome-linux/chrome"
-    app.logger.info(f"Using default Chromium path: {default_path}")
-    return default_path
+    app.logger.info(f"Attempting to use Chromium at: {chromium_path}")
+    app.logger.info(f"File exists: {os.path.exists(chromium_path)}")
+    
+    if not os.path.exists(chromium_path):
+        app.logger.error(f"Chromium executable not found at {chromium_path}")
+        return None, None
+    
+    async with AsyncWebCrawler(verbose=True, playwright_kwargs={
+        'chromium_sandbox': False,
+        'playwright_kwargs': {
+            'executable_path': chromium_path
+        }
+    }) as crawler:
+        try:
+            result = await crawler.arun(url=url)
+            
+            if result.success:
+                if hasattr(result, 'markdown'):
+                    content = result.markdown[:5000]  # Limit to 5000 characters
+                    return result.html, content
+                else:
+                    app.logger.warning(f"No markdown content found for {url}")
+                    return None, None
+            else:
+                app.logger.warning(f"Failed to fetch content from {url} using crawl4ai")
+                return None, None
+        except Exception as e:
+            app.logger.error(f"Error in fetch_with_crawl4ai: {str(e)}")
+            return None, None
 
-app.logger.info(f"Playwright executable path: {get_playwright_executable_path()}")
-app.logger.info(f"BUILDPACK_BROWSERS_INSTALL_PATH: {os.getenv('BUILDPACK_BROWSERS_INSTALL_PATH', 'browsers')}")
+def log_environment():
+    app.logger.info("Environment variables:")
+    for key, value in os.environ.items():
+        app.logger.info(f"{key}: {value}")
+    
+    app.logger.info("File system at /app/browsers:")
+    for root, dirs, files in os.walk("/app/browsers"):
+        for file in files:
+            app.logger.info(os.path.join(root, file))
 
-def install_playwright_browsers():
-    try:
-        subprocess.run(["playwright", "install", "chromium"], check=True)
-        app.logger.info("Playwright browsers installed successfully")
-        # Log the contents of the browsers directory
-        browsers_dir = "/app/browsers"
-        app.logger.info(f"Contents of {browsers_dir}:")
-        for root, dirs, files in os.walk(browsers_dir):
-            for name in files:
-                app.logger.info(os.path.join(root, name))
-    except subprocess.CalledProcessError as e:
-        app.logger.error(f"Failed to install Playwright browsers: {e}")
-    except Exception as e:
-        app.logger.error(f"Unexpected error during Playwright browser installation: {e}")
-
+# Call this function at the start of your app
 if __name__ == '__main__':
-    install_playwright_browsers()
+    log_environment()
     port = int(os.environ.get("PORT", 5001))
     app.run(host='0.0.0.0', port=port, debug=True)
