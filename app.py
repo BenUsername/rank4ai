@@ -739,7 +739,11 @@ def analyze_city():
         return jsonify({"error": "An error occurred while processing your request. Please try again later."}), 500
 
 def get_playwright_executable_path():
-    return os.getenv("PLAYWRIGHT_BROWSERS_PATH", "0")
+    browsers_path = os.getenv("BUILDPACK_BROWSERS_INSTALL_PATH", "browsers")
+    return os.path.join("/app", browsers_path, "chromium")
+
+app.logger.info(f"Playwright executable path: {get_playwright_executable_path()}")
+app.logger.info(f"BUILDPACK_BROWSERS_INSTALL_PATH: {os.getenv('BUILDPACK_BROWSERS_INSTALL_PATH', 'browsers')}")
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))
