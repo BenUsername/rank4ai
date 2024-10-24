@@ -21,14 +21,6 @@ import psutil
 import difflib
 from requests.exceptions import RequestException
 import urllib3
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.firefox.options import Options
 
 # Load environment variables from .env file
 load_dotenv()
@@ -91,27 +83,6 @@ def fetch_main_page_content(domain):
             return process_content(content)
         except RequestException as e:
             app.logger.warning(f"HTTP request also failed for {domain}: {str(e)}")
-            
-            # Fallback to headless browser
-            app.logger.info(f"Attempting to fetch {domain} using headless browser")
-            return fetch_with_headless_browser(base_url)
-
-def fetch_with_headless_browser(url):
-    options = Options()
-    options.add_argument("--headless")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    
-    service = Service(ChromeDriverManager().install())
-    
-    with webdriver.Chrome(service=service, options=options) as driver:
-        try:
-            driver.get(url)
-            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-            content = driver.page_source
-            return process_content(content)
-        except Exception as e:
-            app.logger.error(f"Error fetching {url} with headless browser: {str(e)}")
             return None, None
 
 def process_content(content):
