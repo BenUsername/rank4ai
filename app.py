@@ -64,6 +64,7 @@ def fetch_page(url, headers, timeout):
 async def fetch_with_crawl4ai(url):
     browser_path = get_playwright_executable_path()
     app.logger.info(f"Attempting to use Chromium at: {browser_path}")
+    app.logger.info(f"File exists: {os.path.exists(browser_path)}")
     async with AsyncWebCrawler(verbose=True, playwright_kwargs={
         'chromium_sandbox': False,
         'playwright_kwargs': {
@@ -753,7 +754,7 @@ def get_playwright_executable_path():
         app.logger.info(f"Using CHROMIUM_EXECUTABLE_PATH: {chromium_path}")
         return chromium_path
     
-    default_path = "/app/.heroku/python/lib/python3.12/site-packages/playwright/driver/package/.local-browsers/chromium-1134/chrome-linux/chrome"
+    default_path = "/app/browsers/chromium-1134/chrome-linux/chrome"
     app.logger.info(f"Using default Chromium path: {default_path}")
     return default_path
 
@@ -764,6 +765,12 @@ def install_playwright_browsers():
     try:
         subprocess.run(["playwright", "install", "chromium"], check=True)
         app.logger.info("Playwright browsers installed successfully")
+        # Log the contents of the browsers directory
+        browsers_dir = "/app/browsers"
+        app.logger.info(f"Contents of {browsers_dir}:")
+        for root, dirs, files in os.walk(browsers_dir):
+            for name in files:
+                app.logger.info(os.path.join(root, name))
     except subprocess.CalledProcessError as e:
         app.logger.error(f"Failed to install Playwright browsers: {e}")
     except Exception as e:
