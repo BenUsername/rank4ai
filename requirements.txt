@@ -21,8 +21,7 @@ cffi==1.17.1
 chardet==5.2.0
 charset-normalizer==3.3.2
 click==8.1.7
-constantly==23.10.4
-Crawl4AI==0.3.71
+constantly==23.10.
 cryptography==43.0.3
 cssselect==1.2.0
 defusedxml==0.7.1
@@ -79,8 +78,6 @@ outcome==1.3.0.post0
 packaging==24.1
 parsel==1.9.1
 pillow==10.4.0
-playwright==1.48.0
-playwright-stealth==1.0.6
 priority==2.0.0
 propcache==0.2.0
 Protego==0.3.1

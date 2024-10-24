@@ -3,6 +3,8 @@ from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 from bs4 import BeautifulSoup
 import re
+from scrapy.spidermiddlewares.httperror import HttpError
+from twisted.internet.error import DNSLookupError, TimeoutError, TCPTimedOutError
 
 class LodgifySpider(scrapy.Spider):
     name = 'lodgify'
@@ -12,6 +14,7 @@ class LodgifySpider(scrapy.Spider):
         'USER_AGENT': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         'ROBOTSTXT_OBEY': False,
         'DOWNLOAD_DELAY': 3,
+        'HTTPERROR_ALLOW_ALL': True,  # Allow the spider to process error responses
     }
 
     def start_requests(self):
@@ -19,6 +22,10 @@ class LodgifySpider(scrapy.Spider):
             yield scrapy.Request(url, callback=self.parse, errback=self.errback_httpbin)
 
     def parse(self, response):
+        if response.status == 403:
+            self.logger.error(f"Access forbidden (403) on {response.url}")
+            return
+
         # Extract the title
         title = response.css('title::text').get()
         
