@@ -769,6 +769,11 @@ def install_playwright_browsers():
     except Exception as e:
         app.logger.error(f"Unexpected error during Playwright browser installation: {e}")
 
+def get_playwright_executable_path():
+    from playwright.sync_api import sync_playwright
+    with sync_playwright() as p:
+        return p.chromium.executable_path
+
 # Call this function at the start of your app
 if __name__ == '__main__':
     install_playwright_browsers()
