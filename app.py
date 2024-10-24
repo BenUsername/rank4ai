@@ -398,9 +398,12 @@ def calculate_score(table, content):
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
+    start_time = time.time()  # Start timing
     domain = request.form['domain']
     if not is_valid_domain(domain):
         return jsonify({'error': 'Invalid domain'}), 400
+
+    searches_left = session.get('searches_left', MAX_SEARCHES_PER_SESSION)  # Initialize searches_left
 
     app.logger.info(f"Analyzing domain: {domain}")
 
