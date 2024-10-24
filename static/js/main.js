@@ -40,6 +40,9 @@ function displayResults(data) {
     const mainContent = document.getElementById('main-content');
     const landingContent = document.getElementById('landing-content');
     const errorMessage = document.getElementById('error-message');
+    const spinner = document.getElementById('spinner');
+    const progressLog = document.getElementById('progress-log');
+    const analyzeButton = document.getElementById('analyzeButton');
     
     if (!mainContent) {
         console.error('Main content element not found');
@@ -52,6 +55,12 @@ function displayResults(data) {
     // Hide landing content and show main content
     landingContent.style.display = 'none';
     mainContent.style.display = 'block';
+
+    // Stop the spinner and reset the button
+    spinner.style.display = 'none';
+    progressLog.innerHTML = '';
+    analyzeButton.disabled = false;
+    analyzeButton.textContent = 'Analyze';
 
     // Clear previous content
     mainContent.innerHTML = '';
@@ -371,24 +380,6 @@ function handleFormSubmit(e) {
     
     clearAutocomplete();
 
-    let progressSteps = [
-        'Fetching website content...',
-        'Analyzing content...',
-        'Generating prompts...',
-        'Simulating AI responses...',
-        'Compiling results...'
-    ];
-
-    let currentStep = 0;
-    let progressInterval = setInterval(() => {
-        if (currentStep < progressSteps.length) {
-            updateProgress(progressSteps[currentStep]);
-            currentStep++;
-        } else {
-            clearInterval(progressInterval);
-        }
-    }, 2000);
-
     fetch('/analyze', {
         method: 'POST',
         headers: {
@@ -396,43 +387,30 @@ function handleFormSubmit(e) {
         },
         body: `domain=${encodeURIComponent(domain)}`
     })
-    .then(response => {
-        if (!response.ok) {
-            return response.json().then(err => { throw err; });
-        }
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
-        clearInterval(progressInterval);
-        spinner.style.display = 'none';
-        progressLog.innerHTML = '';
         if (data.error) {
             throw new Error(data.error);
-        } else {
-            console.log('Received data:', data);
-            displayResults(data);
-            // Clear any previous error messages
-            const errorMessage = document.getElementById('error-message');
-            errorMessage.textContent = '';
-            errorMessage.style.display = 'none';
         }
+        displayResults(data);
     })
     .catch(error => {
         console.error('Error:', error);
-        const errorMessage = document.getElementById('error-message');
-        errorMessage.textContent = error.error || "An unexpected error occurred. Please try again later.";
-        errorMessage.style.display = 'block';
-    })
-    .finally(() => {
-        submitButton.disabled = false;
-        submitButton.textContent = 'Analyze Now';
-        spinner.style.display = 'none';
+        document.getElementById('error-message').textContent = error.message;
+        document.getElementById('error-message').style.display = 'block';
+        resetProgressIndicators();
     });
 }
 
-function updateProgress(message) {
+function resetProgressIndicators() {
+    const spinner = document.getElementById('spinner');
     const progressLog = document.getElementById('progress-log');
-    progressLog.innerHTML = `<p>${message}</p>`;
+    const submitButton = document.getElementById('analyzeButton');
+
+    spinner.style.display = 'none';
+    progressLog.innerHTML = ''; // Clear progress log
+    submitButton.disabled = false;
+    submitButton.textContent = 'Analyze';
 }
 
 function showAdviceModal() {

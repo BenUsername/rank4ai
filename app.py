@@ -21,6 +21,7 @@ import psutil
 import difflib
 from requests.exceptions import RequestException
 import urllib3
+import httpx
 
 # Load environment variables from .env file  
 load_dotenv()
@@ -66,7 +67,6 @@ def fetch_main_page_content(domain):
     MAX_HTML_SIZE = 1 * 1024 * 1024  # 1MB
 
     try:
-        # Try HTTPS first
         response = requests.get(base_url, headers=headers, timeout=requests_timeout, verify=False)
         response.raise_for_status()
         content = response.text[:MAX_HTML_SIZE]
@@ -74,7 +74,6 @@ def fetch_main_page_content(domain):
     except RequestException as e:
         app.logger.warning(f"HTTPS request failed for {domain}: {str(e)}")
         try:
-            # If HTTPS fails, try HTTP
             base_url = f"http://{domain}"
             response = requests.get(base_url, headers=headers, timeout=requests_timeout)
             response.raise_for_status()
@@ -82,7 +81,33 @@ def fetch_main_page_content(domain):
             return process_content(content)
         except RequestException as e:
             app.logger.warning(f"HTTP request also failed for {domain}: {str(e)}")
-            return None, None
+            # Fallback using httpx
+            return fetch_with_httpx(base_url)
+
+def fetch_with_httpx(url):
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
+        }
+        response = httpx.get(url, headers=headers, follow_redirects=True)
+        response.raise_for_status()
+        
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Extract the title
+        title = soup.title.string if soup.title else 'No title found'
+        
+        # Extract the description
+        description_tag = soup.find('meta', attrs={'name': 'description'})
+        description = description_tag['content'] if description_tag else 'No description found'
+        
+        return title, description
+    except httpx.RequestError as e:
+        app.logger.error(f"An error occurred while requesting {url}: {e}")
+        return None, "Failed to fetch content. The website might be blocking our request or is unavailable."
+    except httpx.HTTPStatusError as e:
+        app.logger.error(f"HTTP error occurred: {e}")
+        return None, "Failed to fetch content. The website might be blocking our request or is unavailable."
 
 def process_content(content):
     MAX_HTML_SIZE = 1 * 1024 * 1024  # 1MB
@@ -115,6 +140,10 @@ def fetch_additional_content(domain):
             app.logger.info(f"Successfully fetched content from {url}")
         except Exception as e:
             app.logger.warning(f"Error fetching {url}: {str(e)}")
+            # Fallback using httpx
+            title, description = fetch_with_httpx(url)
+            if title and description:
+                existing_content[url] = f"Title: {title}, Description: {description}"
 
     if not existing_content:
         app.logger.warning(f"No additional content found for {domain}")
@@ -398,20 +427,21 @@ def calculate_score(table, content):
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    start_time = time.time()  # Start timing
+    start_time = time.time()
     domain = request.form['domain']
     if not is_valid_domain(domain):
         return jsonify({'error': 'Invalid domain'}), 400
 
-    searches_left = session.get('searches_left', MAX_SEARCHES_PER_SESSION)  # Initialize searches_left
-
     app.logger.info(f"Analyzing domain: {domain}")
+
+    # Initialize searches_left
+    searches_left = session.get('searches_left', MAX_SEARCHES_PER_SESSION)
 
     try:
         html_content, main_text_content = fetch_main_page_content(domain)
         
-        if html_content is None or main_text_content is None:
-            return jsonify({'error': 'Failed to fetch content. The website might be blocking our request or is unavailable. Please try another website.'}), 500
+        if html_content is None:
+            return jsonify({'error': main_text_content}), 500
 
         app.logger.info(f"Extracting main info for {domain}")
         info = extract_main_info(html_content)
@@ -426,8 +456,9 @@ def analyze():
         table = generate_prompt_answers(prompts, domain, info, existing_content={})
         score = calculate_score(table, info['content'])
 
-        session['searches_left'] = searches_left - 1
-        searches_left = session['searches_left']
+        # Update searches_left
+        searches_left -= 1
+        session['searches_left'] = searches_left
 
         end_time = time.time()
         app.logger.info(f"Total processing time for {domain}: {end_time - start_time} seconds")
@@ -446,7 +477,7 @@ def analyze():
 
     except Exception as e:
         app.logger.error(f"Error processing {domain}: {str(e)}")
-        return jsonify({'error': 'An unexpected error occurred. Please try again later.'}), 500
+        return jsonify({'error': 'An unexpected error occurred. Please try again later.', 'searches_left': searches_left}), 500
 
 @app.route('/robots.txt')
 def robots():
