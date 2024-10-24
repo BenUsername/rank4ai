@@ -39,10 +39,15 @@ function copyLink() {
 function displayResults(data) {
     const mainContent = document.getElementById('main-content');
     const landingContent = document.getElementById('landing-content');
+    const errorMessage = document.getElementById('error-message');
+    
     if (!mainContent) {
         console.error('Main content element not found');
         return;
     }
+    
+    // Hide error message if it was previously shown
+    errorMessage.style.display = 'none';
     
     // Hide landing content and show main content
     landingContent.style.display = 'none';

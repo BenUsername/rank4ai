@@ -21,10 +21,6 @@ import psutil
 import difflib
 from requests.exceptions import RequestException
 import urllib3
-import asyncio
-from crawl4ai import AsyncWebCrawler
-from playwright.sync_api import sync_playwright
-import subprocess
 
 # Load environment variables from .env file  
 load_dotenv()
@@ -70,7 +66,7 @@ def fetch_main_page_content(domain):
     MAX_HTML_SIZE = 1 * 1024 * 1024  # 1MB
 
     try:
-        # Try HTTPS first with regular requests
+        # Try HTTPS first
         response = requests.get(base_url, headers=headers, timeout=requests_timeout, verify=False)
         response.raise_for_status()
         content = response.text[:MAX_HTML_SIZE]
@@ -86,15 +82,7 @@ def fetch_main_page_content(domain):
             return process_content(content)
         except RequestException as e:
             app.logger.warning(f"HTTP request also failed for {domain}: {str(e)}")
-            
-            # Fallback to crawl4ai
-            app.logger.info(f"Attempting to fetch {domain} using crawl4ai")
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                return loop.run_until_complete(fetch_with_crawl4ai(base_url))
-            finally:
-                loop.close()
+            return None, None
 
 def process_content(content):
     MAX_HTML_SIZE = 1 * 1024 * 1024  # 1MB
@@ -410,23 +398,17 @@ def calculate_score(table, content):
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
+    domain = request.form['domain']
+    if not is_valid_domain(domain):
+        return jsonify({'error': 'Invalid domain'}), 400
+
+    app.logger.info(f"Analyzing domain: {domain}")
+
     try:
-        start_time = time.time()
-        domain = request.form['domain']
-        searches_left = session.get('searches_left', MAX_SEARCHES_PER_SESSION)
-
-        app.logger.info(f"Analyzing domain: {domain}")
-
-        if searches_left <= 0:
-            return jsonify({'error': 'No searches left. Please try again later.', 'searches_left': 0}), 403
-
-        if not is_valid_domain(domain):
-            return jsonify({'error': 'Invalid domain name.', 'searches_left': searches_left}), 400
-
-        app.logger.info(f"Fetching main page content for {domain}")
         html_content, main_text_content = fetch_main_page_content(domain)
+        
         if html_content is None or main_text_content is None:
-            return jsonify({'error': f"We couldn't fetch the content for {domain}. The website may be unavailable or blocking our requests. Please try another domain.", 'searches_left': searches_left}), 404
+            return jsonify({'error': 'Failed to fetch content. The website might be blocking our request or is unavailable. Please try another website.'}), 500
 
         app.logger.info(f"Extracting main info for {domain}")
         info = extract_main_info(html_content)
@@ -439,7 +421,7 @@ def analyze():
 
         app.logger.info(f"Generating prompt answers for {domain}")
         table = generate_prompt_answers(prompts, domain, info, existing_content={})
-        score = calculate_score(table, info['content'])  # Pass info['content'] as the second argument
+        score = calculate_score(table, info['content'])
 
         session['searches_left'] = searches_left - 1
         searches_left = session['searches_left']
@@ -460,8 +442,8 @@ def analyze():
         })
 
     except Exception as e:
-        app.logger.error(f"Error processing {domain}: {str(e)}", exc_info=True)
-        return jsonify({'error': f"An unexpected error occurred: {str(e)}. Please try again later."}), 500
+        app.logger.error(f"Error processing {domain}: {str(e)}")
+        return jsonify({'error': 'An unexpected error occurred. Please try again later.'}), 500
 
 @app.route('/robots.txt')
 def robots():
@@ -722,61 +704,6 @@ def analyze_city():
         app.logger.error(f"Error processing request: {str(e)}")
         return jsonify({"error": "An error occurred while processing your request. Please try again later."}), 500
 
-async def fetch_with_crawl4ai(url):
-    browser_path = get_playwright_executable_path()
-    app.logger.info(f"Attempting to use Chromium at: {browser_path}")
-    app.logger.info(f"File exists: {os.path.exists(browser_path)}")
-    
-    async with AsyncWebCrawler(verbose=True, playwright_kwargs={
-        'chromium_sandbox': False,
-        'playwright_kwargs': {
-            'executable_path': browser_path
-        }
-    }) as crawler:
-        try:
-            result = await crawler.arun(url=url)
-            
-            if result.success:
-                if hasattr(result, 'markdown'):
-                    content = result.markdown[:5000]  # Limit to 5000 characters
-                    return result.html, content
-                else:
-                    app.logger.warning(f"No markdown content found for {url}")
-                    return None, None
-            else:
-                app.logger.warning(f"Failed to fetch content from {url} using crawl4ai")
-                return None, None
-        except Exception as e:
-            app.logger.error(f"Error in fetch_with_crawl4ai: {str(e)}")
-            return None, None
-
-def log_environment():
-    app.logger.info("Environment variables:")
-    for key, value in os.environ.items():
-        app.logger.info(f"{key}: {value}")
-    
-    app.logger.info("File system at /app/browsers:")
-    for root, dirs, files in os.walk("/app/browsers"):
-        for file in files:
-            app.logger.info(os.path.join(root, file))
-
-def install_playwright_browsers():
-    try:
-        subprocess.run(["playwright", "install", "chromium"], check=True)
-        app.logger.info("Playwright browsers installed successfully")
-    except subprocess.CalledProcessError as e:
-        app.logger.error(f"Failed to install Playwright browsers: {e}")
-    except Exception as e:
-        app.logger.error(f"Unexpected error during Playwright browser installation: {e}")
-
-def get_playwright_executable_path():
-    from playwright.sync_api import sync_playwright
-    with sync_playwright() as p:
-        return p.chromium.executable_path
-
-# Call this function at the start of your app
 if __name__ == '__main__':
-    install_playwright_browsers()
-    log_environment()
     port = int(os.environ.get("PORT", 5001))
     app.run(host='0.0.0.0', port=port, debug=True)
