@@ -82,7 +82,22 @@ def fetch_main_page_content(domain):
         except RequestException as e:
             app.logger.warning(f"HTTP request also failed for {domain}: {str(e)}")
             # Fallback using httpx
-            return fetch_with_httpx(base_url)
+            title, description, main_content = fetch_with_httpx(base_url)
+            app.logger.info(f"Fallback httpx results - Title: {title}, Description: {description}")
+            
+            # Create HTML-like content with the extracted information
+            html_content = f"""
+            <html>
+                <head>
+                    <title>{title}</title>
+                    <meta name="description" content="{description}">
+                </head>
+                <body>
+                    {main_content}
+                </body>
+            </html>
+            """
+            return html_content, main_content, main_content
 
 def fetch_with_httpx(url):
     try:
@@ -95,27 +110,42 @@ def fetch_with_httpx(url):
         soup = BeautifulSoup(response.text, 'html.parser')
         
         # Extract the title
-        title = soup.title.string if soup.title else 'No title found'
+        title = soup.title.string.strip() if soup.title else 'No title found'
+        app.logger.info(f"Extracted title with httpx: {title}")
         
-        # Extract the description
-        description_tag = soup.find('meta', attrs={'name': 'description'})
-        description = description_tag['content'] if description_tag else 'No description found'
+        # Extract the description - try different meta tag formats
+        description = None
+        meta_tags = [
+            soup.find('meta', attrs={'name': 'description'}),
+            soup.find('meta', attrs={'property': 'og:description'}),
+            soup.find('meta', attrs={'name': 'Description'})
+        ]
         
-        return title, description
+        for tag in meta_tags:
+            if tag and tag.get('content'):
+                description = tag['content'].strip()
+                break
+                
+        if not description:
+            description = 'No description found'
+            
+        app.logger.info(f"Extracted description with httpx: {description}")
+        
+        # Extract main content
+        main_content = soup.get_text(strip=True)
+        
+        return title, description, main_content
     except httpx.RequestError as e:
         app.logger.error(f"An error occurred while requesting {url}: {e}")
-        return None, "Failed to fetch content. The website might be blocking our request or is unavailable."
+        return "No title found", "No description found", "Failed to fetch content."
     except httpx.HTTPStatusError as e:
         app.logger.error(f"HTTP error occurred: {e}")
-        return None, "Failed to fetch content. The website might be blocking our request or is unavailable."
+        return "No title found", "No description found", "Failed to fetch content."
 
 def process_content(content):
-    MAX_HTML_SIZE = 1 * 1024 * 1024  # 1MB
-    soup = BeautifulSoup(content[:MAX_HTML_SIZE], 'html.parser')
-    main_content = soup.find('main') or soup.find('article') or soup.find('div', class_='content')
-    text_content = (main_content.get_text(strip=True) if main_content else soup.get_text(strip=True))[:5000]
-    
-    return content[:MAX_HTML_SIZE], text_content
+    soup = BeautifulSoup(content, 'html.parser')
+    main_content = soup.get_text(strip=True)
+    return content, main_content[:5000]  # Adjust the limit as needed
 
 def fetch_additional_content(domain):
     base_url = f"https://{domain}"
@@ -141,9 +171,9 @@ def fetch_additional_content(domain):
         except Exception as e:
             app.logger.warning(f"Error fetching {url}: {str(e)}")
             # Fallback using httpx
-            title, description = fetch_with_httpx(url)
+            title, description, main_content = fetch_with_httpx(url)
             if title and description:
-                existing_content[url] = f"Title: {title}, Description: {description}"
+                existing_content[url] = f"Title: {title}, Description: {description}, Content: {main_content}"
 
     if not existing_content:
         app.logger.warning(f"No additional content found for {domain}")
@@ -206,46 +236,33 @@ def generate_marketing_prompts(title, description, content, domain):
         return []
 
 def extract_main_info(html_content):
-    """Extract Title, Description, and Main Content from the HTML."""
-    soup = BeautifulSoup(html_content, 'lxml')
-    
-    # Extract title
-    title_tag = soup.find('title')
-    title = title_tag.get_text(strip=True) if title_tag else 'No title available'
-    
-    # Extract meta description
-    meta_description = ''
-    meta = soup.find('meta', attrs={'name': 'description'})
-    if meta and meta.get('content'):
-        meta_description = meta.get('content').strip()
-    
-    # Extract main content
-    main_content = ''
-    # Try to find the main content in common tags
-    main_candidates = soup.find_all(['main', 'article', 'section', 'div'], class_=re.compile(r'(content|main|article)', re.I))
-    if main_candidates:
-        # Combine text from all candidate tags
-        main_content = ' '.join([tag.get_text(strip=True) for tag in main_candidates])
-    else:
-        # Fallback to body content
-        body = soup.find('body')
-        if body:
-            main_content = body.get_text(strip=True)
-    
-    # Limit content length
-    main_content = main_content[:5000]
-    
-    # Explicitly delete the soup object
-    del soup
-    
-    # Call garbage collection
-    gc.collect()
-    
-    return {
-        'title': title,
-        'description': meta_description,
-        'content': main_content
-    }
+    try:
+        soup = BeautifulSoup(html_content, 'html.parser')
+        
+        # Extract title
+        title = soup.title.string if soup.title else 'No title found'
+        app.logger.info(f"Found title: {title}")
+        
+        # Extract description
+        description_tag = soup.find('meta', attrs={'name': 'description'})
+        description = description_tag['content'] if description_tag else 'No description found'
+        app.logger.info(f"Found description: {description}")
+        
+        # Extract main content
+        main_content = soup.get_text(strip=True)
+        
+        return {
+            'title': title,
+            'description': description,
+            'content': main_content
+        }
+    except Exception as e:
+        app.logger.error(f"Error extracting main info: {e}")
+        return {
+            'title': 'No title available',
+            'description': '',
+            'content': ''
+        }
 
 def analyze_content_gaps(domain, ai_response, existing_content):
     suggestions = []
@@ -438,7 +455,7 @@ def analyze():
     searches_left = session.get('searches_left', MAX_SEARCHES_PER_SESSION)
 
     try:
-        html_content, main_text_content = fetch_main_page_content(domain)
+        html_content, main_text_content, full_content = fetch_main_page_content(domain)
         
         if html_content is None:
             return jsonify({'error': main_text_content}), 500
@@ -447,14 +464,14 @@ def analyze():
         info = extract_main_info(html_content)
 
         app.logger.info(f"Generating marketing prompts for {domain}")
-        prompts = generate_marketing_prompts(info['title'], info['description'], info['content'], domain)
+        prompts = generate_marketing_prompts(info['title'], info['description'], full_content, domain)
 
         if not prompts:
             return jsonify({'error': "Couldn't generate valid prompts for this website. Please try another domain.", 'searches_left': searches_left}), 500
 
         app.logger.info(f"Generating prompt answers for {domain}")
         table = generate_prompt_answers(prompts, domain, info, existing_content={})
-        score = calculate_score(table, info['content'])
+        score = calculate_score(table, full_content)
 
         # Update searches_left
         searches_left -= 1
