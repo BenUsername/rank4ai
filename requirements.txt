@@ -9,4 +9,5 @@ gunicorn==20.1.0
 psutil
 httpx
 lxml>=4.9.3
-
+pymongo[srv]
+dnspython

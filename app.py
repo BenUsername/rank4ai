@@ -21,6 +21,7 @@ import psutil
 from requests.exceptions import RequestException
 import urllib3
 import httpx
+from pymongo import MongoClient
 
 # Load environment variables from .env file  
 load_dotenv()
@@ -45,6 +46,22 @@ requests_timeout = 30
 
 # Disable SSL warnings (use with caution)
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+# MongoDB setup
+mongo_uri = os.getenv('MONGODB_URI')
+if not mongo_uri:
+    app.logger.error("No MongoDB URI found in environment variables")
+    raise ValueError("MongoDB URI is required")
+
+try:
+    mongo_client = MongoClient(mongo_uri)
+    # Explicitly specify the database name
+    db = mongo_client['promptboostai']  # or any other database name you prefer
+    requests_collection = db.requests
+    app.logger.info("Successfully connected to MongoDB")
+except Exception as e:
+    app.logger.error(f"Failed to connect to MongoDB: {str(e)}")
+    raise
 
 def is_valid_domain(domain):
     return validators.domain(domain)
@@ -423,17 +440,17 @@ def calculate_score(table, content):
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    start_time = time.time()
-    domain = request.form['domain']
-    if not is_valid_domain(domain):
-        return jsonify({'error': 'Invalid domain'}), 400
-
-    app.logger.info(f"Analyzing domain: {domain}")
-
-    # Initialize searches_left
-    searches_left = session.get('searches_left', MAX_SEARCHES_PER_SESSION)
-
     try:
+        start_time = time.time()
+        domain = request.form['domain']
+        if not is_valid_domain(domain):
+            return jsonify({'error': 'Invalid domain'}), 400
+
+        app.logger.info(f"Analyzing domain: {domain}")
+
+        # Initialize searches_left
+        searches_left = session.get('searches_left', MAX_SEARCHES_PER_SESSION)
+
         html_content, main_text_content, full_content = fetch_main_page_content(domain)
         
         if html_content is None:
@@ -461,6 +478,9 @@ def analyze():
 
         logo_url = get_logo_dev_logo(domain)
 
+        # After generating all results
+        store_analysis_result(domain, info['title'], info['description'], prompts, table, score)
+
         return jsonify({
             'domain': domain,
             'info': info,
@@ -473,7 +493,7 @@ def analyze():
 
     except Exception as e:
         app.logger.error(f"Error processing {domain}: {str(e)}")
-        return jsonify({'error': 'An unexpected error occurred. Please try again later.', 'searches_left': searches_left}), 500
+        return jsonify({'error': 'An unexpected error occurred. Please try again later.'}), 500
 
 @app.route('/robots.txt')
 def robots():
@@ -604,6 +624,10 @@ def get_advice(domain, prompt):
         # Ensure we have exactly 3 blog post suggestions
         content_suggestions['new_blog_post_suggestions'] = content_suggestions.get('new_blog_post_suggestions', [])[:3]
 
+        # After getting content suggestions
+        if 'new_blog_post_suggestions' in content_suggestions:
+            store_blog_suggestions(domain, content_suggestions['new_blog_post_suggestions'])
+
         return content_suggestions
 
     except Exception as e:
@@ -727,6 +751,50 @@ def analyze_city():
     except Exception as e:
         app.logger.error(f"Error processing request: {str(e)}")
         return jsonify({"error": "An error occurred while processing your request. Please try again later."}), 500
+
+def store_analysis_result(domain, title, description, prompts, table, score):
+    try:
+        # Prepare the document
+        document = {
+            "timestamp": datetime.utcnow(),
+            "request_info": {
+                "user_agent": request.headers.get('User-Agent'),
+                "ip_address": request.remote_addr
+            },
+            "domain": domain,
+            "title": title,
+            "description": description,
+            "marketing_prompts": [
+                {
+                    "prompt": row['prompt'],
+                    "answer": row['answer'],
+                    "competitors": row['competitors'].split(', ') if isinstance(row['competitors'], str) else row['competitors'],
+                    "visible": row['visible']
+                } for row in table
+            ],
+            "score": score
+        }
+        
+        # Insert into MongoDB
+        result = requests_collection.insert_one(document)
+        app.logger.info(f"Stored analysis result with ID: {result.inserted_id}")
+        return str(result.inserted_id)
+    except Exception as e:
+        app.logger.error(f"Failed to store analysis result: {str(e)}")
+        # Don't raise the exception - we don't want to break the main functionality
+        return None
+
+def store_blog_suggestions(domain, blog_suggestions):
+    try:
+        # Find the existing document for this domain
+        result = requests_collection.update_one(
+            {"domain": domain, "timestamp": {"$gte": datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)}},
+            {"$set": {"blog_suggestions": blog_suggestions}},
+            upsert=False
+        )
+        app.logger.info(f"Updated {result.modified_count} documents with blog suggestions")
+    except Exception as e:
+        app.logger.error(f"Failed to store blog suggestions: {str(e)}")
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))
