@@ -18,7 +18,6 @@ import uuid
 import requests.exceptions
 import gc
 import psutil
-import difflib
 from requests.exceptions import RequestException
 import urllib3
 import httpx
@@ -89,78 +88,38 @@ def fetch_with_httpx(url):
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
         }
+        app.logger.info(f"Attempting httpx request for {url}")
         response = httpx.get(url, headers=headers, follow_redirects=True)
         response.raise_for_status()
+        app.logger.info(f"Successfully got response from {url}")
         
         soup = BeautifulSoup(response.text, 'html.parser')
         
         # Extract the title
-        title = soup.title.string.strip() if soup.title else 'No title found'
-        app.logger.info(f"Extracted title with httpx: {title}")
+        title = soup.title.string if soup.title else 'No title found'
+        app.logger.info(f"Extracted title: {title}")
         
-        # Extract the description - try different meta tag formats
-        description = None
-        meta_tags = [
-            soup.find('meta', attrs={'name': 'description'}),
-            soup.find('meta', attrs={'property': 'og:description'}),
-            soup.find('meta', attrs={'name': 'Description'})
-        ]
-        
-        for tag in meta_tags:
-            if tag and tag.get('content'):
-                description = tag['content'].strip()
-                break
-                
-        if not description:
-            description = 'No description found'
-            
-        app.logger.info(f"Extracted description with httpx: {description}")
+        # Extract the description
+        description_tag = soup.find('meta', attrs={'name': 'description'})
+        description = description_tag['content'] if description_tag else 'No description found'
+        app.logger.info(f"Extracted description: {description}")
         
         # Extract main content
         main_content = soup.get_text(strip=True)
         
-        # Create HTML-like content with the extracted information
-        html_content = f"""
-        <html>
-            <head>
-                <title>{title}</title>
-                <meta name="description" content="{description}">
-            </head>
-            <body>
-                {main_content}
-            </body>
-        </html>
-        """
+        # Create HTML-like content
+        html_content = f'<html><head><title>{title}</title><meta name="description" content="{description}"></head><body>{main_content}</body></html>'
         
         return html_content, main_content, main_content
     except httpx.RequestError as e:
-        app.logger.error(f"An error occurred while requesting {url}: {e}")
-        html_content = f"""
-        <html>
-            <head>
-                <title>Error</title>
-                <meta name="description" content="Error fetching content">
-            </head>
-            <body>
-                Failed to fetch content
-            </body>
-        </html>
-        """
-        return html_content, "Failed to fetch content", "Failed to fetch content"
+        app.logger.error(f"RequestError for {url}: {str(e)}")
+        return "No content", "No content", "Failed to fetch content."
     except httpx.HTTPStatusError as e:
-        app.logger.error(f"HTTP error occurred: {e}")
-        html_content = f"""
-        <html>
-            <head>
-                <title>Error</title>
-                <meta name="description" content="Error fetching content">
-            </head>
-            <body>
-                Failed to fetch content
-            </body>
-        </html>
-        """
-        return html_content, "Failed to fetch content", "Failed to fetch content"
+        app.logger.error(f"HTTPStatusError for {url}: {str(e)}")
+        return "No content", "No content", "Failed to fetch content."
+    except Exception as e:
+        app.logger.error(f"Unexpected error for {url}: {str(e)}")
+        return "No content", "No content", "Failed to fetch content."
 
 def process_content(content):
     soup = BeautifulSoup(content, 'html.parser')
@@ -599,37 +558,31 @@ def unhandled_exception(e):
 
 def get_advice(domain, prompt):
     try:
-        logging.info(f"Fetching additional content for {domain}")
-        existing_content = fetch_additional_content(domain)
-        if not existing_content:
-            logging.warning(f"No additional content fetched for {domain}")
-            # Instead of returning an error, let's proceed with the main content
-            existing_content = {"main": fetch_main_page_content(domain)[1]}  # Use the text content from the main page
-
-        if not existing_content:
-            logging.error(f"Failed to fetch any content for {domain}")
+        logging.info(f"Analyzing content for {domain}")
+        # Get main content only
+        _, main_content, _ = fetch_main_page_content(domain)
+        
+        if not main_content:
+            logging.error(f"Failed to fetch content for {domain}")
             return {"error": "Failed to fetch content for analysis. Please try again later."}
 
-        total_content = json.dumps(existing_content)
-        max_content_tokens = 1000
-        total_content = ' '.join(total_content.split()[:max_content_tokens])
+        # Prepare content for analysis
+        total_content = main_content[:1000]  # Limit content to 1000 tokens
 
         system_message = "You are an expert in SEO and content strategy."
         user_message = f"""
-        Analyze the following prompt and existing content for {domain}.
-        Provide specific suggestions for content updates:
-        1. Suggest updates for up to 3 existing pages, including the main landing page and up to 2 blog posts.
-        2. Suggest 3 new blog posts to create.
+        Based on the following content from {domain}, suggest 3 new blog posts that would enhance their content strategy.
 
         Prompt: {prompt}
 
         Existing content:
         {total_content}
 
-        Format your response as a JSON object with two keys: 'existing_page_suggestions' and 'new_blog_post_suggestions'.
-        For existing pages, include 'url' and 'suggestion'.
-        For new blog posts, include 'title' and 'outline'. The 'outline' should always be an array of strings.
-        Limit your response to a maximum of 3 existing page suggestions and 3 new blog post suggestions.
+        Format your response as a JSON object with a single key: 'new_blog_post_suggestions'.
+        Each blog post suggestion should include 'title' and 'outline'.
+        The 'outline' should be an array of strings representing the main sections of the post.
+        Limit your response to exactly 3 blog post suggestions.
+        Make sure the suggestions are highly relevant to their business and target audience.
         """
 
         response = client.chat.completions.create(
@@ -648,7 +601,7 @@ def get_advice(domain, prompt):
         content = content.replace("```json", "").replace("```", "").strip()
         content_suggestions = json.loads(content)
 
-        content_suggestions['existing_page_suggestions'] = content_suggestions.get('existing_page_suggestions', [])[:3]
+        # Ensure we have exactly 3 blog post suggestions
         content_suggestions['new_blog_post_suggestions'] = content_suggestions.get('new_blog_post_suggestions', [])[:3]
 
         return content_suggestions
