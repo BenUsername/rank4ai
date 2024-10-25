@@ -497,17 +497,25 @@ def analyze():
             db_result = find_latest_domain_analysis(domain)
             if db_result:
                 app.logger.info(f"Using cached results for {domain}")
+                # Format the marketing prompts to ensure consistent structure
+                formatted_prompts = [{
+                    'prompt': mp['prompt'],
+                    'answer': mp['answer'],
+                    'competitors': mp['competitors'] if isinstance(mp['competitors'], list) else mp['competitors'].split(', '),
+                    'visible': mp['visible']
+                } for mp in db_result['marketing_prompts']]
+                
                 return jsonify({
                     'domain': db_result['domain'],
                     'info': {
                         'title': db_result['title'],
                         'description': db_result['description']
                     },
-                    'table': db_result['marketing_prompts'],
+                    'table': formatted_prompts,  # Use formatted prompts
                     'searches_left': searches_left,
                     'score': db_result['score'],
                     'logo_url': get_logo_dev_logo(domain),
-                    'from_cache': True  # Flag to indicate data is from database
+                    'from_cache': True
                 })
             else:
                 app.logger.error(f"No database results found for {domain}")

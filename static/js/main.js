@@ -133,13 +133,14 @@ function displayResults(data) {
                         </td>
                         <td>
                             <ol class="competitors-list">
-                                ${row.competitors.split(', ').map((competitor, index) => `
+                                ${row.competitors ? (Array.isArray(row.competitors) ? 
+                                    row.competitors : row.competitors.split(', ')).map((competitor, index) => `
                                     <li>
                                         <span class="competitor-order">${index + 1}.</span>
                                         <img src="${get_logo_dev_logo(competitor)}" alt="${competitor} logo" class="competitor-logo" onerror="this.onerror=null; this.src='https://www.google.com/s2/favicons?domain=${competitor}&sz=32';">
                                         <span class="competitor-domain" title="${competitor}">${competitor}</span>
                                     </li>
-                                `).join('')}
+                                `).join('') : ''}
                             </ol>
                         </td>
                         <td class="visibility-result">
