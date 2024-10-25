@@ -438,6 +438,23 @@ def calculate_score(table, content):
 
     return final_score
 
+def find_latest_domain_analysis(domain):
+    """
+    Search for the most recent analysis of a domain in MongoDB
+    """
+    try:
+        # Find most recent entry for this domain
+        result = requests_collection.find_one(
+            {"domain": domain},
+            sort=[("timestamp", -1)]  # Most recent first
+        )
+        app.logger.info(f"Found database entry for {domain}: {result is not None}")
+        return result
+    except Exception as e:
+        app.logger.error(f"Database query failed: {str(e)}")
+        return None
+
+# Modify the analyze route to include database fallback
 @app.route('/analyze', methods=['POST'])
 def analyze():
     try:
@@ -451,23 +468,51 @@ def analyze():
         # Initialize searches_left
         searches_left = session.get('searches_left', MAX_SEARCHES_PER_SESSION)
 
-        html_content, main_text_content, full_content = fetch_main_page_content(domain)
-        
-        if html_content is None:
-            return jsonify({'error': main_text_content}), 500
+        try:
+            html_content, main_text_content, full_content = fetch_main_page_content(domain)
+            
+            if html_content is None:
+                raise Exception("Failed to fetch content")
 
-        app.logger.info(f"Extracting main info for {domain}")
-        info = extract_main_info(html_content)
+            app.logger.info(f"Extracting main info for {domain}")
+            info = extract_main_info(html_content)
 
-        app.logger.info(f"Generating marketing prompts for {domain}")
-        prompts = generate_marketing_prompts(info['title'], info['description'], full_content, domain)
+            app.logger.info(f"Generating marketing prompts for {domain}")
+            prompts = generate_marketing_prompts(info['title'], info['description'], full_content, domain)
 
-        if not prompts:
-            return jsonify({'error': "Couldn't generate valid prompts for this website. Please try another domain.", 'searches_left': searches_left}), 500
+            if not prompts:
+                raise Exception("Couldn't generate valid prompts")
 
-        app.logger.info(f"Generating prompt answers for {domain}")
-        table = generate_prompt_answers(prompts, domain, info, existing_content={})
-        score = calculate_score(table, full_content)
+            app.logger.info(f"Generating prompt answers for {domain}")
+            table = generate_prompt_answers(prompts, domain, info, existing_content={})
+            score = calculate_score(table, full_content)
+
+            # Store successful analysis
+            store_analysis_result(domain, info['title'], info['description'], prompts, table, score)
+
+        except Exception as e:
+            app.logger.warning(f"Live analysis failed for {domain}, trying database fallback: {str(e)}")
+            
+            # Try database fallback
+            db_result = find_latest_domain_analysis(domain)
+            if db_result:
+                app.logger.info(f"Using cached results for {domain}")
+                return jsonify({
+                    'domain': db_result['domain'],
+                    'info': {
+                        'title': db_result['title'],
+                        'description': db_result['description']
+                    },
+                    'table': db_result['marketing_prompts'],
+                    'searches_left': searches_left,
+                    'score': db_result['score'],
+                    'logo_url': get_logo_dev_logo(domain),
+                    'from_cache': True  # Flag to indicate data is from database
+                })
+            else:
+                app.logger.error(f"No database results found for {domain}")
+                return jsonify({'error': "Couldn't generate valid prompts for this website. Please try another domain.", 
+                              'searches_left': searches_left}), 500
 
         # Update searches_left
         searches_left -= 1
@@ -476,19 +521,15 @@ def analyze():
         end_time = time.time()
         app.logger.info(f"Total processing time for {domain}: {end_time - start_time} seconds")
 
-        logo_url = get_logo_dev_logo(domain)
-
-        # After generating all results
-        store_analysis_result(domain, info['title'], info['description'], prompts, table, score)
-
         return jsonify({
             'domain': domain,
             'info': info,
             'prompts': prompts,
             'table': table,
             'searches_left': searches_left,
-            'logo_url': logo_url,
-            'score': score
+            'logo_url': get_logo_dev_logo(domain),
+            'score': score,
+            'from_cache': False  # Flag to indicate fresh data
         })
 
     except Exception as e:
