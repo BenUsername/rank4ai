@@ -70,7 +70,7 @@ def fetch_main_page_content(domain):
         response = requests.get(base_url, headers=headers, timeout=requests_timeout, verify=False)
         response.raise_for_status()
         content = response.text[:MAX_HTML_SIZE]
-        return process_content(content)
+        return process_content(content)  # Now returns 3 values
     except RequestException as e:
         app.logger.warning(f"HTTPS request failed for {domain}: {str(e)}")
         try:
@@ -78,26 +78,11 @@ def fetch_main_page_content(domain):
             response = requests.get(base_url, headers=headers, timeout=requests_timeout)
             response.raise_for_status()
             content = response.text[:MAX_HTML_SIZE]
-            return process_content(content)
+            return process_content(content)  # Now returns 3 values
         except RequestException as e:
             app.logger.warning(f"HTTP request also failed for {domain}: {str(e)}")
             # Fallback using httpx
-            title, description, main_content = fetch_with_httpx(base_url)
-            app.logger.info(f"Fallback httpx results - Title: {title}, Description: {description}")
-            
-            # Create HTML-like content with the extracted information
-            html_content = f"""
-            <html>
-                <head>
-                    <title>{title}</title>
-                    <meta name="description" content="{description}">
-                </head>
-                <body>
-                    {main_content}
-                </body>
-            </html>
-            """
-            return html_content, main_content, main_content
+            return fetch_with_httpx(base_url)  # Already returns 3 values
 
 def fetch_with_httpx(url):
     try:
@@ -134,18 +119,53 @@ def fetch_with_httpx(url):
         # Extract main content
         main_content = soup.get_text(strip=True)
         
-        return title, description, main_content
+        # Create HTML-like content with the extracted information
+        html_content = f"""
+        <html>
+            <head>
+                <title>{title}</title>
+                <meta name="description" content="{description}">
+            </head>
+            <body>
+                {main_content}
+            </body>
+        </html>
+        """
+        
+        return html_content, main_content, main_content
     except httpx.RequestError as e:
         app.logger.error(f"An error occurred while requesting {url}: {e}")
-        return "No title found", "No description found", "Failed to fetch content."
+        html_content = f"""
+        <html>
+            <head>
+                <title>Error</title>
+                <meta name="description" content="Error fetching content">
+            </head>
+            <body>
+                Failed to fetch content
+            </body>
+        </html>
+        """
+        return html_content, "Failed to fetch content", "Failed to fetch content"
     except httpx.HTTPStatusError as e:
         app.logger.error(f"HTTP error occurred: {e}")
-        return "No title found", "No description found", "Failed to fetch content."
+        html_content = f"""
+        <html>
+            <head>
+                <title>Error</title>
+                <meta name="description" content="Error fetching content">
+            </head>
+            <body>
+                Failed to fetch content
+            </body>
+        </html>
+        """
+        return html_content, "Failed to fetch content", "Failed to fetch content"
 
 def process_content(content):
     soup = BeautifulSoup(content, 'html.parser')
     main_content = soup.get_text(strip=True)
-    return content, main_content[:5000]  # Adjust the limit as needed
+    return content, main_content, main_content  # Return three values consistently
 
 def fetch_additional_content(domain):
     base_url = f"https://{domain}"
