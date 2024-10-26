@@ -302,36 +302,49 @@ function hideSpinnerAndProgressLog() {
 
 function updateAdviceContent(data) {
     const adviceContent = document.getElementById('adviceContent');
-    let contentHtml = '<h3>Content Update Suggestions:</h3>';
+    let contentHtml = '<h3>Recommendations to Improve LLM Visibility:</h3>';
 
-    if (data.existing_page_suggestions && data.existing_page_suggestions.length > 0) {
-        contentHtml += '<h4>Existing Pages to Update:</h4><ul>';
-        data.existing_page_suggestions.forEach((suggestion, index) => {
-            let url = suggestion.url;
-            if (!url.startsWith('http://') && !url.startsWith('https://')) {
-                url = `https://${url}`;
-            }
+    if (data.recommendations && data.recommendations.length > 0) {
+        contentHtml += '<div class="recommendations-container">';
+        data.recommendations.forEach((rec, index) => {
+            const typeIcon = {
+                'content_update': 'fa-pencil-alt',
+                'new_content': 'fa-plus-circle',
+                'technical': 'fa-cogs'
+            }[rec.type] || 'fa-lightbulb';
+
+            const typeLabel = {
+                'content_update': 'Content Update',
+                'new_content': 'New Content',
+                'technical': 'Technical Optimization'
+            }[rec.type] || 'General Recommendation';
+
+            const impactClass = rec.score_impact <= 5 ? 'low-impact' : 
+                              rec.score_impact <= 10 ? 'medium-impact' : 
+                              'high-impact';
+
             contentHtml += `
-                <li>
-                    <strong><a href="${url}" target="_blank" rel="noopener noreferrer">${suggestion.url}</a></strong>
-                    <p>Suggestion: ${suggestion.suggestion}</p>
-                </li>
+                <div class="recommendation-card">
+                    <div class="recommendation-header">
+                        <i class="fas ${typeIcon}"></i>
+                        <span class="recommendation-type">${typeLabel}</span>
+                        <span class="score-impact ${impactClass}">
+                            <i class="fas fa-chart-line"></i>
+                            +${rec.score_impact} points
+                        </span>
+                    </div>
+                    <h4>${rec.title}</h4>
+                    <p class="recommendation-description">${rec.description}</p>
+                    <div class="implementation-steps">
+                        <h5>Implementation Steps:</h5>
+                        <p>${rec.implementation}</p>
+                    </div>
+                </div>
             `;
         });
-        contentHtml += '</ul>';
-    }
-
-    if (data.new_blog_post_suggestions && data.new_blog_post_suggestions.length > 0) {
-        contentHtml += '<h4>New Blog Posts to Create:</h4><ul>';
-        data.new_blog_post_suggestions.forEach(suggestion => {
-            contentHtml += `
-                <li>
-                    <strong>${suggestion.title}</strong>
-                    <p>Outline: ${Array.isArray(suggestion.outline) ? suggestion.outline.join(', ') : suggestion.outline}</p>
-                </li>
-            `;
-        });
-        contentHtml += '</ul>';
+        contentHtml += '</div>';
+    } else {
+        contentHtml += '<p>No recommendations available at this time.</p>';
     }
 
     adviceContent.innerHTML = contentHtml;

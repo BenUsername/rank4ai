@@ -628,30 +628,38 @@ def unhandled_exception(e):
 def get_advice(domain, prompt):
     try:
         logging.info(f"Analyzing content for {domain}")
-        # Get main content only
         _, main_content, _ = fetch_main_page_content(domain)
         
         if not main_content:
             logging.error(f"Failed to fetch content for {domain}")
             return {"error": "Failed to fetch content for analysis. Please try again later."}
 
-        # Prepare content for analysis
-        total_content = main_content[:1000]  # Limit content to 1000 tokens
+        total_content = main_content[:1000]
 
-        system_message = "You are an expert in SEO and content strategy."
+        system_message = "You are an expert in content strategy and LLM optimization."
         user_message = f"""
-        Based on the following content from {domain}, suggest 3 new blog posts that would enhance their content strategy.
-
-        Prompt: {prompt}
+        Based on the following content from {domain}, provide 3 strategic recommendations to help them appear more frequently in LLM responses for the prompt: "{prompt}"
 
         Existing content:
         {total_content}
 
-        Format your response as a JSON object with a single key: 'new_blog_post_suggestions'.
-        Each blog post suggestion should include 'title' and 'outline'.
-        The 'outline' should be an array of strings representing the main sections of the post.
-        Limit your response to exactly 3 blog post suggestions.
-        Make sure the suggestions are highly relevant to their business and target audience.
+        Format your response as a JSON object with a single key: 'recommendations'.
+        Each recommendation should include:
+        1. 'type': One of ['content_update', 'new_content', 'technical']
+        2. 'title': A brief title for the recommendation
+        3. 'description': Detailed explanation of the recommendation
+        4. 'implementation': Step-by-step guide to implement the recommendation
+        5. 'score_impact': A number between 1 and 15 representing the estimated score increase
+            - 1-5: Minor improvement
+            - 6-10: Moderate improvement
+            - 11-15: Major improvement
+        Base the score_impact on:
+        - How much the recommendation would improve visibility in LLM responses
+        - How much it would help rank higher in those responses
+        - The effort vs impact ratio
+        
+        Ensure one recommendation is of type 'new_content' suggesting a new blog post or content piece.
+        Make recommendations highly specific to their business and the given prompt.
         """
 
         response = client.chat.completions.create(
@@ -668,20 +676,42 @@ def get_advice(domain, prompt):
         app.logger.info(f"Raw OpenAI API response: {content}")
 
         content = content.replace("```json", "").replace("```", "").strip()
-        content_suggestions = json.loads(content)
+        recommendations = json.loads(content)
 
-        # Ensure we have exactly 3 blog post suggestions
-        content_suggestions['new_blog_post_suggestions'] = content_suggestions.get('new_blog_post_suggestions', [])[:3]
+        # Store recommendations in MongoDB
+        store_recommendations(domain, prompt, recommendations['recommendations'])
 
-        # After getting content suggestions
-        if 'new_blog_post_suggestions' in content_suggestions:
-            store_blog_suggestions(domain, content_suggestions['new_blog_post_suggestions'])
-
-        return content_suggestions
+        return recommendations
 
     except Exception as e:
         app.logger.error(f"Error generating advice: {str(e)}", exc_info=True)
         return {"error": f"An error occurred while generating advice: {str(e)}. Please try again later."}
+
+def store_recommendations(domain, prompt, recommendations):
+    try:
+        document = {
+            "timestamp": datetime.utcnow(),
+            "domain": domain,
+            "prompt": prompt,
+            "recommendations": recommendations
+        }
+        
+        # Update existing document or create new one
+        result = requests_collection.update_one(
+            {
+                "domain": domain,
+                "prompt": prompt,
+                "timestamp": {
+                    "$gte": datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+                }
+            },
+            {"$set": {"recommendations": recommendations}},
+            upsert=True
+        )
+        
+        app.logger.info(f"Stored/updated recommendations: {result.modified_count} documents modified")
+    except Exception as e:
+        app.logger.error(f"Failed to store recommendations: {str(e)}")
 
 # Add this new route
 @app.route('/autocomplete/<query>')
