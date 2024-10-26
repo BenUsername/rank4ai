@@ -40,6 +40,7 @@ function displayResults(data) {
     const mainContent = document.getElementById('main-content');
     const landingContent = document.getElementById('landing-content');
     const errorMessage = document.getElementById('error-message');
+    const landingNavItems = document.getElementById('landing-nav-items');
     const spinner = document.getElementById('spinner');
     const progressLog = document.getElementById('progress-log');
     const analyzeButton = document.getElementById('analyzeButton');
@@ -55,6 +56,11 @@ function displayResults(data) {
     // Hide landing content and show main content
     landingContent.style.display = 'none';
     mainContent.style.display = 'block';
+    
+    // Hide landing nav items
+    if (landingNavItems) {
+        landingNavItems.style.display = 'none';
+    }
 
     // Stop the spinner and reset the button
     spinner.style.display = 'none';
