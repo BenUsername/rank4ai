@@ -40,10 +40,11 @@ function displayResults(data) {
     const mainContent = document.getElementById('main-content');
     const landingContent = document.getElementById('landing-content');
     const errorMessage = document.getElementById('error-message');
-    const landingNavItems = document.getElementById('landing-nav-items');
-    const spinner = document.getElementById('spinner');
-    const progressLog = document.getElementById('progress-log');
-    const analyzeButton = document.getElementById('analyzeButton');
+    
+    // Hide specific nav items when showing results
+    document.getElementById('how-it-works-link').style.display = 'none';
+    document.getElementById('success-stories-link').style.display = 'none';
+    document.getElementById('faq-link').style.display = 'none';
     
     if (!mainContent) {
         console.error('Main content element not found');
