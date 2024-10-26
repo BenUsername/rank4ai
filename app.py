@@ -845,6 +845,10 @@ def store_blog_suggestions(domain, blog_suggestions):
     except Exception as e:
         app.logger.error(f"Failed to store blog suggestions: {str(e)}")
 
+@app.route('/dashboard')
+def dashboard():
+    return render_template('dashboard.html')
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))
     app.run(host='0.0.0.0', port=port, debug=True)
