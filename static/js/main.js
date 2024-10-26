@@ -40,6 +40,8 @@ function displayResults(data) {
     const mainContent = document.getElementById('main-content');
     const landingContent = document.getElementById('landing-content');
     const errorMessage = document.getElementById('error-message');
+    const spinner = document.getElementById('spinner');
+    const progressLog = document.getElementById('progress-log');  // Define progressLog here
     
     // Hide specific nav items when showing results
     document.getElementById('how-it-works-link').style.display = 'none';
@@ -57,17 +59,16 @@ function displayResults(data) {
     // Hide landing content and show main content
     landingContent.style.display = 'none';
     mainContent.style.display = 'block';
-    
-    // Hide landing nav items
-    if (landingNavItems) {
-        landingNavItems.style.display = 'none';
-    }
 
     // Stop the spinner and reset the button
-    spinner.style.display = 'none';
-    progressLog.innerHTML = '';
-    analyzeButton.disabled = false;
-    analyzeButton.textContent = 'Analyze';
+    if (spinner) spinner.style.display = 'none';
+    if (progressLog) progressLog.innerHTML = '';
+    
+    const analyzeButton = document.getElementById('analyzeButton');
+    if (analyzeButton) {
+        analyzeButton.disabled = false;
+        analyzeButton.textContent = 'Analyze';
+    }
 
     // Clear previous content
     mainContent.innerHTML = '';
