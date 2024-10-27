@@ -879,6 +879,104 @@ def store_blog_suggestions(domain, blog_suggestions):
 def dashboard():
     return render_template('dashboard.html')
 
+def analyze_competitor(competitor_domain, prompt, llm_response):
+    try:
+        # Fetch competitor content
+        _, competitor_content, _ = fetch_main_page_content(competitor_domain)
+        
+        # Ask LLM to analyze why this competitor was mentioned
+        analysis_prompt = f"""
+        Based on this competitor's content and how they were mentioned in the response,
+        identify the SINGLE MOST IMPORTANT factor why {competitor_domain} was included.
+        
+        Competitor content: {competitor_content[:1000]}
+        Original prompt: {prompt}
+        How they were mentioned: {llm_response}
+        
+        Return ONLY a brief one-line explanation (max 50 chars).
+        Format: Key factor: [explanation]
+        """
+        
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are an expert in competitive analysis."},
+                {"role": "user", "content": analysis_prompt}
+            ],
+            max_tokens=60,
+            temperature=0.3
+        )
+        
+        analysis = response.choices[0].message.content.strip()
+        
+        # Store in MongoDB
+        store_competitor_analysis(competitor_domain, prompt, analysis)
+        
+        return analysis
+    except Exception as e:
+        app.logger.error(f"Error analyzing competitor: {str(e)}")
+        return "Analysis unavailable"
+
+def store_competitor_analysis(competitor_domain, prompt, analysis):
+    try:
+        document = {
+            "timestamp": datetime.utcnow(),
+            "competitor_domain": competitor_domain,
+            "prompt": prompt,
+            "analysis": analysis
+        }
+        
+        # Update existing analysis or create new one
+        result = requests_collection.update_one(
+            {
+                "competitor_domain": competitor_domain,
+                "prompt": prompt,
+                "timestamp": {
+                    "$gte": datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+                }
+            },
+            {"$set": {"analysis": analysis}},
+            upsert=True
+        )
+        
+        app.logger.info(f"Stored competitor analysis: {result.modified_count} documents modified")
+    except Exception as e:
+        app.logger.error(f"Failed to store competitor analysis: {str(e)}")
+
+@app.route('/analyze_competitor', methods=['POST'])
+def analyze_competitor_route():
+    data = request.json
+    competitor = data.get('competitor')
+    prompt = data.get('prompt')
+    
+    if not competitor or not prompt:
+        return jsonify({'error': 'Competitor and prompt are required'}), 400
+        
+    try:
+        # Find the original response that mentioned this competitor
+        original_response = requests_collection.find_one(
+            {
+                "marketing_prompts": {
+                    "$elemMatch": {
+                        "prompt": prompt,
+                        "competitors": {"$in": [competitor]}
+                    }
+                }
+            },
+            {"marketing_prompts.$": 1}
+        )
+        
+        if not original_response or not original_response.get('marketing_prompts'):
+            return jsonify({'error': 'Original response not found'}), 404
+            
+        llm_response = original_response['marketing_prompts'][0]['answer']
+        
+        analysis = analyze_competitor(competitor, prompt, llm_response)
+        return jsonify({'analysis': analysis})
+    except Exception as e:
+        app.logger.error(f"Error in analyze_competitor route: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))
     app.run(host='0.0.0.0', port=port, debug=True)

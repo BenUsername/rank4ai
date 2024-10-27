@@ -147,6 +147,9 @@ function displayResults(data) {
                                         <span class="competitor-order">${index + 1}.</span>
                                         <img src="${get_logo_dev_logo(competitor)}" alt="${competitor} logo" class="competitor-logo" onerror="this.onerror=null; this.src='https://www.google.com/s2/favicons?domain=${competitor}&sz=32';">
                                         <span class="competitor-domain" title="${competitor}">${competitor}</span>
+                                        <button class="competitor-analysis-button" data-competitor="${competitor}" data-prompt="${row.prompt}">
+                                            <i class="fas fa-search-plus"></i>
+                                        </button>
                                     </li>
                                 `).join('') : ''}
                             </ol>
@@ -208,6 +211,9 @@ function displayResults(data) {
             getContentUpdates(domain, prompt);
         });
     });
+
+    // Add this after displayResults function
+    attachCompetitorAnalysisListeners();
 }
 
 function formatMarkdown(text) {
@@ -673,3 +679,51 @@ function initializeDropdown() {
     }
 }
 
+// Add this after displayResults function
+function attachCompetitorAnalysisListeners() {
+    const buttons = document.querySelectorAll('.competitor-analysis-button');
+    buttons.forEach(button => {
+        button.addEventListener('click', function() {
+            const competitor = this.getAttribute('data-competitor');
+            const prompt = this.getAttribute('data-prompt');
+            
+            // Show loading state
+            this.disabled = true;
+            const originalIcon = this.innerHTML;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            
+            fetch('/analyze_competitor', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ competitor, prompt })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                // Show the analysis in the existing modal
+                const adviceContent = document.getElementById('adviceContent');
+                adviceContent.innerHTML = `
+                    <h3>Competitor Analysis: ${competitor}</h3>
+                    <p class="competitor-analysis">${data.analysis}</p>
+                `;
+                document.getElementById('adviceModal').style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error analyzing competitor: ' + error.message);
+            })
+            .finally(() => {
+                // Reset button state
+                this.disabled = false;
+                this.innerHTML = originalIcon;
+            });
+        });
+    });
+}
+
+// Add this line at the end of displayResults function
+attachCompetitorAnalysisListeners();
