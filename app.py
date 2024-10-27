@@ -953,29 +953,71 @@ def analyze_competitor_route():
         return jsonify({'error': 'Competitor and prompt are required'}), 400
         
     try:
-        # Find the original response that mentioned this competitor
+        # More flexible query to find the original response
         original_response = requests_collection.find_one(
             {
-                "marketing_prompts": {
-                    "$elemMatch": {
+                "$or": [
+                    # Check in marketing_prompts array
+                    {
+                        "marketing_prompts": {
+                            "$elemMatch": {
+                                "prompt": prompt,
+                                "$or": [
+                                    {"competitors": {"$in": [competitor]}},
+                                    {"competitors": competitor},  # Handle case where competitors is a string
+                                    {"competitors": {"$regex": competitor}}  # Handle case where competitor is part of a string
+                                ]
+                            }
+                        }
+                    },
+                    # Check in the root level (for older documents)
+                    {
                         "prompt": prompt,
-                        "competitors": {"$in": [competitor]}
+                        "$or": [
+                            {"competitors": {"$in": [competitor]}},
+                            {"competitors": competitor},
+                            {"competitors": {"$regex": competitor}}
+                        ]
                     }
-                }
+                ]
             },
-            {"marketing_prompts.$": 1}
+            {
+                "marketing_prompts": 1,
+                "answer": 1  # Include answer field for older documents
+            }
         )
         
-        if not original_response or not original_response.get('marketing_prompts'):
-            return jsonify({'error': 'Original response not found'}), 404
+        app.logger.info(f"Found document for {competitor} and prompt '{prompt}': {original_response is not None}")
+        
+        if not original_response:
+            app.logger.warning(f"No document found for competitor {competitor} and prompt '{prompt}'")
+            # Fallback: analyze without original response context
+            analysis = analyze_competitor(competitor, prompt, f"Analysis for prompt: {prompt}")
+            return jsonify({'analysis': analysis})
             
-        llm_response = original_response['marketing_prompts'][0]['answer']
+        # Extract the response text, handling different document structures
+        if 'marketing_prompts' in original_response and original_response['marketing_prompts']:
+            for prompt_data in original_response['marketing_prompts']:
+                if prompt_data['prompt'] == prompt:
+                    llm_response = prompt_data['answer']
+                    break
+            else:
+                llm_response = original_response['marketing_prompts'][0]['answer']
+        else:
+            llm_response = original_response.get('answer', f"Analysis for prompt: {prompt}")
         
         analysis = analyze_competitor(competitor, prompt, llm_response)
         return jsonify({'analysis': analysis})
+        
     except Exception as e:
-        app.logger.error(f"Error in analyze_competitor route: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Error in analyze_competitor route: {str(e)}", exc_info=True)
+        # Fallback: return a basic analysis
+        try:
+            basic_analysis = analyze_competitor(competitor, prompt, f"Analysis for prompt: {prompt}")
+            return jsonify({'analysis': basic_analysis})
+        except Exception as e2:
+            app.logger.error(f"Error in fallback analysis: {str(e2)}", exc_info=True)
+            return jsonify({'error': "Could not analyze competitor at this time"}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))
