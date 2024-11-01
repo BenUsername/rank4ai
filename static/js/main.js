@@ -41,12 +41,16 @@ function displayResults(data) {
     const landingContent = document.getElementById('landing-content');
     const errorMessage = document.getElementById('error-message');
     const spinner = document.getElementById('spinner');
-    const progressLog = document.getElementById('progress-log');  // Define progressLog here
+    const progressLog = document.getElementById('progress-log');
     
-    // Hide specific nav items when showing results
-    document.getElementById('how-it-works-link').style.display = 'none';
-    document.getElementById('success-stories-link').style.display = 'none';
-    document.getElementById('faq-link').style.display = 'none';
+    // Hide specific nav items when showing results - Using href selectors
+    const howItWorksLink = document.querySelector('a[href="#how-it-works"]');
+    const successStoriesLink = document.querySelector('a[href="#case-studies"]');
+    const faqLink = document.querySelector('a[href="#faq"]');
+    
+    if (howItWorksLink) howItWorksLink.style.display = 'none';
+    if (successStoriesLink) successStoriesLink.style.display = 'none';
+    if (faqLink) faqLink.style.display = 'none';
     
     if (!mainContent) {
         console.error('Main content element not found');
@@ -54,10 +58,10 @@ function displayResults(data) {
     }
     
     // Hide error message if it was previously shown
-    errorMessage.style.display = 'none';
+    if (errorMessage) errorMessage.style.display = 'none';
     
     // Hide landing content and show main content
-    landingContent.style.display = 'none';
+    if (landingContent) landingContent.style.display = 'none';
     mainContent.style.display = 'block';
 
     // Stop the spinner and reset the button
@@ -70,41 +74,31 @@ function displayResults(data) {
         analyzeButton.textContent = 'Analyze';
     }
 
-    // Clear previous content
-    mainContent.innerHTML = '';
+    // Check different access states
+    const isFirstTimeUser = data.searches_left > 0 && !data.is_authenticated;
+    const isAuthenticatedFreeUser = data.is_authenticated && data.free_searches_left > 0;
+    const hasFullAccess = data.is_authenticated && data.has_active_subscription;
+    const needsUpgrade = data.is_authenticated && data.free_searches_left <= 0 && !data.has_active_subscription;
+    const needsSignup = !data.is_authenticated && data.searches_left <= 0;
 
     const score = Math.round(data.score);
     const scoreColor = getScoreColor(score);
-    const circumference = 2 * Math.PI * 90; // Circumference of the circle
-    const dashArray = (score / 100) * circumference; // Adjust fill based on score
 
-    mainContent.innerHTML += `
+    mainContent.innerHTML = `
         <div class="results-header">
             <h2>
                 ${data.logo_url ? `<img src="${data.logo_url}" alt="${data.domain} logo" style="vertical-align: middle; margin-right: 10px; max-height: 50px;">` : ''}
                 Results for ${data.domain}
             </h2>
             <div class="score-container">
-                <div class="score-circle" style="background-color: ${scoreColor}11;">
-                    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="100" cy="100" r="90" fill="none" stroke="${scoreColor}33" stroke-width="12"/>
-                        <circle cx="100" cy="100" r="90" fill="none" stroke="${scoreColor}" stroke-width="12"
-                                stroke-dasharray="${circumference}" stroke-dashoffset="${circumference - dashArray}"
-                                transform="rotate(-90 100 100)"/>
-                    </svg>
-                    <span class="score" style="color: ${scoreColor};">${score}</span>
-                </div>
-                <p>LLM Visibility Score</p>
+                <div class="score">${Math.round(data.score)}</div>
+                <div class="score-title">LLM Visibility Score</div>
                 <div class="score-legend">
-                    <span class="legend-item poor">0-49</span>
-                    <span class="legend-item average">50-89</span>
-                    <span class="legend-item good">90-100</span>
+                    <span class="poor">0-49</span>
+                    <span class="average">50-89</span>
+                    <span class="good">90-100</span>
                 </div>
             </div>
-        </div>
-        <div class="scroll-prompt">
-            <p>See whether you are visible in LLM searches, whether your competitors are, and how to improve below</p>
-            <i class="fas fa-chevron-down"></i>
         </div>
     `;
 
@@ -130,36 +124,64 @@ function displayResults(data) {
                 </tr>
             </thead>
             <tbody>
+                ${(needsSignup || needsUpgrade) && index === 2 ? `
+                    <tr class="cta-row">
+                        <td colspan="5" class="signup-cta">
+                            <div class="cta-content">
+                                <h3>${needsUpgrade ? 'Time to Upgrade!' : 'Want to see more insights?'}</h3>
+                                <p>${needsUpgrade ? 
+                                    'You\'ve used all your free searches. Upgrade now for unlimited access!' : 
+                                    'Sign up to get 3 more free searches and unlock all features!'}</p>
+                                <button class="signup-button" onclick="${needsUpgrade ? 
+                                    'document.getElementById(\'pricingModal\').style.display=\'block\'' : 
+                                    'document.getElementById(\'signupModal\').style.display=\'block\''}">
+                                    <i class="fas fa-unlock"></i> ${needsUpgrade ? 'Upgrade Now' : 'Sign Up Now'}
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                ` : ''}
                 ${data.table.map((row, index) => `
                     <tr>
                         <td>${row.prompt}</td>
                         <td class="ai-response">
-                            <div class="response-content">
+                            <div class="response-content ${(needsSignup || needsUpgrade) && index >= 2 ? 'blurred-content' : ''}">
                                 <p>${formatMarkdown(row.answer)}</p>
+                                ${(needsSignup || needsUpgrade) && index >= 2 ? `
+                                    <div class="premium-overlay">
+                                        <button class="signup-button" onclick="${needsUpgrade ? 
+                                            'document.getElementById(\'pricingModal\').style.display=\'block\'' : 
+                                            'document.getElementById(\'signupModal\').style.display=\'block\''}">
+                                            <i class="fas fa-user-plus"></i> ${needsUpgrade ? 'Upgrade to See More' : 'Sign Up to See More'}
+                                        </button>
+                                    </div>
+                                ` : ''}
                             </div>
                             <button class="read-more-btn">Read More</button>
                         </td>
                         <td>
-                            <ol class="competitors-list">
-                                ${row.competitors ? (Array.isArray(row.competitors) ? 
-                                    row.competitors : row.competitors.split(', ')).map((competitor, index) => `
-                                    <li>
-                                        <span class="competitor-order">${index + 1}.</span>
-                                        <img src="${get_logo_dev_logo(competitor)}" alt="${competitor} logo" class="competitor-logo" onerror="this.onerror=null; this.src='https://www.google.com/s2/favicons?domain=${competitor}&sz=32';">
-                                        <span class="competitor-domain" title="${competitor}">${competitor}</span>
-                                        <button class="competitor-analysis-button" data-competitor="${competitor}" data-prompt="${row.prompt}">
-                                            <i class="fas fa-search-plus"></i>
-                                        </button>
-                                    </li>
-                                `).join('') : ''}
-                            </ol>
+                            <div class="${(needsSignup || needsUpgrade) && index >= 2 ? 'blurred-content' : ''}">
+                                <ol class="competitors-list">
+                                    ${row.competitors ? (Array.isArray(row.competitors) ? 
+                                        row.competitors : row.competitors.split(', ')).map((competitor, idx) => `
+                                        <li>
+                                            <span class="competitor-order">${idx + 1}.</span>
+                                            <img src="${get_logo_dev_logo(competitor)}" alt="${competitor} logo" class="competitor-logo">
+                                            <span class="competitor-domain">${competitor}</span>
+                                        </li>
+                                    `).join('') : ''}
+                                </ol>
+                            </div>
                         </td>
-                        <td class="visibility-result">
+                        <td class="visibility-result ${(needsSignup || needsUpgrade) && index >= 2 ? 'blurred-content' : ''}">
                             ${getVisibilityMessage(row.visible)}
                         </td>
                         <td>
                             ${row.visible === 'No' ? `
-                                <button class="content-updates-button" data-domain="${data.domain}" data-prompt="${row.prompt}">
+                                <button class="content-updates-button ${(needsSignup || needsUpgrade) ? 'blurred-content disabled' : ''}" 
+                                    data-domain="${data.domain}" 
+                                    data-prompt="${row.prompt}"
+                                    ${(needsSignup || needsUpgrade) ? 'disabled' : ''}>
                                     <i class="fas fa-pencil-alt"></i>
                                 </button>
                             ` : ''}
@@ -181,10 +203,17 @@ function displayResults(data) {
         </div>
     `;
 
-    // Update searches left
+    // Update searches left display
     const searchesLeftElement = document.getElementById('searches-left');
     if (searchesLeftElement) {
-        searchesLeftElement.textContent = data.searches_left;
+        if (hasFullAccess) {
+            searchesLeftElement.parentElement.style.display = 'none';
+        } else if (data.is_authenticated) {
+            searchesLeftElement.textContent = data.free_searches_left;
+            searchesLeftElement.previousElementSibling.textContent = 'free searches left before upgrade';
+        } else {
+            searchesLeftElement.textContent = data.searches_left;
+        }
     }
 
     // Add event listeners for "Read More" buttons
@@ -214,6 +243,64 @@ function displayResults(data) {
 
     // Add this after displayResults function
     attachCompetitorAnalysisListeners();
+
+    // Initialize upgrade buttons
+    const upgradeButtons = document.querySelectorAll('.upgrade-button');
+    upgradeButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const pricingModal = document.getElementById('pricingModal');
+            if (pricingModal) {
+                pricingModal.style.display = 'block';
+            } else {
+                console.error('Pricing modal not found');
+            }
+        });
+    });
+
+    // Initialize close button for pricing modal
+    const pricingModal = document.getElementById('pricingModal');
+    const closeBtn = pricingModal.querySelector('.close');
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            pricingModal.style.display = 'none';
+        };
+    }
+
+    // Close modal when clicking outside
+    window.onclick = (event) => {
+        if (event.target === pricingModal) {
+            pricingModal.style.display = 'none';
+        }
+    };
+
+    // Initialize subscribe buttons
+    const subscribeButtons = document.querySelectorAll('.subscribe-button');
+    subscribeButtons.forEach(button => {
+        button.addEventListener('click', async () => {
+            const plan = button.getAttribute('data-plan');
+            try {
+                const response = await fetch('/subscribe', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ plan }),
+                });
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Redirect to Stripe Checkout
+                const stripe = Stripe(stripePublicKey);
+                await stripe.redirectToCheckout({ sessionId: data.sessionId });
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error processing subscription: ' + error.message);
+            }
+        });
+    });
 }
 
 function formatMarkdown(text) {
@@ -375,6 +462,8 @@ function init() {
     handleUrlParams();
     setupAutocomplete();
     initializeDropdown();
+    initializePricingModal();
+    initializeAuthModals(); // Add this line
 }
 
 // Call init() only once when the DOM is loaded
@@ -393,9 +482,7 @@ function attachEventListeners() {
 function handleFormSubmit(e) {
     e.preventDefault();
     const submitButton = document.getElementById('analyzeButton');
-    if (submitButton.disabled) {
-        return; // Prevent multiple submissions
-    }
+    if (submitButton.disabled) return;
     
     const domain = document.getElementById('domainInput').value;
     submitButton.disabled = true;
@@ -417,15 +504,87 @@ function handleFormSubmit(e) {
     })
     .then(response => response.json())
     .then(data => {
-        if (data.error) {
+        if (data.error === 'signup_required') {
+            const mainContent = document.getElementById('main-content');
+            const landingContent = document.getElementById('landing-content');
+            const errorMessage = document.getElementById('error-message');
+            
+            // Hide error message and landing content
+            if (errorMessage) errorMessage.style.display = 'none';
+            if (landingContent) landingContent.style.display = 'none';
+            
+            // Show signup prompt with preview data
+            if (mainContent) {
+                mainContent.style.display = 'block';
+                mainContent.innerHTML = `
+                    <div class="signup-prompt">
+                        <div class="score-preview">
+                            <div class="score-circle" style="--score-color: ${scoreColor}; --score-percentage: ${scorePercentage}">
+                                <svg viewBox="0 0 200 200">
+                                    <circle cx="100" cy="100" r="90" />
+                                    <circle cx="100" cy="100" r="90" />
+                                </svg>
+                                <span class="score">${score}</span>
+                            </div>
+                            <p>LLM Visibility Score Preview</p>
+                            <div class="score-legend">
+                                <span class="poor">0-49</span>
+                                <span class="average">50-89</span>
+                                <span class="good">90-100</span>
+                            </div>
+                        </div>
+                        <h2>🔍 Unlock Your Full Results</h2>
+                        <p class="lead">Your analysis for ${data.preview_data?.domain || domain} is ready!</p>
+                        <div class="preview-benefits">
+                            <div class="benefit-item">
+                                <i class="fas fa-chart-line"></i>
+                                <p>See your complete visibility score</p>
+                            </div>
+                            <div class="benefit-item">
+                                <i class="fas fa-users"></i>
+                                <p>Compare with competitors</p>
+                            </div>
+                            <div class="benefit-item">
+                                <i class="fas fa-lightbulb"></i>
+                                <p>Get personalized recommendations</p>
+                            </div>
+                        </div>
+                        <button class="cta-button signup-cta" onclick="document.getElementById('signupModal').style.display='block'">
+                            <i class="fas fa-unlock"></i> Sign Up Free to View Results
+                        </button>
+                        <div class="signup-features">
+                            <p><i class="fas fa-check"></i> 3 additional free searches</p>
+                            <p><i class="fas fa-check"></i> No credit card required</p>
+                            <p><i class="fas fa-check"></i> Instant access</p>
+                        </div>
+                    </div>
+                `;
+            }
+            resetProgressIndicators();
+            return;
+        } else if (data.error === 'subscription_required') {
+            document.getElementById('pricingModal').style.display = 'block';
+            throw new Error('Please upgrade to continue analyzing websites');
+        } else if (data.error) {
             throw new Error(data.error);
         }
         displayResults(data);
     })
     .catch(error => {
         console.error('Error:', error);
-        document.getElementById('error-message').textContent = error.message;
-        document.getElementById('error-message').style.display = 'block';
+        const errorMessage = document.getElementById('error-message');
+        if (error.message.includes('geographical redirect')) {
+            errorMessage.innerHTML = `
+                <p style="font-size: 0.9em; color: #666;">
+                    If your website uses geographical redirect based on IP: we are implementing standard IP redirect handling, 
+                    which we are doing site by site for now. 
+                    <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" rel="noopener noreferrer" 
+                       style="color: #3498db; text-decoration: underline;">Contact us</a> 
+                    to speed up the handling of your website.
+                </p>
+            `;
+            errorMessage.style.display = 'block';
+        }
         resetProgressIndicators();
     });
 }
@@ -465,13 +624,36 @@ function fetchWithRetry(url, options, retries = 3) {
 
 // Add this function to handle URL parameters when the page loads
 function handleUrlParams() {
+    // Get URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const domain = urlParams.get('domain');
     const showResults = urlParams.get('showResults');
 
-    if (domain && showResults === 'true') {
-        document.getElementById('domainInput').value = domain;
-        document.getElementById('analyzeForm').dispatchEvent(new Event('submit'));
+    // If domain parameter exists, set it in the input field
+    if (domain) {
+        const domainInput = document.getElementById('domainInput');
+        if (domainInput) {
+            domainInput.value = domain;
+        }
+    }
+
+    // If showResults is true, hide landing content and show results
+    if (showResults === 'true') {
+        const landingContent = document.getElementById('landing-content');
+        const mainContent = document.getElementById('main-content');
+        if (landingContent && mainContent) {
+            landingContent.style.display = 'none';
+            mainContent.style.display = 'block';
+        }
+
+        // Hide specific nav items when showing results
+        const howItWorksLink = document.querySelector('a[href="#how-it-works"]');
+        const successStoriesLink = document.querySelector('a[href="#case-studies"]');
+        const faqLink = document.querySelector('a[href="#faq"]');
+
+        if (howItWorksLink) howItWorksLink.style.display = 'none';
+        if (successStoriesLink) successStoriesLink.style.display = 'none';
+        if (faqLink) faqLink.style.display = 'none';
     }
 }
 
@@ -636,9 +818,9 @@ function clearAutocomplete() {
 }
 
 function getScoreColor(score) {
-    if (score < 50) return '#FF4136'; // Red
-    if (score < 90) return '#FF851B'; // Orange
-    return '#2ECC40'; // Green
+    if (score <= 49) return '#FF4136';      // Red for 0-49
+    if (score <= 89) return '#FF851B';      // Orange for 50-89
+    return '#2ECC40';                       // Green for 90-100
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -727,3 +909,172 @@ function attachCompetitorAnalysisListeners() {
 
 // Add this line at the end of displayResults function
 attachCompetitorAnalysisListeners();
+
+function initializePricingModal() {
+    const modal = document.getElementById('pricingModal');
+    const upgradeButtons = document.querySelectorAll('.upgrade-button');
+    const subscribeButtons = document.querySelectorAll('.subscribe-button');
+    const closeBtn = modal.querySelector('.close');
+
+    upgradeButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            modal.style.display = 'block';
+        });
+    });
+
+    closeBtn.onclick = () => {
+        modal.style.display = 'none';
+    };
+
+    window.onclick = (event) => {
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
+    };
+
+    subscribeButtons.forEach(button => {
+        button.addEventListener('click', async () => {
+            const plan = button.getAttribute('data-plan');
+            try {
+                const response = await fetch('/subscribe', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ plan }),
+                });
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Redirect to Stripe Checkout
+                const stripe = Stripe(stripePublicKey); // We'll need to add this key to the template
+                stripe.redirectToCheckout({ sessionId: data.sessionId });
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error processing subscription: ' + error.message);
+            }
+        });
+    });
+}
+
+function initializeAuthModals() {
+    const loginModal = document.getElementById('loginModal');
+    const signupModal = document.getElementById('signupModal');
+    const loginButton = document.getElementById('loginButton');
+    const signupButton = document.getElementById('signupButton');
+    const showSignup = document.getElementById('showSignup');
+    const showLogin = document.getElementById('showLogin');
+    
+    loginButton.addEventListener('click', () => {
+        loginModal.style.display = 'block';
+    });
+    
+    signupButton.addEventListener('click', () => {
+        signupModal.style.display = 'block';
+    });
+    
+    showSignup.addEventListener('click', (e) => {
+        e.preventDefault();
+        loginModal.style.display = 'none';
+        signupModal.style.display = 'block';
+    });
+    
+    showLogin.addEventListener('click', (e) => {
+        e.preventDefault();
+        signupModal.style.display = 'none';
+        loginModal.style.display = 'block';
+    });
+    
+    // Handle form submissions
+    document.getElementById('loginForm').addEventListener('submit', handleLogin);
+    document.getElementById('signupForm').addEventListener('submit', handleSignup);
+}
+
+async function handleLogin(e) {
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    
+    try {
+        const response = await fetch('/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert(data.error);
+        }
+    } catch (error) {
+        alert('Error logging in: ' + error.message);
+    }
+}
+
+async function handleSignup(e) {
+    e.preventDefault();
+    const email = document.getElementById('signupEmail').value;
+    const password = document.getElementById('signupPassword').value;
+    
+    try {
+        const response = await fetch('/signup', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert(data.error);
+        }
+    } catch (error) {
+        alert('Error signing up: ' + error.message);
+    }
+}
+
+// Score circle creation function
+function createScoreCircle(score) {
+    const radius = 90;
+    const circumference = 2 * Math.PI * radius;
+    const progress = (score / 100) * circumference;
+    const dashoffset = circumference - progress;
+    
+    return `
+        <div class="score-circle">
+            <svg viewBox="0 0 200 200">
+                <circle cx="100" cy="100" r="${radius}" />
+                <circle cx="100" cy="100" r="${radius}" 
+                        style="stroke-dasharray: ${circumference}; stroke-dashoffset: ${dashoffset};" />
+            </svg>
+            <span class="score">${score}</span>
+        </div>
+        <p>LLM Visibility Score</p>
+        <div class="score-legend">
+            <span class="poor">0-49</span>
+            <span class="average">50-89</span>
+            <span class="good">90-100</span>
+        </div>
+    `;
+}
+
+// Use this function when displaying the score
+mainContent.innerHTML = `
+    <div class="signup-prompt">
+        <div class="score-preview">
+            ${createScoreCircle(data.preview_data?.score || 85)}
+        </div>
+        <!-- Rest of the content -->
+    </div>
+`;
+

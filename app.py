@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request, render_template, session, jsonify, send_from_directory
+from flask import Flask, request, render_template, session, jsonify, send_from_directory, redirect, url_for
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
@@ -22,9 +22,16 @@ from requests.exceptions import RequestException
 import urllib3
 import httpx
 from pymongo import MongoClient
+import stripe
+from flask_login import LoginManager, UserMixin, current_user, login_user, logout_user, login_required
+from bson.objectid import ObjectId
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # Load environment variables from .env file  
 load_dotenv()
+
+# Initialize Stripe
+stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'default_secret_key')
@@ -43,6 +50,8 @@ DAILY_INCREASE = 5
 CONTACT_EMAIL = os.getenv('mailto', 'support@promptboostai.com')
 MAX_SEARCHES_PER_SESSION = 3
 requests_timeout = 30
+MAX_INITIAL_SEARCHES = 3  # Searches before signup
+MAX_FREE_SEARCHES_AFTER_SIGNUP = 3  # Additional searches after signup before subscription required
 
 # Disable SSL warnings (use with caution)
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -58,6 +67,7 @@ try:
     # Explicitly specify the database name
     db = mongo_client['promptboostai']  # or any other database name you prefer
     requests_collection = db.requests
+    users_collection = db.users  # Add this line
     app.logger.info("Successfully connected to MongoDB")
 except Exception as e:
     app.logger.error(f"Failed to connect to MongoDB: {str(e)}")
@@ -385,13 +395,19 @@ def after_request(response):
     gc.collect()
     return response
 
-@app.route('/', methods=['GET'])
+@app.route('/')
 def index():
     searches_left = session.get('searches_left', MAX_SEARCHES_PER_SESSION)
     user_count = get_user_count()
     domain = request.args.get('domain')
     show_results = request.args.get('showResults')
-    return render_template('index.html', searches_left=searches_left, user_count=user_count, domain=domain, show_results=show_results)
+    return render_template('index.html', 
+                         searches_left=searches_left, 
+                         user_count=user_count, 
+                         domain=domain, 
+                         show_results=show_results,
+                         stripe_public_key=os.getenv('STRIPE_PUBLIC_KEY'),
+                         current_user=current_user)  # Pass current_user explicitly
 
 def calculate_score(table, content):
     total_points = 0
@@ -454,95 +470,78 @@ def find_latest_domain_analysis(domain):
         app.logger.error(f"Database query failed: {str(e)}")
         return None
 
-# Modify the analyze route to include database fallback
 @app.route('/analyze', methods=['POST'])
 def analyze():
     try:
-        start_time = time.time()
         domain = request.form['domain']
         if not is_valid_domain(domain):
             return jsonify({'error': 'Invalid domain'}), 400
 
         app.logger.info(f"Analyzing domain: {domain}")
-
-        # Initialize searches_left
-        searches_left = session.get('searches_left', MAX_SEARCHES_PER_SESSION)
-
-        try:
-            html_content, main_text_content, full_content = fetch_main_page_content(domain)
-            
-            if html_content is None:
-                raise Exception("Failed to fetch content")
-
-            app.logger.info(f"Extracting main info for {domain}")
-            info = extract_main_info(html_content)
-
-            app.logger.info(f"Generating marketing prompts for {domain}")
-            prompts = generate_marketing_prompts(info['title'], info['description'], full_content, domain)
-
-            if not prompts:
-                raise Exception("Couldn't generate valid prompts")
-
-            app.logger.info(f"Generating prompt answers for {domain}")
-            table = generate_prompt_answers(prompts, domain, info, existing_content={})
-            score = calculate_score(table, full_content)
-
-            # Store successful analysis
-            store_analysis_result(domain, info['title'], info['description'], prompts, table, score)
-
-        except Exception as e:
-            app.logger.warning(f"Live analysis failed for {domain}, trying database fallback: {str(e)}")
-            
-            # Try database fallback
-            db_result = find_latest_domain_analysis(domain)
-            if db_result:
-                app.logger.info(f"Using cached results for {domain}")
-                # Format the marketing prompts to ensure consistent structure
-                formatted_prompts = [{
-                    'prompt': mp['prompt'],
-                    'answer': mp['answer'],
-                    'competitors': mp['competitors'] if isinstance(mp['competitors'], list) else mp['competitors'].split(', '),
-                    'visible': mp['visible']
-                } for mp in db_result['marketing_prompts']]
-                
-                return jsonify({
-                    'domain': db_result['domain'],
-                    'info': {
-                        'title': db_result['title'],
-                        'description': db_result['description']
-                    },
-                    'table': formatted_prompts,  # Use formatted prompts
-                    'searches_left': searches_left,
-                    'score': db_result['score'],
-                    'logo_url': get_logo_dev_logo(domain),
-                    'from_cache': True
-                })
+        
+        # Get user's search counts
+        if current_user.is_authenticated:
+            user_data = users_collection.find_one({'_id': ObjectId(current_user.id)})
+            if user_data:
+                if user_data.get('subscription_status') == 'active':
+                    # Subscribed users get unlimited searches
+                    pass
+                else:
+                    # Check free searches after signup
+                    free_searches_left = user_data.get('free_searches_left', MAX_FREE_SEARCHES_AFTER_SIGNUP)
+                    if free_searches_left <= 0:
+                        return jsonify({
+                            'error': 'subscription_required',
+                            'message': 'Please upgrade to continue analyzing websites'
+                        }), 403
+                    users_collection.update_one(
+                        {'_id': ObjectId(current_user.id)},
+                        {'$set': {'free_searches_left': free_searches_left - 1}}
+                    )
             else:
-                app.logger.error(f"No database results found for {domain}")
-                return jsonify({'error': "Couldn't generate valid prompts for this website. Please try another domain.", 
-                              'searches_left': searches_left}), 500
+                # New authenticated user, initialize with free searches
+                users_collection.update_one(
+                    {'_id': ObjectId(current_user.id)},
+                    {'$set': {'free_searches_left': MAX_FREE_SEARCHES_AFTER_SIGNUP - 1}},
+                    upsert=True
+                )
+        else:
+            # Check initial free searches for non-authenticated users
+            searches_left = session.get('searches_left', MAX_INITIAL_SEARCHES)
+            if searches_left <= 0:
+                return jsonify({
+                    'error': 'signup_required',
+                    'message': 'Sign up to continue analyzing websites',
+                    'preview_data': {
+                        'domain': domain,
+                        'score': 85
+                    }
+                }), 403
+            session['searches_left'] = searches_left - 1
 
-        # Update searches_left
-        searches_left -= 1
-        session['searches_left'] = searches_left
-
-        end_time = time.time()
-        app.logger.info(f"Total processing time for {domain}: {end_time - start_time} seconds")
-
-        return jsonify({
-            'domain': domain,
-            'info': info,
-            'prompts': prompts,
-            'table': table,
-            'searches_left': searches_left,
-            'logo_url': get_logo_dev_logo(domain),
-            'score': score,
-            'from_cache': False  # Flag to indicate fresh data
-        })
-
+        # Get analysis results
+        results = get_analysis_results(domain)
+        
+        # Add user status info to results
+        if current_user.is_authenticated:
+            user_data = users_collection.find_one({'_id': ObjectId(current_user.id)})
+            results.update({
+                'is_authenticated': True,
+                'has_active_subscription': user_data.get('subscription_status') == 'active',
+                'free_searches_left': user_data.get('free_searches_left', 0) if not user_data.get('subscription_status') == 'active' else 'unlimited'
+            })
+        else:
+            results.update({
+                'is_authenticated': False,
+                'has_active_subscription': False,
+                'searches_left': session.get('searches_left', 0)
+            })
+        
+        return jsonify(results)
+        
     except Exception as e:
-        app.logger.error(f"Error processing {domain}: {str(e)}")
-        return jsonify({'error': 'An unexpected error occurred. Please try again later.'}), 500
+        app.logger.error(f"Error analyzing domain: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/robots.txt')
 def robots():
@@ -1019,6 +1018,274 @@ def analyze_competitor_route():
             app.logger.error(f"Error in fallback analysis: {str(e2)}", exc_info=True)
             return jsonify({'error': "Could not analyze competitor at this time"}), 500
 
+@app.route('/subscribe', methods=['POST'])
+def subscribe():
+    try:
+        data = request.json
+        plan = data.get('plan')
+        
+        price_id = os.getenv(f'STRIPE_PRICE_ID_{plan.upper()}')
+        
+        if not price_id:
+            raise ValueError(f"No price ID found for plan: {plan}")
+            
+        app.logger.info(f"Creating checkout session for plan {plan} with price ID {price_id}")
+        
+        # Create Stripe checkout session
+        session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price': price_id,
+                'quantity': 1,
+            }],
+            mode='subscription',
+            success_url=request.host_url + 'success?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url=request.host_url + 'cancel',
+            metadata={
+                'plan': plan
+            }
+        )
+        
+        return jsonify({'sessionId': session.id})
+    except Exception as e:
+        app.logger.error(f"Error creating subscription: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/success')
+def success():
+    session_id = request.args.get('session_id')
+    if not session_id:
+        return redirect(url_for('index'))
+
+    try:
+        # Retrieve the session from Stripe
+        checkout_session = stripe.checkout.Session.retrieve(session_id)
+        
+        # Store user and subscription info in MongoDB
+        user_data = {
+            "customer_id": checkout_session.customer,
+            "subscription_id": checkout_session.subscription,
+            "email": checkout_session.customer_details.email,
+            "subscription_status": "active",
+            "plan": checkout_session.metadata.get('plan', 'monthly'),  # Default to monthly if not specified
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+        
+        # Store in MongoDB, using email as unique identifier
+        users_collection.update_one(
+            {"email": user_data["email"]},
+            {"$set": user_data},
+            upsert=True
+        )
+        
+        # Store subscription info in session
+        session['user_email'] = user_data["email"]
+        session['is_subscriber'] = True
+        
+        return render_template('success.html', email=user_data["email"])
+    except Exception as e:
+        app.logger.error(f"Error processing successful subscription: {str(e)}")
+        return redirect(url_for('index'))
+
+# Add a function to check subscription status
+def check_subscription_status():
+    user_email = session.get('user_email')
+    if not user_email:
+        return False
+        
+    user = users_collection.find_one({"email": user_email})
+    if not user:
+        return False
+        
+    if user.get('subscription_status') != 'active':
+        return False
+        
+    return True
+
+# Add webhook handling for subscription updates
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    payload = request.get_data()
+    sig_header = request.headers.get('Stripe-Signature')
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, os.getenv('STRIPE_WEBHOOK_SECRET')
+        )
+    except ValueError as e:
+        return jsonify({'error': 'Invalid payload'}), 400
+    except stripe.error.SignatureVerificationError as e:
+        return jsonify({'error': 'Invalid signature'}), 400
+
+    if event['type'] == 'customer.subscription.updated':
+        subscription = event['data']['object']
+        update_subscription_status(subscription)
+    elif event['type'] == 'customer.subscription.deleted':
+        subscription = event['data']['object']
+        cancel_subscription(subscription)
+
+    return jsonify({'status': 'success'})
+
+def update_subscription_status(subscription):
+    customer_id = subscription['customer']
+    status = subscription['status']
+    
+    users_collection.update_one(
+        {"customer_id": customer_id},
+        {
+            "$set": {
+                "subscription_status": status,
+                "updated_at": datetime.utcnow()
+            }
+        }
+    )
+
+def cancel_subscription(subscription):
+    customer_id = subscription['customer']
+    
+    users_collection.update_one(
+        {"customer_id": customer_id},
+        {
+            "$set": {
+                "subscription_status": "canceled",
+                "updated_at": datetime.utcnow()
+            }
+        }
+    )
+
+def get_analysis_results(domain):
+    try:
+        app.logger.info(f"Getting analysis results for {domain}")
+        
+        # Get main content
+        html_content, main_content, full_content = fetch_main_page_content(domain)
+        if not html_content:
+            raise Exception("Failed to fetch content")
+
+        # Extract main info
+        info = extract_main_info(html_content)
+        
+        # Get existing content
+        existing_content = fetch_additional_content(domain)
+        
+        # Generate marketing prompts
+        prompts = generate_marketing_prompts(info['title'], info['description'], full_content, domain)
+        if not prompts:
+            raise Exception("Couldn't generate valid prompts")
+        
+        # Generate prompt answers
+        table = generate_prompt_answers(prompts, domain, info, existing_content)
+        
+        # Calculate score
+        score = calculate_score(table, full_content)
+        
+        # Store results
+        store_analysis_result(domain, info['title'], info['description'], prompts, table, score)
+        
+        return {
+            'domain': domain,
+            'info': info,
+            'prompts': prompts,
+            'table': table,
+            'logo_url': get_logo_dev_logo(domain),
+            'score': score,
+            'from_cache': False
+        }
+        
+    except Exception as e:
+        app.logger.error(f"Error getting analysis results: {str(e)}")
+        raise
+
+# Add near the top after Flask initialization
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+class User(UserMixin):
+    def __init__(self, user_data):
+        self.id = str(user_data['_id'])
+        self.email = user_data['email']
+        self.subscription_status = user_data.get('subscription_status', 'free')
+
+@login_manager.user_loader
+def load_user(user_id):
+    user_data = users_collection.find_one({'_id': ObjectId(user_id)})
+    if user_data:
+        return User(user_data)
+    return None
+
+@app.route('/signup', methods=['POST'])
+def signup():
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+    
+    if not email or not password:
+        return jsonify({'error': 'Email and password are required'}), 400
+        
+    # Check if user already exists
+    if users_collection.find_one({"email": email}):
+        return jsonify({'error': 'Email already registered'}), 400
+        
+    # Create new user with free searches
+    user_data = {
+        "email": email,
+        "password": generate_password_hash(password),
+        "subscription_status": "free",
+        "free_searches_left": MAX_FREE_SEARCHES_AFTER_SIGNUP,
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+    
+    try:
+        result = users_collection.insert_one(user_data)
+        user = User(user_data)
+        login_user(user)
+        return jsonify({'message': 'Signup successful'}), 200
+    except Exception as e:
+        app.logger.error(f"Error creating user: {str(e)}")
+        return jsonify({'error': 'Error creating user'}), 500
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+    
+    if not email or not password:
+        return jsonify({'error': 'Email and password are required'}), 400
+        
+    user_data = users_collection.find_one({"email": email})
+    if not user_data or not check_password_hash(user_data['password'], password):
+        return jsonify({'error': 'Invalid email or password'}), 401
+    
+    # Initialize free searches if not set
+    if 'free_searches_left' not in user_data:
+        users_collection.update_one(
+            {"_id": user_data['_id']},
+            {"$set": {
+                "free_searches_left": MAX_FREE_SEARCHES_AFTER_SIGNUP,
+                "subscription_status": user_data.get('subscription_status', 'free')
+            }}
+        )
+        user_data['free_searches_left'] = MAX_FREE_SEARCHES_AFTER_SIGNUP
+        
+    user = User(user_data)
+    login_user(user)
+    return jsonify({'message': 'Login successful'}), 200
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('index'))
+
+@app.errorhandler(404)
+def not_found_error(error):
+    return render_template('404.html'), 404
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))
     app.run(host='0.0.0.0', port=port, debug=True)
+

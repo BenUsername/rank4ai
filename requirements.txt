@@ -11,3 +11,5 @@ httpx
 lxml>=4.9.3
 pymongo[srv]
 dnspython
+stripe==2.65.0
+Flask-Login==0.6.3

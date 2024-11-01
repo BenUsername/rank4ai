@@ -37,22 +37,35 @@
     </script>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Add near the top of the head section -->
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>
+        const stripePublicKey = '{{ stripe_public_key }}';
+    </script>
 </head>
 <body>
     <header>
         <nav class="main-nav">
             <ul>
-                <li><a href="/">Home</a></li>
-                <li id="how-it-works-link"><a href="#how-it-works">How It Works</a></li>
-                <li id="success-stories-link"><a href="#case-studies">Success Stories</a></li>
-                <li id="faq-link"><a href="#faq">FAQ</a></li>
-                <li><a href="/dashboard">Analytics</a></li>
-                <li class="dropdown">
-                    <a href="#sector" class="dropbtn">Sector</a>
-                    <div class="dropdown-content">
-                        <a href="{{ url_for('short_term_rental') }}">Short-term Rental</a>
-                    </div>
-                </li>
+                <div class="nav-group">
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/dashboard">Analytics</a></li>
+                    <li class="dropdown">
+                        <a href="#" class="dropbtn">Sector</a>
+                        <div class="dropdown-content">
+                            <a href="{{ url_for('short_term_rental') }}">Short-term Rental</a>
+                        </div>
+                    </li>
+                </div>
+                <div class="auth-group">
+                    {% if current_user.is_authenticated %}
+                        <span class="user-email">{{ current_user.email }}</span>
+                        <a href="{{ url_for('logout') }}" class="auth-button">Logout</a>
+                    {% else %}
+                        <a href="#" class="auth-button" id="signupButton">Sign Up</a>
+                        <a href="#" class="auth-button" id="loginButton">Login</a>
+                    {% endif %}
+                </div>
             </ul>
         </nav>
         <div class="hero">
@@ -65,12 +78,20 @@
                     <label for="domainInput" class="sr-only">Enter your website domain</label>
                     <input type="text" name="domain" id="domainInput" placeholder="Enter your website domain (e.g., example.com)" required aria-required="true" autocomplete="off">
                     <ul id="autocompleteResults" class="autocomplete-results"></ul>
-                    {% if searches_left > 0 %}
+                    {% if current_user.is_authenticated %}
                         <button type="submit" class="cta-button" id="analyzeButton" aria-label="Analyze website">
                             <i class="fas fa-rocket icon-small" aria-hidden="true"></i>Analyze Now
                         </button>
                     {% else %}
-                        <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" class="cta-button waiting-list-button" id="waitingListButton">Join Waiting List</a>
+                        {% if searches_left > 0 %}
+                            <button type="submit" class="cta-button" id="analyzeButton" aria-label="Analyze website">
+                                <i class="fas fa-rocket icon-small" aria-hidden="true"></i>Analyze Now
+                            </button>
+                        {% else %}
+                            <button type="button" class="cta-button signup-button" onclick="document.getElementById('signupModal').style.display='block'">
+                                <i class="fas fa-user-plus icon-small" aria-hidden="true"></i>Sign Up Free
+                            </button>
+                        {% endif %}
                     {% endif %}
                 </form>
             </div>
@@ -303,6 +324,14 @@
                         <h3>How often should I check my LLM search performance?</h3>
                         <p>We recommend checking at least monthly, or whenever you make significant changes to your website content. AI models are regularly updated, so frequent checks can help you stay on top of your visibility.</p>
                     </div>
+                    <div class="faq-item">
+                        <h3>Which AI model is used for the analysis?</h3>
+                        <p>We use the latest API live from ChatGPT which is currently gpt-4o-mini. Learn more about the model on the <a href="https://openai.com/gpt-4" target="_blank" rel="noopener noreferrer">OpenAI website</a>.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h3>My website which has geographical redirect based on IP isn't working?</h3>
+                        <p>We are implementing standard IP redirect handling, which we are doing site by site for now. <a href="https://mv71z3xpmnl.typeform.com/to/bmN8bM2y" target="_blank" rel="noopener noreferrer">Contact us</a> to speed up the handling of your website.</p>
+                    </div>
                 </div>
             </section>
 
@@ -458,5 +487,76 @@
             });
         });
     </script>
+
+    <div id="pricingModal" class="modal">
+        <div class="modal-content pricing-content">
+            <span class="close">&times;</span>
+            <h2>Upgrade to Premium</h2>
+            <div class="pricing-plans">
+                <div class="pricing-plan">
+                    <h3>Monthly</h3>
+                    <div class="price">$29/month</div>
+                    <ul>
+                        <li>Full visibility analysis</li>
+                        <li>Unlimited competitor insights</li>
+                        <li>Detailed recommendations</li>
+                        <li>Score improvement tracking</li>
+                    </ul>
+                    <button class="subscribe-button" data-plan="monthly">Subscribe</button>
+                </div>
+                <div class="pricing-plan featured">
+                    <h3>Annual</h3>
+                    <div class="price">$290/year</div>
+                    <div class="savings">Save 17%</div>
+                    <ul>
+                        <li>All monthly features</li>
+                        <li>Priority support</li>
+                        <li>Monthly strategy calls</li>
+                        <li>Custom reporting</li>
+                    </ul>
+                    <button class="subscribe-button" data-plan="annual">Subscribe</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add these modals just before the closing body tag -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content auth-content">
+            <span class="close">&times;</span>
+            <h2>Login</h2>
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" name="password" required>
+                </div>
+                <button type="submit" class="auth-submit">Login</button>
+                <p class="auth-switch">Don't have an account? <a href="#" id="showSignup">Sign up</a></p>
+            </form>
+        </div>
+    </div>
+
+    <div id="signupModal" class="modal">
+        <div class="modal-content auth-content">
+            <span class="close">&times;</span>
+            <h2>Sign Up</h2>
+            <form id="signupForm" class="auth-form">
+                <div class="form-group">
+                    <label for="signupEmail">Email</label>
+                    <input type="email" id="signupEmail" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="signupPassword">Password</label>
+                    <input type="password" id="signupPassword" name="password" required>
+                </div>
+                <button type="submit" class="auth-submit">Sign Up</button>
+                <p class="auth-switch">Already have an account? <a href="#" id="showLogin">Login</a></p>
+            </form>
+        </div>
+    </div>
 </body>
 </html>
