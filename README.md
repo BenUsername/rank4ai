@@ -157,5 +157,4 @@ This project is licensed under the [MIT License](LICENSE).
 
 For any inquiries or support, please contact:
 
-- **Email:** eduar.varil@proton.me
 - **Website:** [promptboostai.com](https://promptboostai.com)
